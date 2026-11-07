@@ -101,8 +101,8 @@ def test_every_source_row_links_evidence(context) -> None:
             assert row.evidence_ids, row.source_ref
 
 
-def test_reference_target_is_labelled_ai_assisted() -> None:
+def test_reference_target_is_labelled_not_independent() -> None:
     reference = json.loads(REFERENCE.read_text(encoding="utf-8"))
-    assert reference["authored_blind"] is True
+    assert reference["authored_blind"] is False
     assert "ai-assisted" in reference["independence"].lower()
-    assert "not human-independent" in reference["independence"].lower()
+    assert "not independent" in reference["independence"].lower()

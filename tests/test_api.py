@@ -237,11 +237,6 @@ def test_holdout_is_not_importable(api) -> None:
     assert response.status_code == 400
 
 
-def test_delete_run(api, run_id) -> None:
-    client, token = api
-    response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
-    assert response.status_code == 200
-    assert client.get(f"/api/runs/{run_id}/status").status_code == 404
 
 
 def test_running_run_shows_loading_state(api) -> None:
@@ -253,3 +248,33 @@ def test_running_run_shows_loading_state(api) -> None:
     assert response.status_code == 200
     assert "Analysis in progress" in response.text
     assert "data-run-wait" in response.text
+
+
+def test_runs_page_lists_existing_run(api, run_id) -> None:
+    client, _ = api
+    response = client.get("/runs")
+    assert response.status_code == 200
+    assert "<h1>Runs</h1>" in response.text
+    assert run_id in response.text
+
+
+def test_failed_run_shows_scoped_error(api) -> None:
+    client, _ = api
+    store = client.app.state.store
+    store.create_run("R-FAILED", project_id="demo", snapshot_id="S-FAILED", fixture_id="demo-slice-300")
+    store.update_status("R-FAILED", status="failed", stage="failed", percent=0.0,
+                        error={"code": "ParseError", "message": "Synthetic failure for test", "retryable": False})
+    response = client.get("/?run=R-FAILED")
+    assert response.status_code == 200
+    assert "Analysis did not complete" in response.text
+    assert "Synthetic failure for test" in response.text
+    other = client.get("/manifest?run=R-FAILED")
+    assert other.status_code == 200
+    assert "Synthetic failure for test" in other.text
+
+
+def test_delete_run(api, run_id) -> None:
+    client, token = api
+    response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
+    assert response.status_code == 200
+    assert client.get(f"/api/runs/{run_id}/status").status_code == 404

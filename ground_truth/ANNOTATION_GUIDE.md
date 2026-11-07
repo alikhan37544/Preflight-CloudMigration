@@ -15,8 +15,8 @@
 3. Cohen's kappa is reported. If kappa < 0.60, the sample is relabelled and the limitation is reported.
 4. The reference target is authored in a separate blind pass with neutral descriptions, then sealed by hash.
 5. If the same agent authored both the rules and the reference target, the result is labelled
-   "internally authored, not independent"; this build uses a separate AI pass but does not claim
-   human independence.
+   "internally authored, not independent". This build is internally authored and does not claim
+   independence or blindness.
 
 ## Limits
 

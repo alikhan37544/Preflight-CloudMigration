@@ -38,7 +38,7 @@
     <label class="visually-hidden" for="manifest-status">Filter by status</label>
     <select id="manifest-status" class="input" name="status">
       <option value="" {{ 'selected' if not status_filter }}>All statuses</option>
-      {% for value in ['parsed', 'partial', 'unsupported', 'binary', 'corrupt', 'excluded'] %}
+      {% for value in ['parsed', 'partial', 'unsupported', 'binary', 'corrupt'] %}
       <option value="{{ value }}" {{ 'selected' if status_filter == value }}>{{ value }}</option>
       {% endfor %}
     </select>

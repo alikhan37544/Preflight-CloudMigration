@@ -395,3 +395,16 @@ progress.progress { width: 100%; height: 8px; accent-color: var(--brand); }
   .panel { overflow-x: auto; }
   .finding-layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+.data-table tr.row-accepted td, .data-table tr.row-accepted:hover td { background: #f2f9f5; }
+.data-table tr.row-rejected td, .data-table tr.row-rejected:hover td { background: #fdf4f3; }
+html, body { max-width: 100%; overflow-x: hidden; }
+.shell, .canvas, .workbench-grid, .workbench-grid > *, .panel { min-width: 0; }
+@media (max-width: 980px) {
+  .spine-svg { min-width: 0; width: 100%; }
+  .data-table { display: block; overflow-x: auto; }
+  .topbar { height: auto; flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .top-status { flex-wrap: wrap; }
+  .contextbar { padding: 8px 12px; }
+  .canvas { padding: 16px 12px 32px; }
+}

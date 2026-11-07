@@ -52,10 +52,10 @@
     <div class="panel-head"><h2>Assumption register</h2></div>
     {% if view.assumptions %}
     <table class="data-table compact">
-      <thead><tr><th>ID</th><th>Statement</th><th>Range</th><th>Question</th></tr></thead>
+      <thead><tr><th>ID</th><th>Statement</th><th>Range</th><th>Question</th><th>Owner</th><th>Status</th></tr></thead>
       <tbody>
         {% for item in view.assumptions %}
-        <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td></tr>
+        <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td><td>{{ item.owner }}</td><td>{{ item.status }}</td></tr>
         {% endfor %}
       </tbody>
     </table>

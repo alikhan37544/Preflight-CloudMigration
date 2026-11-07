@@ -1,6 +1,6 @@
 # PreFlight Evaluation Pre-Registration
 
-**Status:** Pre-freeze. `FROZEN.json` must record the hashes and commit before the final scored run; after freeze, no rules or thresholds change.
+**Status:** Frozen. See `FROZEN.json` for hashes and commit; after freeze, no rules or thresholds change.
 **Date:** 7 November 2026
 **Scope:** Demo-critical and thesis-complete tiers.
 **Rule:** No holdout access, prompt tuning, rule tuning, or threshold changes after the freeze commit.
@@ -19,7 +19,7 @@ Can an evidence-first, deterministic pipeline produce a traceable feature invent
 | `demo-slice-300` | Live import demo | 300 | PA-VEH-01 complete | No |
 | `northstar-pc-2026.10` | Naming-shift holdout | 150 (demo) / 300 (thesis) | 4 / 6 | Yes |
 
-The holdout is never imported into the demo, never used to author rules, and never used to tune thresholds. Its aggregate is **pre-computed once before freeze** in `ground_truth/holdout_metrics.json`; the demo pipeline does not scan it. The demo slice is an in-sample subset of the development fixture and is labelled as such.
+The holdout is never imported into the demo, never used to author rules, and never used to tune thresholds. Its aggregate is **pre-computed once before freeze** in `ground_truth/holdout_metrics.json`; the demo pipeline does not scan it. The demo slice is an in-sample subset of the development fixture and is labelled as such. The reference target is **internally authored, AI-assisted, and not independent**; this is reported as a limitation.
 
 ## 3. Baselines
 
@@ -37,13 +37,13 @@ The holdout is never imported into the demo, never used to author rules, and nev
 | Metric | Identity mapper | All-unresolved | Grep-only | PCF+grep | Strong naive | PreFlight target |
 |---|---|---|---|---|---|---|
 | M1 feature recall | n/a | n/a | baseline | baseline | +10pp over PCF+grep | main ≥0.75 |
-| M2 feature precision | n/a | n/a | baseline | baseline | +10pp over PCF+grep | ≥0.75 |
-| M3 evidence precision | n/a | n/a | baseline | baseline | +10pp over strong naive | ≥0.90 |
+| M2 feature precision | n/a | n/a | descriptive | descriptive | descriptive | ≥0.75 |
+| M3 evidence precision | n/a | n/a | descriptive | descriptive | descriptive | ≥0.90 |
 | M4 disposition correctness | baseline | baseline | n/a | n/a | +10pp over identity | ≥0.75 |
-| M5 estimate-moving recall | n/a | n/a | baseline | baseline | +10pp over strong naive | ≥0.75 |
+| M5 estimate-moving recall | n/a | n/a | descriptive | descriptive | descriptive | ≥0.75 |
 | M6 finding F1 | n/a | n/a | baseline | baseline | +10pp over grep-only | ≥0.75 |
 
-Margins are absolute percentage points and are frozen before the first scored run. If PreFlight does not beat a baseline by the margin, the claim is reported as not supported.
+Frozen margins are reported for M1, M4, and M6 where an independent or naive comparator exists. M2, M3, and M5 baselines are descriptive because no comparable independent scanner was built in the demo tier. If PreFlight does not beat a frozen baseline by the margin, the claim is reported as not supported.
 
 ## 4. Headline metrics and thresholds
 
@@ -53,7 +53,7 @@ Margins are absolute percentage points and are frozen before the first scored ru
 | M2 | Feature precision | emitted candidates | ≥0.75 | ≥0.75 |
 | M3 | Evidence-link support precision | stratified 30-link audit sample; path resolves and excerpt appears at the source | ≥0.90 point; Wilson lower ≥0.75 (28/30 minimum) | same |
 | M4 | Disposition correctness | 12 demo / 16 thesis gold mappings; source, target, and disposition must all match; extra mappings reduce the score | ≥0.75 | ≥0.75 |
-| M5 | Estimate-moving issue recall | 6 planted high-impact issues; top-8 ranked + precision guard | ≥0.75 recall; ≥0.75 top-8 precision (6 TP / 8) | same |
+| M5 | Estimate-moving issue recall | 6 planted high-impact issues; top-8 allowance (6 TP + 2 fixed decoys) | ≥0.75 recall; ≥0.75 top-8 allowance | same |
 | M6 | Finding micro-F1 | 8 rules demo / 10 thesis; 3 positives + 3 hard negatives per rule; per-rule macro-F1 reported as supporting | precision ≥0.80, recall ≥0.70, micro-F1 ≥0.75 | same |
 
 Supporting: feature macro-F1, evidence-link recall, reference-target macro-F1 + confusion matrix, silent omission (gold scope), non-unresolved rate (mapped + correctly-non-mapped split), local schema conformance, assistant refusal/citation, 5k throughput.

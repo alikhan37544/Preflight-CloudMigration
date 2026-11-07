@@ -183,3 +183,31 @@ def test_bogus_feature_lowers_m2(evaluation) -> None:
         ground_truth_dir=GROUND, tier="demo",
     )
     assert changed.metrics[1].value < result.metrics[1].value
+
+
+def test_wrong_source_lowers_m4(evaluation) -> None:
+    import copy
+
+    manifest, discovery, reconstruction, review, comparison, result = evaluation
+    bad = copy.deepcopy(reconstruction)
+    bad.mappings[0].source_ref = "Totally.Wrong.Source"
+    changed = evaluate_run(
+        fixture_id="demo-slice-300", manifest=manifest, discovery=discovery,
+        reconstruction=bad, review=review, comparison=comparison,
+        ground_truth_dir=GROUND, tier="demo",
+    )
+    assert changed.metrics[3].value < result.metrics[3].value
+
+
+def test_duplicate_mapping_lowers_m4(evaluation) -> None:
+    import copy
+
+    manifest, discovery, reconstruction, review, comparison, result = evaluation
+    bad = copy.deepcopy(reconstruction)
+    bad.mappings.append(copy.deepcopy(bad.mappings[0]))
+    changed = evaluate_run(
+        fixture_id="demo-slice-300", manifest=manifest, discovery=discovery,
+        reconstruction=bad, review=review, comparison=comparison,
+        ground_truth_dir=GROUND, tier="demo",
+    )
+    assert changed.metrics[3].value < result.metrics[3].value

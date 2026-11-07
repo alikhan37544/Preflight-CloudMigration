@@ -27,3 +27,7 @@ def test_frozen_manifest_is_complete_and_matches_files() -> None:
     assert sha_file(REPO / "ground_truth" / "annotation_concordance.json") == data["annotation_concordance_sha256"]
     assert rulepack_hash() == data["rulepack_sha256"]
     assert sha_file(REPO / "ground_truth" / "PRE_REGISTRATION.md") == data["pre_registration_sha256"]
+    assert sha_file(REPO / "docs" / "claims-ledger.json") == data["claims_ledger_sha256"]
+    assert data["gold"]
+    for name, recorded in data["gold"].items():
+        assert sha_file(REPO / "ground_truth" / name) == recorded, name

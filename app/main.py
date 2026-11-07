@@ -257,6 +257,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 request=request, name="loading.html",
                 context=context(request, run_id, view, title),
             )
+        if view["status"]["status"] in {"failed", "cancelled"}:
+            error = (view["status"].get("error") or {}).get("message") or "The run stopped before producing artifacts."
+            return view, templates.TemplateResponse(
+                request=request, name="error.html",
+                context=context(request, run_id, view, title, error=error),
+                status_code=200,
+            )
         return view, None
 
     # -- pages ---------------------------------------------------------
@@ -568,6 +575,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/runs/{run_id}/manifest")
     def manifest_api(run_id: str, page: int = Query(default=1, ge=1),
                      size: int = Query(default=100, ge=1, le=500)):
+        _status_or_404(app.state.store, run_id)
         view = load_run_view(app.state.store, run_id)
         artifacts = view["manifest"].get("artifacts", [])
         start = (page - 1) * size

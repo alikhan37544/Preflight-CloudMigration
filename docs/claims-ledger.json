@@ -226,13 +226,13 @@
     },
     {
       "id": "C-018",
-      "claim": "PCF pages are managed in Guidewire Studio; PCF is an XML page-configuration format. Public docs reviewed on 7 Nov 2026 do not include a canonical XSD.",
+      "claim": "Guidewire Studio manages PCF pages.",
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/glossary/tech-terms.html",
-      "quote": "Guidewire Glossary of Technical Terms, \u201cStudio\u201d: \u201cUse Studio to manage rule sets, Gosu classes, PCF pages, workflows, entity types, display keys, plugins, message destinations, and web services.\u201d https://docs.guidewire.com/glossary/tech-terms.html. Absence of a public XSD is a dated statement, not a universal claim.",
+      "quote": "Use Studio to manage rule sets, Gosu classes, PCF pages, workflows, entity types, display keys, plugins, message destinations, and web services.",
       "falsifier": "A public XSD or a doc that defines the acronym differently.",
-      "consequence": "Say \u201cPage Configuration File(s), as used by Guidewire Studio\u201d; do not claim XSD validation.",
+      "consequence": "PreFlight treats PCF files as XML page-configuration files and makes no canonical-XSD claim.",
       "rule_ids": []
     },
     {
@@ -438,6 +438,17 @@
       "rule_ids": [
         "PF-GW-SQL-001"
       ]
+    },
+    {
+      "id": "C-036",
+      "claim": "PreFlight treats PCF files as XML page-configuration files and does not claim a canonical public XSD.",
+      "status": "PRODUCT-CLAIM",
+      "access": "none",
+      "source_url": "",
+      "quote": "Product interpretation; public docs reviewed on 7 Nov 2026 do not include a canonical XSD.",
+      "falsifier": "A public canonical XSD or a different PCF format definition.",
+      "consequence": "Parser uses lxml structure; no XSD-validation claim.",
+      "rule_ids": []
     }
   ]
 }

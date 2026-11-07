@@ -39,7 +39,7 @@
       </thead>
       <tbody>
         {% for mapping in view.mappings %}
-        <tr data-mapping-row="{{ mapping.mapping_id }}">
+        <tr class="row-{{ mapping.reviewer_state }}" data-mapping-row="{{ mapping.mapping_id }}">
           <td><code>{{ mapping.source_ref }}</code><div class="muted">{{ mapping.source_layer }}</div></td>
           <td>{{ mapping.target_name }}<div class="muted"><code>{{ mapping.target_path }}</code></div></td>
           <td><span class="pill pill-disposition">{{ mapping.disposition }}</span></td>

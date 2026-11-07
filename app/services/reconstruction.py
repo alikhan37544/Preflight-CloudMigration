@@ -41,6 +41,7 @@ CODEGEN_URL = "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/to
 COMPILE_URL = "https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html"
 
 CONTRACTS = Path(__file__).resolve().parents[2] / "templates" / "target" / "contracts.json"
+MAPPING_RULES = Path(__file__).resolve().parents[2] / "rules" / "mapping_rules.yaml"
 
 
 @dataclass
@@ -81,63 +82,35 @@ def _mapping(index: int, rule_id: str, source_ref: str, source_layer: str, targe
 
 
 def _build_mappings() -> list[Mapping]:
-    rows = [
-        ("R-CG-01", "PAVehicle", "apd_template", "codegen.PAVehicle.nameOverride", "PersonalVehicle",
-         Disposition.MAPPED_TRANSFORMED, Provenance.GUIDEWIRE_DOC,
-         "Documented Personal Auto codegen override maps the extracted APD type to the installed entity.",
-         "PAVehicle:\n  nameOverride: PersonalVehicle"),
-        ("R-CG-02", "PAVehicle.Year", "apd_template", "codegen.PAVehicle.fields.Year.nameOverride", "ModelYear",
-         Disposition.MAPPED_TRANSFORMED, Provenance.GUIDEWIRE_DOC,
-         "Documented field-level nameOverride for the non-APD Cloud Retrofit path.",
-         "Year:\n  nameOverride: ModelYear"),
-        ("R-CG-03", "PADriver", "apd_template", "codegen.PADriver.nameOverride", "VehicleDriver",
-         Disposition.MAPPED_TRANSFORMED, Provenance.GUIDEWIRE_DOC,
-         "Documented Personal Auto driver type override.",
-         "PADriver:\n  nameOverride: VehicleDriver"),
-        ("R-CG-04", "PALine", "apd_template", "codegen.PALine.nameOverride", "PersonalAutoLine",
-         Disposition.MAPPED_TRANSFORMED, Provenance.GUIDEWIRE_DOC,
-         "Documented Personal Auto line type override.",
-         "PALine:\n  nameOverride: PersonalAutoLine"),
-        ("R-GW-24-01", "PersonalAutoRatingFactorConfiguration", "apd_template",
-         "codegen.PersonalAutoRatingFactor.nameOverride", "PersonalAutoRatingFactorConfiguration",
-         Disposition.MAPPED_TRANSFORMED, Provenance.GUIDEWIRE_DOC,
-         "Documented nameOverride mechanism applied to a synthetic long type in this fixture.",
-         "Paraphrase: APD limits type names to 24 characters; nameOverride restores the full installed name."),
-        ("R-API-01", "PersonalVehicle.VehicleType", "installed_entity", "schema.vehicleType", "vehicleType",
-         Disposition.MAPPED_EXACT, Provenance.PREFLIGHT_CONVENTION,
-         "Installed entity field is preserved as an API property for review.", None, None),
-        ("R-API-02", "PersonalVehicle.GarageLocation_Ext", "installed_entity", "schema.garageLocation", "garageLocation",
-         Disposition.MAPPED_TRANSFORMED, Provenance.PREFLIGHT_CONVENTION,
-         "Custom field suffix is stripped for the API property; reviewer approval required."),
-        ("R-API-03", "PersonalVehicle.ModelYear", "installed_entity", "schema.modelYear", "modelYear",
-         Disposition.MAPPED_TRANSFORMED, Provenance.PREFLIGHT_CONVENTION,
-         "Installed field name is lower-cased for the API property; reviewer approval required."),
-        ("R-API-04", "PersonalVehicle.Make", "installed_entity", "schema.make", "make",
-         Disposition.MAPPED_EXACT, Provenance.PREFLIGHT_CONVENTION,
-         "Installed entity field is preserved as an API property for review."),
-        ("R-API-05", "PersonalVehicle.VIN", "installed_entity", "schema.vin", "vin",
-         Disposition.MAPPED_EXACT, Provenance.PREFLIGHT_CONVENTION,
-         "Installed entity field is preserved as an API property for review."),
-        ("R-API-06", "PersonalVehicle.Usage", "installed_entity", "schema.usage", "usage",
-         Disposition.MAPPED_EXACT, Provenance.PREFLIGHT_CONVENTION,
-         "Installed entity field is preserved as an API property for review."),
-        ("R-TYP-01", "VehicleType.Motorcycle_Ext", "typelist", "schema.vehicleType.motorcycle", "motorcycle",
-         Disposition.MAPPED_TRANSFORMED, Provenance.PREFLIGHT_CONVENTION,
-         "Custom typelist code is lower-cased and stripped of _Ext for the API enum; reviewer approval required."),
-    ]
+    """Apply the canonical mapping rule pack; no mapping rows live in code."""
+    payload = yaml.safe_load(MAPPING_RULES.read_text(encoding="utf-8")) or {}
     mappings: list[Mapping] = []
-    for index, row in enumerate(rows, start=1):
-        rule_id, source_ref, source_layer, target_path, target_name, disposition, provenance, rationale = row[:8]
-        quote = row[8] if len(row) > 8 else None
-        url = None
-        if provenance is Provenance.GUIDEWIRE_DOC:
-            url = COMPILE_URL if rule_id == "R-GW-24-01" else CODEGEN_URL
+    for row in payload.get("rules", []):
+        if not row.get("emitted", True):
+            continue
+        index = len(mappings) + 1
+        rationale = row.get("rationale") or (
+            "Documented codegen override from the public codegen config example."
+            if row.get("provenance") == "guidewire-doc" else "PreFlight convention; reviewer approval required."
+        )
         mappings.append(
-            _mapping(index, rule_id, source_ref, source_layer, target_path, target_name,
-                     disposition, provenance, rationale, Confidence.LINKED, url, quote)
+            Mapping(
+                mapping_id=f"M-{index:02d}",
+                source_ref=row["source"],
+                source_name=row["source"].rsplit(".", 1)[-1],
+                source_layer=row["source_layer"],
+                target_path=row["target"],
+                target_name=row["target_name"],
+                disposition=Disposition(row["disposition"]),
+                rule_id=row["rule_id"],
+                provenance=Provenance(row["provenance"]),
+                confidence=Confidence.LINKED,
+                rationale=rationale,
+                source_url=row.get("source_url"),
+                quote=row.get("quote"),
+            )
         )
     return mappings
-
 
 def _schema_document() -> dict:
     return {

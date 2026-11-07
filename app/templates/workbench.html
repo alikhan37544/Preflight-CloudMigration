@@ -15,7 +15,21 @@
   </div>
 </div>
 
-{% if view and view.status.status in ['queued', 'running'] %}
+{% if view and view.status.status in ['failed', 'cancelled'] %}
+<section class="panel error-panel">
+  <div class="eyebrow">Run {{ view.status.status }}</div>
+  <h2>Analysis did not complete</h2>
+  {% if view.status.error %}
+  <p><strong>{{ view.status.error.code or 'Error' }}:</strong> {{ view.status.error.message }}</p>
+  {% else %}
+  <p>The run stopped before producing artifacts.</p>
+  {% endif %}
+  <div class="button-row">
+    <button class="btn btn-primary" type="button" data-import="demo-slice-300">Retry demo import</button>
+    <a class="btn" href="/runs">Open run history</a>
+  </div>
+</section>
+{% elif view and view.status.status in ['queued', 'running'] %}
 <section class="panel" data-run-wait data-run-id="{{ run_id }}">
   <div class="eyebrow">Analysis in progress</div>
   <h2>Reading the snapshot</h2>

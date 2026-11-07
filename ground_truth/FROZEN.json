@@ -1,17 +1,32 @@
 {
   "schema_version": "1.0",
-  "status": "pending_freeze",
-  "frozen_at": null,
-  "commit": null,
-  "author": null,
+  "status": "frozen",
+  "frozen_at": "2026-11-07T20:41:08Z",
+  "commit": "81800319a601c255f60e7d62e518a4b76e909021",
+  "author": "PreFlight Build",
   "fixtures": {
-    "acme-pc-2026.10": {"sha256": null, "files": null},
-    "demo-slice-300": {"sha256": null, "files": 300},
-    "northstar-pc-2026.10": {"sha256": null, "files": null}
+    "acme-pc-2026.10": {
+      "sha256": "44090acc32bff07807c0263f5d8cc0d8b66091a716f7b9aa753426417bef9ff6",
+      "files": 650
+    },
+    "demo-slice-300": {
+      "sha256": "20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404",
+      "files": 300
+    },
+    "northstar-pc-2026.10": {
+      "sha256": "cbd48132f574dbea2493ba9a6da99696d9630937f94901bb9fd31f7db4f86c82",
+      "files": 150
+    }
   },
-  "reference_target_sha256": null,
-  "annotation_guide_sha256": null,
-  "rulepack_sha256": null,
-  "pre_registration_sha256": null,
-  "change_log": []
+  "reference_target_sha256": "7bc5664bfee00b0bea9fbac174aa5565ff18c535f663681b180672de69228595",
+  "annotation_guide_sha256": "dacee80a162de1a4950bef1e3690c91ec48a2680316171a3db5745c7f1132d94",
+  "annotation_concordance_sha256": "5aba02843e4780d9857857036e6a0eb64a56c2e7ee6f369cba38af3d9c885182",
+  "rulepack_sha256": "cf22d2fe1a968d6defdf6940f50e85a570de04267dddb600fb3472e0eb578ddc",
+  "pre_registration_sha256": "15befbeee1524603bef5faf97fc9746459fd94bae04dea2ea2e38604df837002",
+  "change_log": [
+    {
+      "date": "2026-11-07",
+      "change": "Frozen demo-tier fixtures and rule pack."
+    }
+  ]
 }

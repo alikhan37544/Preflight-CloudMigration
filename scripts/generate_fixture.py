@@ -861,9 +861,9 @@ def truth_reference_target() -> dict:
     return {
         "schema_version": "1.0",
         "feature_id": "PA-VEH-01",
-        "author": "Independent reference pass (AI-assisted separate agent, blind to rules)",
-        "authored_blind": True,
-        "independence": "AI-assisted separate pass; not human-independent. Sealed before scored runs.",
+        "author": "Internally authored reference pass (AI-assisted; not independent)",
+        "authored_blind": False,
+        "independence": "Internally authored by the same build team, AI-assisted; not independent. Reported as a limitation.",
         "target_scope_complete": True,
         "properties": [
             {"source": "PersonalVehicle.ModelYear", "target": "modelYear", "class": "changed", "rule_id": "R-API-03"},

@@ -50,6 +50,11 @@ def freeze() -> dict:
             "files": sum(1 for p in root.rglob("*") if p.is_file()),
         }
     reference = REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json"
+    gold_files = [
+        "features.json", "mappings.json", "findings.json", "gaps.json",
+        "estimate_moving_issues.json", "holdout_metrics.json", "holdout_features.json",
+        "pa_veh_01_edges.json", "annotation_concordance.json",
+    ]
     payload = {
         "schema_version": "1.0",
         "status": "frozen",
@@ -62,6 +67,8 @@ def freeze() -> dict:
         "annotation_concordance_sha256": sha_file(REPO / "ground_truth" / "annotation_concordance.json"),
         "rulepack_sha256": rulepack_hash(),
         "pre_registration_sha256": sha_file(REPO / "ground_truth" / "PRE_REGISTRATION.md"),
+        "claims_ledger_sha256": sha_file(REPO / "docs" / "claims-ledger.json"),
+        "gold": {name: sha_file(REPO / "ground_truth" / name) for name in gold_files},
         "change_log": [
             {"date": datetime.now(timezone.utc).date().isoformat(), "change": "Frozen demo-tier fixtures and rule pack."}
         ],

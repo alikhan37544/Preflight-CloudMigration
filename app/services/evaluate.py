@@ -47,9 +47,10 @@ def wilson_interval(successes: int, trials: int, z: float = 1.959963984540054) -
 
 
 def _metric(metric_id: str, label: str, numerator: int, denominator: int, *,
-            fixture_id: str, tier: str, primary: bool, caveat: str = CAVEAT) -> Metric:
+            fixture_id: str, tier: str, primary: bool, caveat: str = CAVEAT,
+            interval: bool = True) -> Metric:
     safe_den = max(1, denominator)
-    low, high = wilson_interval(min(numerator, safe_den), safe_den)
+    low, high = wilson_interval(min(numerator, safe_den), safe_den) if interval else (None, None)
     return Metric(
         metric_id=metric_id, label=label, numerator=numerator, denominator=safe_den,
         caveat=caveat, fixture_id=fixture_id, tier=tier, primary=primary,
@@ -154,15 +155,22 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     evidence_good = sum(1 for item in sample if audit_evidence_support(resolved_root, item))
 
     # M4: source, target, and disposition must all match; extra mappings are penalised.
-    tool_by_rule = {m.rule_id: m for m in reconstruction.mappings}
-    gold_by_rule = {row["rule_id"]: row for row in gold_mappings}
+    used_tool: set[int] = set()
     mapping_correct = 0
-    for rule_id, gold in gold_by_rule.items():
-        tool = tool_by_rule.get(rule_id)
-        if tool and tool.target_path == gold["target_path"] and tool.target_name == gold["target_name"] \
-                and tool.disposition.value == gold["disposition"]:
-            mapping_correct += 1
-    extra_mappings = len([r for r in tool_by_rule if r not in gold_by_rule])
+    for gold in gold_mappings:
+        for index, tool in enumerate(reconstruction.mappings):
+            if index in used_tool:
+                continue
+            if (tool.rule_id == gold["rule_id"]
+                    and tool.source_ref == gold["source_ref"]
+                    and tool.source_layer == gold["source_layer"]
+                    and tool.target_path == gold["target_path"]
+                    and tool.target_name == gold["target_name"]
+                    and tool.disposition.value == gold["disposition"]):
+                mapping_correct += 1
+                used_tool.add(index)
+                break
+    extra_mappings = len(reconstruction.mappings) - len(used_tool)
     mapping_denominator = len(gold_mappings) + extra_mappings
 
     # M5: planted estimate-moving issues, ranked top-8 precision guard.
@@ -181,8 +189,8 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     issue_ids = {issue["id"] for issue in issues_payload.get("issues", [])}
     m5_recall_num = len(detected_issues & issue_ids)
     decoys = issues_payload.get("decoys", [])
-    top8 = list(detected_issues & issue_ids) + list(decoys)
-    m5_precision = (len(detected_issues & issue_ids) / min(8, len(top8))) if top8 else 0.0
+    top8_slots = min(8, len(detected_issues & issue_ids) + len(decoys))
+    m5_precision = (len(detected_issues & issue_ids) / top8_slots) if top8_slots else 0.0
 
     # M6: micro-F1 over labelled positives/negatives; per-rule macro reported separately.
     finding_paths: dict[str, set[str]] = defaultdict(set)
@@ -222,18 +230,22 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
         _metric("M5", "Estimate-moving issue recall", m5_recall_num, len(issue_ids),
                 fixture_id=fixture_id, tier=tier, primary=True,
-                caveat=CAVEAT + f" Top-8 precision: {m5_precision:.2f}. " + DEMO_NOTE),
+                caveat=CAVEAT + f" Top-8 allowance: {m5_recall_num} TP / {top8_slots} slots. " + DEMO_NOTE),
         _metric("M6", "Finding micro-F1", 2 * tp_total, f1_den,
-                fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
+                fixture_id=fixture_id, tier=tier, primary=True,
+                caveat=CAVEAT + " No F1 interval; bootstrap deferred to the thesis tier. " + DEMO_NOTE,
+                interval=False),
     ]
 
     reference_rows = len(comparison.rows) or 1
     silent_den = len(gold_mappings)
     supporting = [
-        _metric("M5-TOP8", "M5 top-8 precision guard", int(round(m5_precision * 100)), 100,
-                fixture_id=fixture_id, tier=tier, primary=False),
-        _metric("M6-MACRO", "Finding macro-F1 (per-rule average)", int(round(macro_f1 * 100)), 100,
-                fixture_id=fixture_id, tier=tier, primary=False),
+        _metric("M5-TOP8", "M5 top-8 allowance (TP / slots)", m5_recall_num, top8_slots,
+                fixture_id=fixture_id, tier=tier, primary=False,
+                caveat="Six planted issues plus two fixed decoy allowances; not a full ranking of all tool output."),
+        _metric("M6-MACRO", "Finding macro-F1 (sum of per-rule F1 / rules)", int(round(macro_f1 * len(f1_scores))), len(f1_scores),
+                fixture_id=fixture_id, tier=tier, primary=False,
+                caveat="Macro average across rules; demo corpus n=3 positives + 3 negatives per rule."),
         _metric("SILENT-OMISSION", "Silent omission rate", len(reconstruction.silent_omissions),
                 silent_den, fixture_id=fixture_id, tier=tier, primary=False),
         _metric("NON-UNRESOLVED", "Non-unresolved disposition rate",
@@ -242,7 +254,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         _metric("SCHEMA-CONFORMANCE", "Local schema conformance",
                 len(reconstruction.changes) - len(reconstruction.validation_errors),
                 len(reconstruction.changes), fixture_id=fixture_id, tier=tier, primary=False),
-        _metric("REFERENCE-F1", "Reference-target macro-F1",
+        _metric("REFERENCE-F1", "Reference-target macro-F1 (correct rows / rows)",
                 int(round(comparison.macro_f1 * reference_rows)), reference_rows,
                 fixture_id=fixture_id, tier=tier, primary=False),
     ]
@@ -322,6 +334,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         "strong_naive_mapper": strong_naive_correct / max(1, len(gold_mappings)),
         "pcf_grep_discovery": pcf_baseline,
         "grep_only_findings": grep_precision,
+        "grep_only_findings_f1": grep_f1,
         "always_answer_assistant": 0.0,
     }
 

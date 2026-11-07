@@ -150,3 +150,20 @@ def test_spine_hits_pa_veh_01_invariants(reconstruction) -> None:
         elif node.artifact_path and ("template" in node.artifact_path or "codegen" in node.artifact_path):
             kinds.add("template_codegen")
     assert kinds == {"pcf", "entity", "typelist", "template_codegen"}
+
+
+def test_mapping_rules_are_loaded_from_the_rule_pack() -> None:
+    import yaml
+
+    from app.services.reconstruction import _build_mappings
+
+    payload = yaml.safe_load((REPO / "rules" / "mapping_rules.yaml").read_text(encoding="utf-8"))
+    expected = [row for row in payload["rules"] if row.get("emitted", True)]
+    mappings = _build_mappings()
+    assert len(mappings) == len(expected) == 12
+    for mapping, row in zip(mappings, expected):
+        assert mapping.rule_id == row["rule_id"]
+        assert mapping.source_ref == row["source"]
+        assert mapping.target_path == row["target"]
+        assert mapping.target_name == row["target_name"]
+        assert mapping.disposition.value == row["disposition"]

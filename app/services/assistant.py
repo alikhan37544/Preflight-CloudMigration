@@ -75,9 +75,10 @@ def answer_question(question: str, discovery: DiscoveryResult, review: ReviewRes
             citations = _citations_from(matches)
             return AssistantAnswer(
                 answer=(
-                    f"Motorcycle_Ext appears in {len(matches)} evidence records, including the "
-                    "typelist extension and the target enum disposition. Each citation resolves to a "
-                    "file and line/pointer."
+                    f"Motorcycle_Ext appears in {len(matches)} evidence "
+                    f"{'record' if len(matches) == 1 else 'records'}, including the typelist extension. "
+                    "The target enum disposition is a reviewer decision, not a source fact. "
+                    "Each citation resolves to a file and line/pointer."
                 ),
                 grounded=True,
                 citations=citations,

@@ -104,3 +104,40 @@ rules:
     disposition: mapped_transformed
     provenance: preflight-convention
     rationale: Custom typelist code lower-cased and stripped of _Ext; reviewer approval required.
+
+  - rule_id: R-UNR-01
+    source: PersonalVehicle.Territory_Ext
+    source_layer: installed_entity
+    target: null
+    target_name: unresolved
+    disposition: unresolved_gap
+    provenance: reviewer-decision
+    rationale: No rating or territory source exists in the snapshot; the field becomes a gap and assumption.
+    emitted: false
+  - rule_id: R-UNS-01
+    source: rating inputs
+    source_layer: unsupported_artifact
+    target: null
+    target_name: unsupported
+    disposition: unsupported
+    provenance: reviewer-decision
+    rationale: Rating inputs are not in a supported export.
+    emitted: false
+  - rule_id: R-DOC-01
+    source: PersonalVehicleValidation
+    source_layer: gosu
+    target: null
+    target_name: evidence-only
+    disposition: not_applicable
+    provenance: preflight-convention
+    rationale: Gosu validation is evidence only; PreFlight does not rewrite it.
+    emitted: false
+  - rule_id: R-TEST-01
+    source: PersonalVehicleRatingDBTest
+    source_layer: gunit
+    target: null
+    target_name: advisory-finding
+    disposition: not_applicable
+    provenance: preflight-convention
+    rationale: DB-coupled test produces an advisory finding, not a target mapping.
+    emitted: false
