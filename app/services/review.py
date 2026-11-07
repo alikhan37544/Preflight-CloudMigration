@@ -34,7 +34,7 @@ RULES_PATH = Path(__file__).resolve().parents[2] / "rules" / "review_rules.yaml"
 THEME_RULES = {"PF-GW-LOG-001", "PF-GW-LOG-002"}
 
 SECRET_KEYS = re.compile(
-    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"([^"]*)"'
+    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"((?:\\.|[^"\\])*)"'
 )
 SECRET_PLACEHOLDERS = {
     "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
@@ -208,7 +208,13 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                     fingerprint = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
                     line = _line_at(raw, match.start())
                     excerpt = _excerpt_at(raw, line)
-                    excerpt = re.sub(r'"[^"]*"', '"[REDACTED]"', excerpt)
+                    all_values = sorted(
+                        {m.group(2) for m in SECRET_KEYS.finditer(code_only) if m.group(2) and len(m.group(2)) >= 3},
+                        key=len, reverse=True,
+                    )
+                    for secret_value in all_values:
+                        excerpt = excerpt.replace(secret_value, "[REDACTED]")
+                    excerpt = re.sub(r'"(?:\\.|[^"\\])*"', '"[REDACTED]"', excerpt)
                     ev = collector.add(path=rel, line=line, excerpt=excerpt,
                                        method="regex_masked", redacted=True)
                     emit("PF-GW-SEC-001", evidence=ev,

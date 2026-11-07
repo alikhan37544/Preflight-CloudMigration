@@ -443,3 +443,25 @@ class ParamSecret {
 ''',
     })
     assert "gsrc/gate/ParamSecret.gs" in paths_for(review, "PF-GW-SEC-001")
+
+
+def test_adjacent_comment_and_escaped_quote_values_are_redacted(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/Leaky.gs": '''package gate
+class Leaky {
+  var apiKey = "sk-live-aaa111"
+  var password = "hunter2"
+  var clientSecret = "cs-live-bbb222"
+  // staging password is hunter2
+  var escaped = "aaa\\"bbb"
+}
+''',
+    })
+    raw_values = ["sk-live-aaa111", "hunter2", "cs-live-bbb222", 'aaa\\"bbb']
+    for finding in review.findings:
+        if finding.rule_id != "PF-GW-SEC-001":
+            continue
+        for evidence_id in finding.evidence_ids:
+            ev = next(e for e in review.evidence if e.evidence_id == evidence_id)
+            for value in raw_values:
+                assert value not in ev.excerpt, (value, ev.excerpt)

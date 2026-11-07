@@ -245,7 +245,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 caveat="Six planted issues plus two fixed decoy allowances; not a full ranking of all tool output."),
         _metric("M6-MACRO", "Finding macro-F1 (sum of per-rule F1 / rules)", int(round(macro_f1 * len(f1_scores))), len(f1_scores),
                 fixture_id=fixture_id, tier=tier, primary=False,
-                caveat="Macro average across rules; demo corpus n=3 positives + 3 negatives per rule."),
+                caveat="Macro average across rules; demo corpus n=3 positives + 3 negatives per rule.", interval=False),
         _metric("SILENT-OMISSION", "Silent omission rate", len(reconstruction.silent_omissions),
                 silent_den, fixture_id=fixture_id, tier=tier, primary=False),
         _metric("NON-UNRESOLVED", "Non-unresolved disposition rate",
@@ -256,7 +256,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 len(reconstruction.changes), fixture_id=fixture_id, tier=tier, primary=False),
         _metric("REFERENCE-F1", "Reference-target macro-F1 (scaled to rows)",
                 int(round(comparison.macro_f1 * reference_rows)), reference_rows,
-                fixture_id=fixture_id, tier=tier, primary=False),
+                fixture_id=fixture_id, tier=tier, primary=False, interval=False),
     ]
 
     holdout_path = root / "holdout_metrics.json"
