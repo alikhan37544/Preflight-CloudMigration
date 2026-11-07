@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "status": "pending_freeze",
+  "frozen_at": null,
+  "commit": null,
+  "author": null,
+  "fixtures": {
+    "acme-pc-2026.10": {"sha256": null, "files": null},
+    "demo-slice-300": {"sha256": null, "files": 300},
+    "northstar-pc-2026.10": {"sha256": null, "files": null}
+  },
+  "reference_target_sha256": null,
+  "annotation_guide_sha256": null,
+  "rulepack_sha256": null,
+  "pre_registration_sha256": null,
+  "change_log": []
+}

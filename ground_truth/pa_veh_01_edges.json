@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "feature_id": "PA-VEH-01",
+  "status": "expected_fixture_edges",
+  "artefact_types": ["pcf", "entity", "typelist", "template_codegen"],
+  "references": [
+    {"from": "pcf:PAVehicleDV", "to": "entity:PersonalVehicle", "kind": "references"},
+    {"from": "pcf:PAVehicleDV.TypeKeyInput@VehicleType", "to": "typelist:VehicleType", "kind": "references"},
+    {"from": "pcf:PAVehicleDV.TextInput@ModelYear", "to": "entity:PersonalVehicle.ModelYear", "kind": "references"},
+    {"from": "pcf:PAVehicleDV.TextInput@GarageLocation_Ext", "to": "entity:PersonalVehicle.GarageLocation_Ext", "kind": "references"},
+    {"from": "entity:PersonalVehicle.GarageLocation_Ext", "to": "schema:garageLocation", "kind": "configures"},
+    {"from": "typelist:VehicleType.Motorcycle_Ext", "to": "schema:vehicleType.motorcycle", "kind": "configures"},
+    {"from": "template:PAVehicle", "to": "codegen:PAVehicle", "kind": "configures"},
+    {"from": "template:PAVehicle.Year", "to": "codegen:PAVehicle.fields.Year", "kind": "configures"},
+    {"from": "template:PADriver", "to": "codegen:PADriver", "kind": "configures"},
+    {"from": "template:PALine", "to": "codegen:PALine", "kind": "configures"},
+    {"from": "gosu:PersonalVehicleValidation", "to": "pcf:PAVehicleDV", "kind": "references"}
+  ],
+  "tests": [
+    {"from": "gtest:PersonalVehicleValidationTest", "to": "gosu:PersonalVehicleValidation", "kind": "tested_by"},
+    {"from": "gtest:PersonalVehicleRatingDBTest", "to": "gosu:PersonalVehicleValidation", "kind": "tested_by"}
+  ],
+  "expected_counts": {"references": 11, "artefact_types": 4, "tests": 2}
+}
