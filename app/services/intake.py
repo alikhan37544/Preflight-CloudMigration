@@ -52,7 +52,7 @@ def _kind_for(path: str) -> tuple[str | None, str | None]:
     if suffix == ".ttx":
         return "typelist_extension", "typelist"
     if suffix in GOSU_SUFFIXES:
-        if "gtest" in segments:
+        if any(segment.startswith("gtest") for segment in segments):
             return "gunit", "gosu"
         return "gosu", "gosu"
     if suffix in YAML_SUFFIXES:
@@ -72,9 +72,11 @@ def _kind_for(path: str) -> tuple[str | None, str | None]:
     if suffix == ".xml":
         if "template_gen_config" in name:
             return "template_gen_config", "xml"
-        if "template" in segments or "template" in name:
+        if any("template" in segment for segment in segments):
             return "template_xml", "product"
-        if "productmodel" in segments or "product" in segments:
+        if any("productmodel" in segment or "product_model" in segment for segment in segments) or "product" in segments:
+            return "product_xml", "product"
+        if "productmodel" in name or "product_model" in name:
             return "product_xml", "product"
         return "xml", "xml"
     if suffix in XML_SUFFIXES:

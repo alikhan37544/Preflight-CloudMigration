@@ -94,12 +94,14 @@
     <li>Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed and never imported.</li>
     <li>M3 audits excerpt support at the source, not semantic entailment. M6 uses three positives and three hard negatives per rule; intervals remain wide at this n.</li>
     <li>No human inter-annotator study was run; the reference target and concordance process are labelled AI-assisted.</li>
+    <li>The reference target is internally authored by the same build team, not independent; this is reported as a limitation.</li>
+    <li>M5 reports recall with a fixed two-decoy top-8 allowance, not a learned ranking of all tool output.</li>
   </ul>
 </section>
 {% else %}
 <section class="panel empty-inline">
   <h2>No metrics yet</h2>
-  <p>Evaluation requires a completed run with a reconstruction and a sealed reference target.</p>
+  <p>Evaluation requires a completed run with a reconstruction and a frozen reference target.</p>
 </section>
 {% endif %}
 {% endblock %}

@@ -118,6 +118,7 @@ class GosuBlock:
     end_line: int
     commit_line: int | None
     text: str
+    commit_lines: list[int] = field(default_factory=list)
 
 
 @dataclass

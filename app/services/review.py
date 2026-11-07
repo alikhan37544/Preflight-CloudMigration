@@ -34,14 +34,26 @@ RULES_PATH = Path(__file__).resolve().parents[2] / "rules" / "review_rules.yaml"
 THEME_RULES = {"PF-GW-LOG-001", "PF-GW-LOG-002"}
 
 SECRET_KEYS = re.compile(
-    r'(?i)\b(api[_-]?key|secret|password|passwd|token|credential)\s*(?::\s*[^=\n]+?)?=\s*"([^"]*)"'
+    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[^=\n]+?)?=\s*"([^"]*)"'
 )
 SECRET_PLACEHOLDERS = {
     "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
     "${secret}", "{{secret}}", "replace_me", "replaceme", "todo", "tbd", "n/a",
-    "none", "null", "********",
+    "none", "null", "********", "bearer", "basic", "prefix",
 }
-SENSITIVE_LOGGED = re.compile(r"(?i)\.(VIN|SSN|password|licence|license|dateOfBirth|apiKey)\b")
+SENSITIVE_LOGGED = re.compile(
+    r"(?i)\.(?:get)?(VIN|SSN|password|licence|license|dateOfBirth|apiKey|secret|token)\b"
+)
+LOG_CALL = re.compile(
+    r"(?i)\b(?:log|logger)\.(?:error|warn|warning|info|debug|trace)\s*\(|"
+    r"\bSystem\.(?:out|err)\.print\w*\s*\(|"
+    r"(?<!\.)\bprint\s*\("
+)
+SENSITIVE_NAME_PARTS = {
+    "secret", "password", "passwd", "token", "credential", "apikey",
+    "privatekey", "accesskey", "secretkey", "clientsecret", "authtoken", "apitoken",
+}
+SAFE_KEY_SUFFIXES = {"timeout", "length", "name", "url", "uri", "endpoint", "count", "type", "policy"}
 
 
 @dataclass
@@ -166,6 +178,14 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
             if "PF-GW-SEC-001" in rules:
                 code_only = mask_comments(raw)
                 for match in SECRET_KEYS.finditer(code_only):
+                    name = match.group(1)
+                    normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+                    parts = [part for part in re.split(r"[_\-\s]+", normalized) if part]
+                    sensitive = any(part in SENSITIVE_NAME_PARTS for part in parts)
+                    if not sensitive and normalized.endswith("_key"):
+                        sensitive = bool(set(parts[:-1]) & {"api", "private", "access", "secret", "client", "signing", "encryption"})
+                    if not sensitive:
+                        continue
                     value = match.group(2)
                     lowered = value.strip().lower()
                     if lowered in SECRET_PLACEHOLDERS:
@@ -180,6 +200,9 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                         continue
                     if any(token in value for token in [" + ", " +", "+ ", "(", ")", "==", "!="]):
                         continue
+                    following = code_only[match.end():match.end() + 12].lstrip()
+                    if following.startswith("+") and not re.search(r"[A-Za-z0-9]{8,}", value):
+                        continue
                     fingerprint = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
                     line = _line_at(raw, match.start())
                     excerpt = _excerpt_at(raw, line).replace(value, f"[REDACTED:{fingerprint}]")
@@ -187,7 +210,7 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                                        method="regex_masked", redacted=True)
                     emit("PF-GW-SEC-001", evidence=ev,
                          message=(
-                             f"Hard-coded value assigned to '{match.group(1)}' at {rel}:{line}. "
+                             f"Hard-coded value assigned to '{name}' at {rel}:{line}. "
                              f"Value redacted (fingerprint {fingerprint})."
                          ), bucket=findings)
                     break
@@ -208,24 +231,25 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
             if "PF-GW-TX-001" in rules:
                 seen_commits: set[int] = set()
                 for block in doc.find_blocks("runWithNewBundle"):
-                    if block.commit_line is None or block.commit_line in seen_commits:
-                        continue
-                    seen_commits.add(block.commit_line)
-                    ev = collector.add(path=rel, line=block.commit_line,
-                                       excerpt=_excerpt_at(raw, block.start_line, span=max(1, block.end_line - block.start_line + 1)),
-                                       method="lexer")
-                    emit("PF-GW-TX-001", evidence=ev,
-                         message=f"Explicit commit inside runWithNewBundle at {rel}:{block.commit_line}.",
-                         bucket=findings)
+                    for commit_line in (block.commit_lines or ([block.commit_line] if block.commit_line else [])):
+                        if commit_line in seen_commits:
+                            continue
+                        seen_commits.add(commit_line)
+                        ev = collector.add(path=rel, line=commit_line,
+                                           excerpt=_excerpt_at(raw, block.start_line, span=max(1, block.end_line - block.start_line + 1)),
+                                           method="lexer")
+                        emit("PF-GW-TX-001", evidence=ev,
+                             message=f"Explicit commit inside runWithNewBundle at {rel}:{commit_line}.",
+                             bucket=findings)
 
             if include_thesis and "PF-GW-LOG-001" in rules:
-                code_only = mask_comments(raw)
+                code_only = mask_source(raw)
                 lines = code_only.splitlines()
                 index = 0
                 while index < len(lines):
                     start = index
                     window = lines[index]
-                    if re.search(r"\b(log|logger|System\.out|print)\b", window) and "(" in window:
+                    if LOG_CALL.search(window):
                         balance = window.count("(") - window.count(")")
                         while balance > 0 and index + 1 < len(lines):
                             index += 1

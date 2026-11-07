@@ -50,7 +50,7 @@ import runs in under 10 seconds.
 Back to **Workbench**. Point at eight features, each with evidence count and confidence.
 Open **PA-VEH-01**; show the open question:
 
-> “Territory has a field but no rating source. That is a priced unknown, not a zero.”
+> “Territory has a field but no rating source. That is an impact-rated unknown, not a zero.”
 
 ## 1:30 — Reconstruction
 
@@ -148,7 +148,7 @@ Five are documented codegen overrides with public quotes. The rest are labelled 
 require reviewer approval. Rejections create assumptions.
 
 **“Is the evaluation self-graded?”**
-It is measured on a controlled synthetic fixture with a sealed reference target, baselines,
+It is measured on a controlled synthetic fixture with a frozen reference target, baselines,
 hard negatives, and a naming-shift holdout that is never imported or tuned. It is not a benchmark.
 
 **“What is gated?”**

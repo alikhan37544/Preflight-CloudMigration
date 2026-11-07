@@ -145,15 +145,18 @@ def _blocks(source: str, masked: str, call: str = "runWithNewBundle") -> list[Go
             continue
         start_line = _line_at(source, match.start())
         end_line = _line_at(source, close_index)
-        commit_match = re.search(r"\bcommit\s*\(", masked[match.start():close_index])
-        commit_line = _line_at(source, match.start() + commit_match.start()) if commit_match else None
+        commit_lines = [
+            _line_at(source, match.start() + commit.start())
+            for commit in re.finditer(r"\bcommit\s*\(", masked[match.start():close_index])
+        ]
         blocks.append(
             GosuBlock(
                 call=call,
                 start_line=start_line,
                 end_line=end_line,
-                commit_line=commit_line,
+                commit_line=commit_lines[0] if commit_lines else None,
                 text=source[match.start():close_index + 1],
+                commit_lines=commit_lines,
             )
         )
     return blocks

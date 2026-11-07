@@ -93,3 +93,12 @@ plans/               vetted build contract and handoff
 
 See `docs/claims-ledger.json` (canonical machine-readable ledger), `docs/target-format.md`,
 `docs/security.md`, and `ground_truth/PRE_REGISTRATION.md`.
+
+## Known limitations
+
+- The reference target is internally authored and AI-assisted; it is not independently blind.
+- Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed.
+- M3 audits excerpt support at the source, not semantic entailment.
+- M5 uses a fixed two-decoy top-8 allowance, not a learned ranking.
+- No human inter-annotator study was run; no reviewer-effort or generalisation claim is made.
+- The extension draft is local and non-deployable; it is not compiled or tenant-validated.

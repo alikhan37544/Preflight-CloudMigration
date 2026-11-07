@@ -284,3 +284,103 @@ def test_root_level_template_path_is_scanned_for_long_names(tmp_path: Path) -> N
         "product/template/PA.xml": f'<?xml version="1.0"?>\n<productTemplate name="X"><type name="{long_name}"/></productTemplate>\n',
     })
     assert "product/template/PA.xml" in paths_for(review, "PF-GW-NAM-001")
+
+
+def test_camel_and_snake_secret_names_are_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/SecretNames.gs": '''package gate
+class SecretNames {
+  var clientSecret = "cs-live-abcdef"
+  var privateKey = "pk-live-abcdef"
+  var db_password = "db-live-abcdef"
+  var auth_token = "tok-live-abcdef"
+}
+''',
+    })
+    assert "gsrc/gate/SecretNames.gs" in paths_for(review, "PF-GW-SEC-001")
+
+
+def test_bearer_prefix_is_not_a_secret(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/TokenBuilder.gs": '''package gate
+class TokenBuilder {
+  function header() {
+    var token = "Bearer " + fetchToken()
+    var password = "hunter2"
+  }
+}
+''',
+    })
+    paths = paths_for(review, "PF-GW-SEC-001")
+    assert "gsrc/gate/TokenBuilder.gs" in paths  # the real password is still found
+
+
+def test_log_string_prose_and_local_variable_are_not_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/LogStringProse.gs": 'package gate\nclass LogStringProse {\n  var note = "log.error(vehicle.VIN) is forbidden"\n}\n',
+        "gsrc/gate/LogVariable.gs": 'package gate\nclass LogVariable {\n  function run(v : PersonalVehicle) { var log = String.format("%s", v.VIN) }\n}\n',
+    })
+    assert paths_for(review, "PF-GW-LOG-001") == set()
+
+
+def test_log_getter_and_multiline_are_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/LogGetter.gs": 'package gate\nclass LogGetter {\n  function run(u : User) { log.error("ssn", u.getSSN()) }\n}\n',
+        "gsrc/gate/LogParen.gs": 'package gate\nclass LogParen {\n  function run(v : PersonalVehicle) {\n    log.error("note ) inside", v.VIN)\n  }\n}\n',
+    })
+    assert "gsrc/gate/LogGetter.gs" in paths_for(review, "PF-GW-LOG-001")
+    assert "gsrc/gate/LogParen.gs" in paths_for(review, "PF-GW-LOG-001")
+
+
+def test_system_err_and_document_print(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/SystemErr.gs": 'package gate\nclass SystemErr {\n  function run(e : Exception) { System.err.println(e.Message) }\n}\n',
+        "gsrc/gate/DocumentPrint.gs": 'package gate\nclass DocumentPrint {\n  function run(pdf : Document) { pdf.print() }\n}\n',
+    })
+    assert "gsrc/gate/SystemErr.gs" in paths_for(review, "PF-GW-LOG-002")
+    assert "gsrc/gate/DocumentPrint.gs" not in paths_for(review, "PF-GW-LOG-002")
+
+
+def test_custom_create_statement_method_is_not_sql(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/StatementBuilder.gs": 'package gate\nclass StatementBuilder {\n  function createStatement(text : String) : String { return text }\n}\n',
+    })
+    assert paths_for(review, "PF-GW-SQL-001") == set()
+
+
+def test_plural_template_and_gtests_paths_are_classified(tmp_path: Path) -> None:
+    long_name = "A" * 25
+    review = review_files(tmp_path, {
+        "product/templates/PersonalAuto.xml": f'<?xml version="1.0"?>\n<productTemplate name="X"><type name="{long_name}"/></productTemplate>\n',
+        "product/PersonalAutoTemplate/PA.xml": f'<?xml version="1.0"?>\n<productTemplate name="Y"><type name="{long_name}"/></productTemplate>\n',
+        "gtests/gate/RatingChecks.gs": 'package gate\nclass RatingChecks extends GUnitTestClassBase {\n  function check() { Query.make(PersonalVehicle) }\n}\n',
+    })
+    assert "product/templates/PersonalAuto.xml" in paths_for(review, "PF-GW-NAM-001")
+    assert "product/PersonalAutoTemplate/PA.xml" in paths_for(review, "PF-GW-NAM-001")
+    assert "gtests/gate/RatingChecks.gs" in paths_for(review, "PF-GW-GUNIT-001")
+
+
+def test_root_product_model_sbt_is_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "ProductModel.xml": '<?xml version="1.0"?>\n<productModel name="X" standardsBasedTemplate="true"/>\n',
+    })
+    assert len(review.readiness) == 1
+
+
+def test_two_commits_in_one_bundle_are_both_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/DoubleCommit.gs": '''package gate
+class DoubleCommit {
+  function save(a : PersonalVehicle, b : PersonalVehicle) {
+    gw.transaction.Transaction.runWithNewBundle(\\bundle -> {
+      bundle.add(a)
+      bundle.commit()
+      bundle.add(b)
+      bundle.commit()
+    })
+  }
+}
+''',
+    })
+    matches = [f for f in review.findings if f.rule_id == "PF-GW-TX-001"]
+    assert len(matches) == 2
