@@ -1,0 +1,152 @@
+"""Reconstruction tests: 12 mappings, drafts, assumptions, spine invariants.
+
+Written before app/services/reconstruction.py exists.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from app.services.discovery import run_discovery
+from app.services.intake import build_manifest, snapshot_hash
+from app.services.reconstruction import (
+    DRAFT_FILES,
+    reconstruct,
+    validate_draft_directory,
+)
+from app.store import RunStore
+
+REPO = Path(__file__).resolve().parents[1]
+DEMO = REPO / "fixtures" / "demo-slice-300"
+
+
+@pytest.fixture(scope="module")
+def demo_manifest():
+    return build_manifest(DEMO, snapshot_id="S-DEMO", project_id="P-DEMO")
+
+
+@pytest.fixture(scope="module")
+def discovery(demo_manifest):
+    return run_discovery(DEMO, demo_manifest)
+
+
+@pytest.fixture(scope="module")
+def reconstruction(demo_manifest, discovery, tmp_path_factory):
+    store = RunStore(tmp_path_factory.mktemp("data"))
+    store.create_run("R-TEST")
+    return reconstruct(
+        DEMO, demo_manifest, discovery, "PA-VEH-01",
+        store=store, run_id="R-TEST", draft_root=store.run_dir("R-TEST") / "draft",
+    )
+
+
+def test_twelve_explicit_mappings(reconstruction) -> None:
+    rules = [m.rule_id for m in reconstruction.mappings]
+    assert rules == [
+        "R-CG-01", "R-CG-02", "R-CG-03", "R-CG-04", "R-GW-24-01",
+        "R-API-01", "R-API-02", "R-API-03", "R-API-04", "R-API-05", "R-API-06",
+        "R-TYP-01",
+    ]
+    assert all(m.disposition.value for m in reconstruction.mappings)
+
+
+def test_guidewire_doc_mappings_carry_a_url_and_quote(reconstruction) -> None:
+    documented = [m for m in reconstruction.mappings if m.provenance.value == "guidewire-doc"]
+    assert len(documented) == 5
+    for mapping in documented:
+        assert mapping.source_url and mapping.source_url.startswith("https://")
+        assert mapping.quote and len(mapping.quote) > 10
+
+
+def test_every_source_property_has_an_explicit_disposition(reconstruction) -> None:
+    expected_sources = {
+        "PersonalVehicle.ModelYear", "PersonalVehicle.Make", "PersonalVehicle.VIN",
+        "PersonalVehicle.Usage", "PersonalVehicle.VehicleType",
+        "PersonalVehicle.GarageLocation_Ext", "VehicleType.Motorcycle_Ext",
+        "PAVehicle", "PAVehicle.Year", "PADriver", "PALine",
+        "PersonalAutoRatingFactorConfiguration",
+    }
+    covered = {m.source_ref for m in reconstruction.mappings}
+    assert covered == expected_sources
+    assert reconstruction.silent_omissions == []
+
+
+def test_assumptions_are_impact_rated(reconstruction) -> None:
+    statements = " ".join(a.statement.lower() for a in reconstruction.assumptions)
+    assert "territory" in statements
+    assert "rating" in statements
+    long_type = next(a for a in reconstruction.assumptions if "24" in a.statement or "long type" in a.statement.lower())
+    assert long_type.impact_range_days == (7.0, 9.0)
+    assert "11" in long_type.impact_basis and "4" in long_type.impact_basis and "2" in long_type.impact_basis
+    assert "not a quote" in long_type.impact_caveat.lower()
+    assert all(a.status == "open" for a in reconstruction.assumptions)
+
+
+def test_draft_files_exist_and_no_generated_files(reconstruction) -> None:
+    for rel in DRAFT_FILES:
+        assert (reconstruction.draft_root / rel).is_file(), rel
+    assert not list(reconstruction.draft_root.rglob("*_gen*"))
+    assert not (reconstruction.draft_root / "config/integration/schemas/ext/policyperiod/v1/policyperiod_pa_ext-1.0.schema.json_gen").exists()
+
+
+def test_draft_validates_against_local_contract(reconstruction) -> None:
+    assert reconstruction.validation_errors == []
+    assert validate_draft_directory(reconstruction.draft_root) == []
+
+
+def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
+    import yaml
+
+    path = reconstruction.draft_root / "config/integration/apis/installedlobs/pa_codegen_config_ext-1.0.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    types = data["types"]
+    assert types["PAVehicle"]["nameOverride"] == "PersonalVehicle"
+    assert types["PAVehicle"]["fields"]["Year"]["nameOverride"] == "ModelYear"
+    assert types["PADriver"]["nameOverride"] == "VehicleDriver"
+    assert types["PALine"]["nameOverride"] == "PersonalAutoLine"
+    assert types["PersonalAutoRatingFactor"]["nameOverride"] == "PersonalAutoRatingFactorConfiguration"
+
+
+def test_schema_draft_has_expected_properties(reconstruction) -> None:
+    import json
+
+    path = reconstruction.draft_root / "config/integration/schemas/ext/policyperiod/v1/policyperiod_pa_ext-1.0.schema.json"
+    schema = json.loads(path.read_text(encoding="utf-8"))
+    assert schema["$id"] == "preflight-target-v1"
+    assert set(schema["properties"]) >= {
+        "modelYear", "make", "vin", "usage", "vehicleType", "garageLocation"
+    }
+    assert "motorcycle" in schema["properties"]["vehicleType"]["enum"]
+
+
+def test_all_changes_start_pending(reconstruction) -> None:
+    assert reconstruction.changes
+    assert all(change.approval_state == "pending" for change in reconstruction.changes)
+    assert reconstruction.patch_diff
+    assert "nameOverride: PersonalVehicle" in reconstruction.patch_diff
+
+
+def test_source_snapshot_unchanged(demo_manifest, reconstruction) -> None:
+    assert snapshot_hash(DEMO) == demo_manifest.sha256
+
+
+def test_spine_hits_pa_veh_01_invariants(reconstruction) -> None:
+    spine = reconstruction.spines["PA-VEH-01"]
+    references = [e for e in spine.edges if e.kind != "tested_by"]
+    tests = [e for e in spine.edges if e.kind == "tested_by"]
+    assert len(references) == 11
+    assert len(tests) == 2
+
+    kinds = set()
+    for node in spine.nodes:
+        if node.artifact_path and node.artifact_path.endswith(".pcf"):
+            kinds.add("pcf")
+        elif node.artifact_path and node.artifact_path.endswith((".eti", ".etx")):
+            kinds.add("entity")
+        elif node.artifact_path and node.artifact_path.endswith((".tti", ".ttx")):
+            kinds.add("typelist")
+        elif node.artifact_path and ("template" in node.artifact_path or "codegen" in node.artifact_path):
+            kinds.add("template_codegen")
+    assert kinds == {"pcf", "entity", "typelist", "template_codegen"}

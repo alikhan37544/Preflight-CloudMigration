@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="AutoVehicleDV">
+  <Screen name="AutoVehicleDV">
+    <TypeKeyInput id="VehicleType" value="VehicleType" label="VehicleType"/>
+    <TextInput id="ModelYear" value="ModelYear" label="ModelYear"/>
+    <TextInput id="GarageLocation_Ext" value="GarageLocation_Ext" label="GarageLocation_Ext"/>
+  </Screen>
+</PCF>

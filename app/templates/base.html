@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{{ title }} - PreFlight</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/css/preflight.css">
+  <script src="/static/js/preflight.js" defer></script>
+</head>
+<body data-run-id="{{ run_id or '' }}" data-page="{{ title|lower|replace(' ', '-') }}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">PF</span>
+      <span class="brand-name">PreFlight</span>
+      <span class="brand-sub">Cloud-readiness review</span>
+    </div>
+    <div class="top-status">
+      <span class="badge badge-synthetic">Synthetic estate</span>
+      <span class="badge badge-offline"><span class="dot"></span> Offline</span>
+      <span class="badge badge-assurance">Official Cloud Assurance: not run</span>
+    </div>
+  </header>
+
+  {% if run_id %}
+  <div class="contextbar">
+    <div class="crumbs">
+      <span>Workspace</span><span class="sep">/</span><span>{{ title }}</span>
+      <span class="sep">/</span><code>{{ run_id }}</code>
+    </div>
+    <div class="context-meta">
+      {% if view %}
+      <span>Snapshot <code title="{{ view.manifest.sha256 }}">{{ view.manifest.sha256|short }}</code></span>
+      <span>{{ view.manifest.file_count }} files</span>
+      <span class="status-dot status-{{ view.status.status }}">{{ view.status.status }}</span>
+      {% endif %}
+      <span>{{ release_context }}</span>
+    </div>
+    <div class="context-actions">
+      <a class="btn btn-ghost btn-small" href="/api/runs/{{ run_id }}/audit" target="_blank" rel="noopener">Audit JSON</a>
+      <button class="btn btn-ghost btn-small" type="button" data-copy="{{ view.manifest.sha256 if view else '' }}">Copy snapshot hash</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="side-group">
+        <div class="side-label">Review</div>
+        <a class="side-link {{ 'active' if title == 'Workbench' }}" href="/{% if run_id %}?run={{ run_id }}{% endif %}">Workbench</a>
+        <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}">Manifest</a>
+        <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}">Reconstruction</a>
+        <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}">Findings</a>
+      </div>
+      <div class="side-group">
+        <div class="side-label">Evidence</div>
+        <a class="side-link {{ 'active' if title == 'Evaluation' }}" href="/evaluation{% if run_id %}?run={{ run_id }}{% endif %}">Evaluation</a>
+        <a class="side-link {{ 'active' if title == 'Packet' }}" href="/packet{% if run_id %}?run={{ run_id }}{% endif %}">Review packet</a>
+      </div>
+      <div class="side-group">
+        <div class="side-label">Workspace</div>
+        <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs">Runs</a>
+        <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings">Settings</a>
+        <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about">About</a>
+      </div>
+      <div class="side-foot">
+        <div class="offline-note">Local only. No tenant, no telemetry.</div>
+      </div>
+    </aside>
+
+    <main id="main" class="canvas">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-line">
+      <strong>Independent research prototype.</strong> Not affiliated with, endorsed by, or certified by Guidewire
+      Software, Inc. Findings are pattern-based heuristics, not official Cloud Standards checks.
+      Official Cloud Assurance: not run.
+    </div>
+    <div class="footer-line muted">
+      {{ disclaimer }}
+    </div>
+  </footer>
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+</body>
+</html>

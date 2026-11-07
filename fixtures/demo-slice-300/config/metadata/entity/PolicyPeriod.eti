@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="PolicyPeriod">
+  <column name="PeriodStart" type="Date"/>
+  <column name="PeriodEnd" type="Date"/>
+</entity>

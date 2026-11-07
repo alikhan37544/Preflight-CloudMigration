@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Boundaries</div>
+    <h1>About PreFlight</h1>
+    <p class="lede">An offline, evidence-first cloud-readiness review product for Guidewire-style legacy
+    estates. Independent research prototype.</p>
+  </div>
+</div>
+
+<section class="panel prose">
+  <h2>What it is</h2>
+  <p>PreFlight assembles feature candidates across PCF, entity metadata, typelists, extracted templates,
+  Gosu, and Cloud API configuration; links every claim to file evidence; surfaces documented blockers and
+  gaps; and produces a reviewable local Cloud API extension draft plus an impact-rated assumption register
+  for one feature slice.</p>
+  <h2>What it is not</h2>
+  <ul>
+    <li>It does not convert products to APD and does not replace Cloud Retrofit.</li>
+    <li>It does not produce an official Cloud Assurance result, score, or certification.</li>
+    <li>Not a generic Gosu linter; SonarQube and Cloud Assurance own generic linting.</li>
+    <li>Not a live-tenant connector, autonomous migration agent, or deployment tool.</li>
+  </ul>
+  <h2>Claim legend</h2>
+  <table class="data-table compact">
+    <thead><tr><th>Status</th><th>Meaning</th><th>Allowed wording</th></tr></thead>
+    <tbody>
+      <tr><td>Designed</td><td>Architecture exists</td><td>"We designed..."</td></tr>
+      <tr><td>Implemented</td><td>Code runs on the synthetic fixture</td><td>"The prototype executes..."</td></tr>
+      <tr><td>Measured</td><td>Metrics on a controlled synthetic fixture</td><td>"Measured on one synthetic fixture..."</td></tr>
+      <tr><td>Proposed</td><td>Future work</td><td>"Planned..."</td></tr>
+      <tr><td>Gated</td><td>Requires external access</td><td>"Gated on..."</td></tr>
+    </tbody>
+  </table>
+  <h2>Claim strength</h2>
+  <table class="data-table compact">
+    <thead><tr><th>Strength</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>verified-id</td><td>Public Guidewire standard ID and title; full body may be gated.</td></tr>
+      <tr><td>verified-policy</td><td>Public Guidewire guidance without a single public ID.</td></tr>
+      <tr><td>verified-doc</td><td>Public Guidewire documentation, such as the 24-character APD type limit.</td></tr>
+      <tr><td>secondary</td><td>Vendor blog or credible secondary source.</td></tr>
+      <tr><td>heuristic</td><td>PreFlight invention, clearly labelled and never given a standard ID.</td></tr>
+    </tbody>
+  </table>
+  <h2>Full disclaimer</h2>
+  <p class="muted">{{ disclaimer }}</p>
+</section>
+{% endblock %}

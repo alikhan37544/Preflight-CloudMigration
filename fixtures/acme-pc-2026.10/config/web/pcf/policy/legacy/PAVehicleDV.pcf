@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PAVehicleDV">
+  <Screen name="PAVehicleDV">
+    <TypeKeyInput id="VehicleType" value="VehicleType" label="VehicleType"/>
+    <TextInput id="ModelYear" value="ModelYear" label="ModelYear"/>
+  </Screen>
+</PCF>

@@ -1,0 +1,124 @@
+"""PreFlight command line."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from app.config import REPO, Settings
+from app.services.intake import build_manifest
+from app.services.pipeline import execute_run
+from app.store import RunStore
+
+
+def _store(args) -> RunStore:
+    return RunStore(Path(args.data))
+
+
+def cmd_serve(args) -> int:
+    import uvicorn
+
+    uvicorn.run("app.main:app", host=args.host, port=args.port, log_level="info")
+    return 0
+
+
+def cmd_seed(args) -> int:
+    from scripts.seed_demo import seed
+
+    result = seed(Path(args.data), "demo-slice-300", force=True)
+    if result is None:
+        print("demo run already exists")
+        return 0
+    print(f"seeded R-DEMO-001: {len(result.discovery.features)} features")
+    return 0
+
+
+def cmd_analyze(args) -> int:
+    store = _store(args)
+    run_id = args.run_id or "R-CLI"
+    if store.run_dir(run_id).exists():
+        store.delete_run(run_id)
+    store.create_run(run_id, project_id=args.project, snapshot_id=f"S-{run_id}",
+                     fixture_id=args.fixture)
+    fixture = Path(args.fixture_path) if args.fixture_path else REPO / "fixtures" / args.fixture
+    reference = REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json"
+    result = execute_run(fixture, store, run_id, project_id=args.project,
+                         fixture_id=args.fixture, tier=args.tier,
+                         reference_path=reference if args.fixture in {"demo-slice-300", "acme-pc-2026.10"} else None)
+    print(f"{run_id}: {len(result.discovery.features)} features, "
+          f"{len(result.review.findings)} findings")
+    return 0
+
+
+def cmd_verify_audit(args) -> int:
+    store = _store(args)
+    run_id = args.run_id
+    if not run_id:
+        runs = store.list_runs()
+        if not runs:
+            print("no runs found")
+            return 1
+        run_id = runs[-1]
+    try:
+        store.read_status(run_id)
+    except Exception:
+        print(f"run not found: {run_id}")
+        return 1
+    ok = store.verify_audit(run_id)
+    events = store.read_audit(run_id)
+    print(f"{run_id}: {'OK' if ok else 'TAMPERED'} ({len(events)} events, head {events[-1]['hash'][:16] if events else 'GENESIS'})")
+    return 0 if ok else 1
+
+
+def cmd_claims_lint(args) -> int:
+    from scripts.claims_lint import main as lint_main
+
+    return lint_main()
+
+
+def cmd_manifest(args) -> int:
+    manifest = build_manifest(Path(args.fixture_path), snapshot_id="S-CLI", project_id="cli")
+    print(f"{manifest.file_count} files, {manifest.total_size} bytes, hash {manifest.sha256}")
+    print(f"{len(manifest.unsupported_paths)} unsupported/corrupt files")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="preflight", description="Offline cloud-readiness review")
+    parser.add_argument("--data", default=str(Settings().data_dir), help="run-store directory")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    serve = sub.add_parser("serve", help="run the local product server")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
+    serve.set_defaults(func=cmd_serve)
+
+    seed = sub.add_parser("seed", help="seed the demo run")
+    seed.set_defaults(func=cmd_seed)
+
+    analyze = sub.add_parser("analyze", help="analyze a fixture")
+    analyze.add_argument("--fixture", default="demo-slice-300")
+    analyze.add_argument("--fixture-path", default=None)
+    analyze.add_argument("--project", default="demo")
+    analyze.add_argument("--run-id", default="R-CLI")
+    analyze.add_argument("--tier", default="demo")
+    analyze.set_defaults(func=cmd_analyze)
+
+    verify = sub.add_parser("verify-audit", help="verify the hash-chained review log")
+    verify.add_argument("run_id", nargs="?")
+    verify.set_defaults(func=cmd_verify_audit)
+
+    lint = sub.add_parser("claims-lint", help="lint the claims ledger and rule coverage")
+    lint.set_defaults(func=cmd_claims_lint)
+
+    manifest = sub.add_parser("manifest", help="print a snapshot manifest summary")
+    manifest.add_argument("fixture_path")
+    manifest.set_defaults(func=cmd_manifest)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

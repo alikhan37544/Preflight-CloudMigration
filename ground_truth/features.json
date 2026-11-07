@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "fixture": "acme-pc-2026.10",
+  "features": [
+    {
+      "feature_id": "PA-VEH-01",
+      "capability": "vehicle_information",
+      "name": "Vehicle Information",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PAVehicleDV.pcf",
+        "config/metadata/entity/PersonalVehicle.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-DRV-01",
+      "capability": "driver_information",
+      "name": "Driver Information",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PADriverDV.pcf",
+        "config/metadata/entity/PersonalVehicleDriver.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-COV-01",
+      "capability": "coverage_selection",
+      "name": "Coverage Selection",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PACoverageDV.pcf",
+        "config/metadata/entity/PACoverage.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-COV-02",
+      "capability": "coverage_terms",
+      "name": "Coverage Terms",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PACoverageTermsDV.pcf",
+        "config/metadata/entity/PACoverageTerm.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-VEH-02",
+      "capability": "vehicle_rating",
+      "name": "Vehicle Rating Factors",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PAVehicleRatingDV.pcf",
+        "config/metadata/entity/RatingFactor.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-DRV-02",
+      "capability": "driver_eligibility",
+      "name": "Driver Eligibility",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PADriverEligibilityDV.pcf",
+        "config/metadata/entity/DriverEligibility.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-POL-01",
+      "capability": "policy_line",
+      "name": "Policy Line and Editions",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/metadata/entity/PersonalAutoLine.eti",
+        "product/template/PersonalAutoTemplate.xml"
+      ]
+    },
+    {
+      "feature_id": "PA-POL-02",
+      "capability": "policy_questions",
+      "name": "Policy Questions",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/policy/PAPolicyQuestionsDV.pcf"
+      ]
+    }
+  ]
+}

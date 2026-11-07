@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="DriverEligibility">
+  <column name="Eligible" type="Boolean"/>
+  <column name="Reason" type="TypeKey" typelist="EligibilityReason"/>
+</entity>

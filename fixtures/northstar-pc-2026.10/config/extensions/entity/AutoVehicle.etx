@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entityExtension name="AutoVehicle">
+  <column name="GarageLocation_Ext" type="Text"/>
+  <column name="Territory_Ext" type="Integer"/>
+</entityExtension>

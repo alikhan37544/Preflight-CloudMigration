@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="AutoProduct">
+  <type name="AutoVehicle">
+    <field name="Year" type="Integer"/>
+    <field name="VehicleType" type="TypeKey"/>
+    <field name="GarageLocation" type="Text"/>
+  </type>
+  <type name="AutoDriver">
+    <field name="FirstName" type="Text"/>
+    <field name="LastName" type="Text"/>
+  </type>
+  <type name="AutoCoverage">
+    <field name="CoverageType" type="TypeKey"/>
+  </type>
+</productTemplate>

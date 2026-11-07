@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typelist name="FactorType">
+  <code name="Age"/>
+  <code name="Territory"/>
+  <code name="Vehicle"/>
+</typelist>

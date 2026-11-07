@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typelist name="VehicleUsage">
+  <code name="Pleasure"/>
+  <code name="Commute"/>
+  <code name="Business"/>
+</typelist>

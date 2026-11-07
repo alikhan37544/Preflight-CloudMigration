@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "fixture": "acme-pc-2026.10",
+  "rules": {
+    "PF-GW-SQL-001": {
+      "positives": [
+        "gsrc/acme/query/PersonalVehicleQuery.gs",
+        "gsrc/acme/query/PersonalVehicleQueryB.gs",
+        "gsrc/acme/query/PersonalVehicleQueryC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/SafePatterns.gs",
+        "gsrc/acme/validation/PersonalVehicleValidation.gs",
+        "gsrc/acme/negatives/SearchClient.gs"
+      ]
+    },
+    "PF-GW-SEC-001": {
+      "positives": [
+        "gsrc/acme/security/SecretConfig.gs",
+        "gsrc/acme/security/SecretConfigB.gs",
+        "gsrc/acme/security/SecretConfigC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/Placeholders.gs",
+        "gsrc/acme/negatives/EnvSecret.gs",
+        "gsrc/acme/negatives/PublicApi.gs"
+      ]
+    },
+    "PF-GW-PKG-001": {
+      "positives": [
+        "gsrc/acme/internal/HiddenPackage.gs",
+        "gsrc/acme/internal/HiddenPackageB.gs",
+        "gsrc/acme/internal/HiddenPackageC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/SafePatterns.gs",
+        "gsrc/acme/negatives/PublicApi.gs",
+        "gsrc/acme/negatives/PackageComment.gs"
+      ]
+    },
+    "PF-GW-EXC-001": {
+      "positives": [
+        "gsrc/acme/error/SwallowError.gs",
+        "gsrc/acme/error/SwallowErrorB.gs",
+        "gsrc/acme/error/SwallowErrorC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/CatchWithLogging.gs",
+        "gsrc/acme/negatives/PackageComment.gs",
+        "gsrc/acme/negatives/SafePatterns.gs"
+      ]
+    },
+    "PF-GW-TX-001": {
+      "positives": [
+        "gsrc/acme/transaction/BundleCommit.gs",
+        "gsrc/acme/transaction/BundleCommitB.gs",
+        "gsrc/acme/transaction/BundleCommitC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/NoCommit.gs",
+        "gsrc/acme/negatives/CommitComment.gs",
+        "gsrc/acme/negatives/SearchClient.gs"
+      ]
+    },
+    "PF-GW-SRV-001": {
+      "positives": [
+        "gsrc/acme/integration/LegacyVehicleServlet.gs",
+        "gsrc/acme/integration/LegacyVehicleServletB.gs",
+        "gsrc/acme/integration/LegacyVehicleServletC.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/SafePatterns.gs",
+        "gsrc/acme/negatives/ServletProse.gs",
+        "gsrc/acme/negatives/PublicApi.gs"
+      ]
+    },
+    "PF-GW-NAM-001": {
+      "positives": [
+        "product/template/LongTypeA.xml",
+        "product/template/LongTypeB.xml",
+        "product/template/LongTypeC.xml"
+      ],
+      "negatives": [
+        "product/template/ShortTypes.xml",
+        "product/template/ShortTypesB.xml",
+        "product/template/ShortTypesC.xml"
+      ]
+    },
+    "PF-GW-GUNIT-001": {
+      "positives": [
+        "gtest/acme/PersonalVehicleRatingDBTest.gs",
+        "gtest/acme/PersonalVehicleRatingDBTestB.gs",
+        "gtest/acme/PersonalVehicleRatingDBTestC.gs"
+      ],
+      "negatives": [
+        "gtest/acme/PersonalVehicleValidationTest.gs",
+        "gtest/acme/PersonalVehiclePureTest.gs",
+        "gtest/acme/PersonalVehiclePureTestB.gs"
+      ]
+    }
+  },
+  "thesis_rules": {
+    "PF-GW-LOG-001": {
+      "positives": [
+        "gsrc/acme/logging/Logging.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/SafePatterns.gs"
+      ]
+    },
+    "PF-GW-LOG-002": {
+      "positives": [
+        "gsrc/acme/logging/Logging.gs"
+      ],
+      "negatives": [
+        "gsrc/acme/negatives/CatchWithLogging.gs"
+      ]
+    }
+  }
+}

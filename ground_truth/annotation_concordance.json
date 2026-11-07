@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "label": "AI-assisted concordance; not human inter-annotator agreement",
+  "annotator_a": "AI pass A (blind to rules)",
+  "annotator_b": "AI pass B (blind to rules)",
+  "evidence_links": 30,
+  "findings": 20,
+  "mappings": 12,
+  "cohen_kappa": 1.0,
+  "adjudicated_items": 0,
+  "guide": "ground_truth/ANNOTATION_GUIDE.md",
+  "caveat": "Synthetic fixtures; AI-assisted only; no human inter-annotator study."
+}

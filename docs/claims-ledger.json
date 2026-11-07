@@ -18,7 +18,7 @@
       "claim": "Guidewire cloud release cadence is three releases per year; recent releases are Olos (Dec 2025), Palisades (Apr 2026), Qusar (Aug 2026, current as of Nov 2026).",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases",
       "quote": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases \u2014 release list shows \u201cQusar \u2014 Released: August 2026\u201d, \u201cPalisades \u2014 Released: April 2026\u201d, \u201cOlos \u2014 Released: December 2025\u201d.",
       "falsifier": "A newer public release page or a changed cadence.",
       "consequence": "Pin release context per run; do not hard-code one release.",
@@ -29,7 +29,7 @@
       "claim": "Only the current release and two most recent releases are supported (N\u22122).",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/olos/whatsnew/topics/introduction.html",
       "quote": "Olos docs: \u201cOnly the current release and the two most recent releases are supported.\u201d https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
       "falsifier": "A change to the support policy.",
       "consequence": "Version warning rule is scoped to N\u22122.",
@@ -40,7 +40,7 @@
       "claim": "APD conversion is a services-led Early Access offering, not a public self-service converter.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "quote": "Guidewire blog, 12 Dec 2025: \u201ccombines advanced tooling with expert services\u201d; current Cloud Retrofit docs label it \u201cAPD Conversion (EA)\u201d. https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "falsifier": "A public self-service APD conversion product page.",
       "consequence": "Do not claim to replace or reproduce APD conversion.",
@@ -51,7 +51,7 @@
       "claim": "Vendor estimate: most monoline products of average complexity convert in 6\u20138 weeks, including testing.",
       "status": "VERIFIED-VENDOR-CLAIM",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "quote": "Blog: \u201cMost monoline products of average complexity can be converted in just 6-8 weeks, including testing.\u201d",
       "falsifier": "Guidewire changes the estimate; independent data contradicts it.",
       "consequence": "Cite as vendor estimate only, never as a benchmark.",
@@ -75,7 +75,7 @@
       "claim": "Cloud Retrofit is not APD conversion. The APD-assisted path imports a product into APD, generates endpoints, then deletes the product from APD.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/cloud-retrofit-with-apd.html",
       "quote": "\u201cCloud Retrofit with APD App\u201d: after endpoint generation, \u201cDelete the product from APD App\u201d; the product cannot be maintained in APD. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/cloud-retrofit-with-apd.html",
       "falsifier": "A new documented process that keeps the product in APD.",
       "consequence": "Target is a Cloud API extension draft, not APD conversion.",
@@ -104,7 +104,7 @@
       "claim": "`_gen` files are codegen output and must not be modified; `_ext` files are LOB extension files.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_files_that_define_lob_specific_endpoints.html",
       "quote": "Same page: \u201cDo not modify codegen output files directly. Any changes you make to these files will be overwritten\u2026\u201d; LOB extension files \u201chave `<productCode>_ext` in their name.\u201d",
       "falsifier": "A new doc contradicts.",
       "consequence": "Draft only `_ext`; `_gen` is read-only.",
@@ -131,7 +131,7 @@
       "claim": "Field-level `nameOverride` is for Cloud Retrofit without APD App; for APD conversion or APD-assisted Retrofit use `schemaPropertyName`.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html",
       "quote": "Codegen config syntax: \u201cThe nameOverride property should be used only for Cloud Retrofit without APD App. For Cloud Retrofit with APD App or APD conversion, use schemaPropertyName.\u201d",
       "falsifier": "A later doc removes the restriction.",
       "consequence": "The product targets the non-APD Cloud Retrofit path; label this scope.",
@@ -142,7 +142,7 @@
       "claim": "Endpoint-generation normalization: `VehicleDriver` \u2192 `Driver`, `PersonalVehicle` \u2192 `Vehicle`; `VehicleDriverExtResource.finishCreate` links the driver to `PALine`.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
       "quote": "\u201cGenerating endpoints for the Personal Auto product,\u201d published 22 Oct 2026: template changes and `finishCreate` code. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
       "falsifier": "A release changes the Personal Auto template.",
       "consequence": "Separate API-naming rule from codegen overrides.",
@@ -154,7 +154,7 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html",
-      "quote": "APD limits type names to 24 characters; WCRetroRatingLetterOfCredit truncates to WCRetroRatingLetterOfCre; nameOverride: WCRetroRatingLetterOfCredit",
+      "quote": "Paraphrase: APD limits type names to 24 characters; the documented correction is a codegen nameOverride with the full installed name.",
       "falsifier": "A release changes the limit or auto-fix.",
       "consequence": "Implement `PF-GW-NAM-001` on APD type names only; not all fields.",
       "rule_ids": [
@@ -167,7 +167,7 @@
       "claim": "Cloud Assurance uses Studio inspections + Cloud Assurance Plugin + TeamCity Automated Cloud Assurance; build fails over a threshold and the PR is labelled `NEEDS WORK`; default timeout 120 minutes.",
       "status": "VERIFIED-PROCESS",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
       "quote": "\u201cAutomated cloud assurance and code compliance\u201d: exact process, `NEEDS WORK`, 120-minute timeout. https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
       "falsifier": "A new official process.",
       "consequence": "Findings are advisory; UI shows \u201cOfficial Cloud Assurance: not run.\u201d",
@@ -178,7 +178,7 @@
       "claim": "Exact Cloud Assurance threshold and full Cloud Standards corpus are not public.",
       "status": "GATED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
       "quote": "The public page refers to \u201cthe threshold\u201d without a number; standard pages redirect to `/gw-login`.",
       "falsifier": "A public threshold/rule corpus.",
       "consequence": "Never invent a threshold or claim a pass/fail.",
@@ -200,16 +200,15 @@
     },
     {
       "id": "C-016",
-      "claim": "`SEC00-G` = Do Not Hardcode Secrets; `ERR00-G` = Do Not Suppress Exceptions; `INJ00-G` = Prevent SQL Injection. `INJ00-G` says JDBC is not supported on Guidewire Cloud.",
+      "claim": "`SEC00-G` = Do Not Hardcode Secrets.",
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G",
-      "quote": "SEC00-G: Do Not Hardcode Secrets; ERR00-G: Do Not Suppress Exceptions; INJ00-G: JDBC is not supported on Guidewire Cloud.",
+      "quote": "SEC00-G: Do Not Hardcode Secrets.",
       "falsifier": "A change to the public guidance.",
       "consequence": "`SEC00-G`/`ERR00-G` are Gosu secure-coding, not Cloud Standards; `standard_family` distinguishes them.",
       "rule_ids": [
-        "PF-GW-SEC-001",
-        "PF-GW-EXC-001"
+        "PF-GW-SEC-001"
       ]
     },
     {
@@ -230,7 +229,7 @@
       "claim": "PCF pages are managed in Guidewire Studio; PCF is an XML page-configuration format. Public docs reviewed on 7 Nov 2026 do not include a canonical XSD.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://docs.guidewire.com/glossary/tech-terms.html",
       "quote": "Guidewire Glossary of Technical Terms, \u201cStudio\u201d: \u201cUse Studio to manage rule sets, Gosu classes, PCF pages, workflows, entity types, display keys, plugins, message destinations, and web services.\u201d https://docs.guidewire.com/glossary/tech-terms.html. Absence of a public XSD is a dated statement, not a universal claim.",
       "falsifier": "A public XSD or a doc that defines the acronym differently.",
       "consequence": "Say \u201cPage Configuration File(s), as used by Guidewire Studio\u201d; do not claim XSD validation.",
@@ -241,7 +240,7 @@
       "claim": "SonarQube Cloud added native Gosu analysis in September 2026.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
       "quote": "Sonar blog, 4 Sept 2026: \u201cSonarQube Cloud adds support for \u2026 Gosu\u201d; \u201cGosu drives policy and claims logic.\u201d https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
       "falsifier": "A support change.",
       "consequence": "Do not compete on generic Gosu linting; position on cross-artefact migration evidence.",
@@ -252,7 +251,7 @@
       "claim": "Developer Assistants for Gosu, Integrations, and Jutro are GA in Qusar and use MCP; technical docs are gated.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.guidewire.com/resources/blog/developers/accelerating-p-c-delivery-with-developer-assistants-from-guidewire",
       "quote": "Qusar release highlights and Guidewire blog, 10 Aug 2026. https://www.guidewire.com/resources/blog/developers/accelerating-p-c-delivery-with-developer-assistants-from-guidewire",
       "falsifier": "A release change.",
       "consequence": "No integration; complementary review evidence.",
@@ -263,7 +262,7 @@
       "claim": "TrainingApp, GO products, Marketplace content, and full Cloud Standards are gated/copyrighted; synthetic fixtures only.",
       "status": "VERIFIED",
       "access": "public",
-      "source_url": "",
+      "source_url": "https://www.guidewire.com/legal-notices",
       "quote": "Guidewire legal notices and Marketplace terms; public docs login notices. https://www.guidewire.com/legal-notices",
       "falsifier": "A public licence grant.",
       "consequence": "No redistribution; synthetic fixture.",
@@ -318,7 +317,7 @@
     },
     {
       "id": "C-026",
-      "claim": "`PF-GW-TX-001` (explicit commit inside `runWithNewBundle`) is described in a Guidewire developer blog as a Cloud Upgrade Estimate finding.",
+      "claim": "A Guidewire-hosted developer blog guest post describes explicit commits in `runWithNewBundle` as a Cloud Upgrade Estimate finding.",
       "status": "SECONDARY",
       "access": "public",
       "source_url": "https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud",
@@ -371,7 +370,7 @@
       "source_url": "",
       "quote": "PreFlight fixture design.",
       "falsifier": "An authorised real example.",
-      "consequence": "Label synthetic in the packet and demo.",
+      "consequence": "Label the long type synthetic in the finding, reconstruction row, packet, and demo.",
       "rule_ids": []
     },
     {
@@ -382,7 +381,7 @@
       "source_url": "https://github.com/adobe-fonts/source-sans/blob/release/LICENSE.md",
       "quote": "SIL Open Font License.",
       "falsifier": "A licence change.",
-      "consequence": "Bundle the OFL text in `THIRD_PARTY_LICENSES`; no CDN.",
+      "consequence": "If the font is bundled, include the OFL text; the current build uses a system font stack with Source Sans 3 first.",
       "rule_ids": []
     },
     {
@@ -393,7 +392,7 @@
       "source_url": "",
       "quote": "No target mapping for evidence-only artefacts; unresolved/unsupported require reviewer decisions.",
       "falsifier": "A documented Guidewire target mapping.",
-      "consequence": "These mappings are labelled preflight-convention/reviewer-decision.",
+      "consequence": "R-DOC-01/R-UNR-01/R-UNS-01/R-TEST-01 are documented in the mapping rule pack; unresolved/unsupported artefacts become gaps and assumptions rather than Mapping rows.",
       "rule_ids": [
         "R-DOC-01",
         "R-UNR-01",
@@ -412,6 +411,32 @@
       "consequence": "Codegen draft includes PersonalAutoRatingFactor -> PersonalAutoRatingFactorConfiguration.",
       "rule_ids": [
         "R-GW-24-01"
+      ]
+    },
+    {
+      "id": "C-034",
+      "claim": "`ERR00-G` = Do Not Suppress Exceptions.",
+      "status": "VERIFIED",
+      "access": "public",
+      "source_url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G",
+      "quote": "ERR00-G: Do Not Suppress Exceptions.",
+      "falsifier": "The Gosu secure-coding guidance changes.",
+      "consequence": "PF-GW-EXC-001 is a gosu-secure-coding rule.",
+      "rule_ids": [
+        "PF-GW-EXC-001"
+      ]
+    },
+    {
+      "id": "C-035",
+      "claim": "`INJ00-G` states that JDBC is not supported on Guidewire Cloud.",
+      "status": "VERIFIED",
+      "access": "public",
+      "source_url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/INJ00-G",
+      "quote": "JDBC is not supported on Guidewire Cloud.",
+      "falsifier": "The Gosu secure-coding guidance changes.",
+      "consequence": "PF-GW-SQL-001 cites the SQL/JDBC family; IS-TLS-1238 remains the Cloud Standard title.",
+      "rule_ids": [
+        "PF-GW-SQL-001"
       ]
     }
   ]

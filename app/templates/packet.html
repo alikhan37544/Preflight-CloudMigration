@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import claim, severity %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Review artifact</div>
+    <h1>Review packet</h1>
+    <p class="lede">A six-section packet you can review, challenge, and approve. Local draft; not a quote,
+    not a certification, not a deployment.</p>
+  </div>
+  <div class="head-meta">
+    {% if view.packet %}<a class="btn btn-primary" href="/packet/export?run={{ run_id }}">Download packet HTML</a>{% endif %}
+  </div>
+</div>
+
+{% if view.packet %}
+<div class="banner banner-info">
+  <strong>Official Cloud Assurance: not run.</strong> Synthetic demonstration estate. Findings are advisory
+  and the extension draft is non-deployable.
+</div>
+
+<section class="packet-sections">
+  {% for page in view.packet.pages %}
+  <article class="packet-card">
+    <div class="packet-number">{{ '%02d'|format(loop.index) }}</div>
+    <h2>{{ page }}</h2>
+    {% if loop.index == 1 %}
+    <p class="muted">{{ view.status.project_id }} / {{ view.status.fixture_id }} / {{ run_id }}</p>
+    <p>Snapshot <code>{{ view.packet.hashes.snapshot|short }}</code></p>
+    {% elif loop.index == 2 %}
+    <p>{{ view.features|length }} features, {{ view.findings|length }} advisory findings,
+    {{ view.mappings|length }} dispositions, {{ view.assumptions|length }} assumptions.</p>
+    {% elif loop.index == 3 %}
+    <p>{{ view.manifest.file_count }} files read; {{ view.unsupported_count }} unsupported/corrupt listed.
+    Confidence labels are shown on every feature and in the manifest.</p>
+    {% elif loop.index == 4 %}
+    <p>{{ view.assumptions|length }} assumptions, each with impact range and a question to ask.</p>
+    {% elif loop.index == 5 %}
+    <p>{{ view.findings|length }} findings from {{ view.findings|map(attribute='rule_id')|unique|list|length }} rules.
+    Claim strength is shown per finding.</p>
+    {% elif loop.index == 6 %}
+    <p>Evidence sample (first 20), unsupported list, audit head, and disclaimers.
+    Audit verified: <strong>{{ 'yes' if view.audit_verified else 'no' }}</strong>.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel-head"><h2>Assumption register</h2></div>
+    {% if view.assumptions %}
+    <table class="data-table compact">
+      <thead><tr><th>ID</th><th>Statement</th><th>Range</th><th>Question</th></tr></thead>
+      <tbody>
+        {% for item in view.assumptions %}
+        <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">No assumptions.</p>{% endif %}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Findings summary</h2></div>
+    {% if view.findings %}
+    <table class="data-table compact">
+      <thead><tr><th>Rule</th><th>Severity</th><th>Claim</th><th>State</th></tr></thead>
+      <tbody>
+        {% for finding in view.findings %}
+        <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.decision }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">No findings.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><h2>Hashes and audit</h2><span class="muted">{{ 'tamper-evident local log' if view.audit_verified else 'audit verification FAILED' }}</span></div>
+  <table class="data-table compact">
+    <thead><tr><th>Hash</th><th>Value</th></tr></thead>
+    <tbody>
+      {% for name, value in view.packet.hashes.items() %}
+      <tr><td>{{ name }}</td><td><code class="hash">{{ value }}</code></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">This is a local tamper-evident log, not non-repudiation. Verify with
+  <code>preflight verify-audit {{ run_id }}</code>.</p>
+</section>
+{% else %}
+<section class="panel empty-inline">
+  <h2>Packet not generated</h2>
+  <p>Complete a run with a reconstruction draft to generate the review packet.</p>
+</section>
+{% endif %}
+{% endblock %}

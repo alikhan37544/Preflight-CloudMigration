@@ -1,0 +1,145 @@
+schema_version: "1.0"
+rules:
+  - rule_id: PF-GW-SQL-001
+    version: "1.0"
+    title: Direct JDBC or SQL access
+    severity: error
+    claim_strength: verified-id
+    standard_family: cloud-standard
+    standard_id: IS-TLS-1238
+    standard_title: Use of Direct SQL Calls to Access a Database
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: gated-body
+    remediation: Use the supported data-access API (for example gw.api.database.Query) instead of direct JDBC.
+    detection:
+      kind: gosu_regex
+      patterns:
+        - 'java\.sql\.(Connection|DriverManager|Statement|PreparedStatement|ResultSet|SQLException|CallableStatement)'
+        - 'javax\.sql\.'
+        - 'DriverManager\.getConnection\s*\('
+        - '\bcreateStatement\s*\('
+        - '\bprepareStatement\s*\('
+  - rule_id: PF-GW-SEC-001
+    version: "1.0"
+    title: Hard-coded secret
+    severity: error
+    claim_strength: verified-id
+    standard_family: gosu-secure-coding
+    standard_id: SEC00-G
+    standard_title: Do Not Hardcode Secrets
+    standard_url: https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G
+    access: public
+    remediation: Move the value to a supported secret store and rotate it.
+    detection:
+      kind: secret_assignment
+  - rule_id: PF-GW-PKG-001
+    version: "1.0"
+    title: Hidden or internal package reference
+    severity: error
+    claim_strength: verified-id
+    standard_family: cloud-standard
+    standard_id: IS-TLS-1191
+    standard_title: Hidden Package Reference
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: gated-body
+    remediation: Replace the internal package with a supported public API.
+    detection:
+      kind: gosu_regex
+      patterns:
+        - '\bgw\.internal\.'
+        - '\bcom\.guidewire\.(?!public\.)'
+  - rule_id: PF-GW-EXC-001
+    version: "1.0"
+    title: Swallowed exception
+    severity: warning
+    claim_strength: verified-id
+    standard_family: gosu-secure-coding
+    standard_id: ERR00-G
+    standard_title: Do Not Suppress Exceptions
+    standard_url: https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G
+    access: public
+    remediation: Log or rethrow the exception with enough context to diagnose the failure.
+    detection:
+      kind: empty_catch
+  - rule_id: PF-GW-TX-001
+    version: "1.0"
+    title: Explicit commit inside runWithNewBundle
+    severity: warning
+    claim_strength: secondary
+    standard_family: internal-guidance
+    standard_url: https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud
+    access: public
+    remediation: Remove the explicit commit and let the bundle boundary manage the transaction.
+    detection:
+      kind: commit_in_block
+  - rule_id: PF-GW-SRV-001
+    version: "1.0"
+    title: Custom servlet
+    severity: warning
+    claim_strength: verified-policy
+    standard_family: hardening-guidance
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: public
+    remediation: Implement the integration through the approved REST API framework.
+    detection:
+      kind: gosu_regex
+      patterns:
+        - 'javax\.servlet'
+        - '\bHttpServlet\b'
+        - '@WebServlet'
+  - rule_id: PF-GW-NAM-001
+    version: "1.0"
+    title: APD type name exceeds 24 characters
+    severity: error
+    claim_strength: verified-doc
+    standard_family: none
+    standard_url: https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+    access: public
+    remediation: Add a codegen nameOverride that maps the truncated type back to the full installed name.
+    detection:
+      kind: long_type_name
+  - rule_id: PF-GW-GUNIT-001
+    version: "1.0"
+    title: Database access in a pure unit test
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    remediation: Move DB-coupled assertions to an integration test and keep the unit test pure.
+    detection:
+      kind: gunit_db
+  - rule_id: PF-GW-LOG-001
+    version: "1.0"
+    title: Sensitive field written to a log
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    remediation: Redact sensitive values before logging.
+    detection:
+      kind: log_pii
+  - rule_id: PF-GW-LOG-002
+    version: "1.0"
+    title: Print or stack trace output
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    remediation: Use the supported logging API with structured, redacted fields.
+    detection:
+      kind: gosu_regex
+      patterns:
+        - '\bSystem\.out\b'
+        - '\bprintStackTrace\s*\('
+        - '\bprint\s*\('
+  - rule_id: PF-GW-SBT-001
+    version: "1.0"
+    title: Standards Based Template readiness flag
+    severity: warning
+    claim_strength: verified-doc
+    standard_family: none
+    standard_url: https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html
+    access: public
+    remediation: Confirm the SBT limitation against the target release before planning APD conversion.
+    detection:
+      kind: sbt_marker

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PAPolicyQuestionsDV">
+  <Screen name="PAPolicyQuestionsDV">
+    <CheckBox id="GarageKept" value="GarageKept" label="GarageKept"/>
+    <TypeKeyInput id="Usage" value="Usage" label="Usage"/>
+  </Screen>
+</PCF>

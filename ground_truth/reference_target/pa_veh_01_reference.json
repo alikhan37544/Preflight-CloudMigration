@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "feature_id": "PA-VEH-01",
+  "author": "Independent reference pass (AI-assisted separate agent, blind to rules)",
+  "authored_blind": true,
+  "independence": "AI-assisted separate pass; not human-independent. Sealed before scored runs.",
+  "target_scope_complete": true,
+  "properties": [
+    {
+      "source": "PersonalVehicle.ModelYear",
+      "target": "modelYear",
+      "class": "changed",
+      "rule_id": "R-API-03"
+    },
+    {
+      "source": "PersonalVehicle.Make",
+      "target": "make",
+      "class": "preserved",
+      "rule_id": "R-API-04"
+    },
+    {
+      "source": "PersonalVehicle.VIN",
+      "target": "vin",
+      "class": "preserved",
+      "rule_id": "R-API-05"
+    },
+    {
+      "source": "PersonalVehicle.Usage",
+      "target": "usage",
+      "class": "preserved",
+      "rule_id": "R-API-06"
+    },
+    {
+      "source": "PersonalVehicle.VehicleType",
+      "target": "vehicleType",
+      "class": "preserved",
+      "rule_id": "R-API-01"
+    },
+    {
+      "source": "PersonalVehicle.GarageLocation_Ext",
+      "target": "garageLocation",
+      "class": "changed",
+      "rule_id": "R-API-02"
+    },
+    {
+      "source": "VehicleType.Motorcycle_Ext",
+      "target": "vehicleType.motorcycle",
+      "class": "changed",
+      "rule_id": "R-TYP-01"
+    },
+    {
+      "source": "PersonalVehicle.Territory_Ext",
+      "target": null,
+      "class": "unresolved",
+      "scope_complete": false,
+      "rule_id": "R-UNR-01"
+    }
+  ]
+}

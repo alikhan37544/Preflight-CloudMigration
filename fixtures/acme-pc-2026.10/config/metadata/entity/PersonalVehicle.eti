@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="PersonalVehicle">
+  <column name="ModelYear" type="Integer"/>
+  <column name="Make" type="Text"/>
+  <column name="VIN" type="Text"/>
+  <column name="Usage" type="TypeKey" typelist="VehicleUsage"/>
+  <column name="VehicleType" type="TypeKey" typelist="VehicleType"/>
+</entity>

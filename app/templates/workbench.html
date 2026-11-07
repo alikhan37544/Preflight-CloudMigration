@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% from "_macros.html" import confidence, status %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Evidence graph</div>
+    <h1>Feature workbench</h1>
+    <p class="lede">One selected feature, traced across PCF, entity metadata, typelists, the extracted
+    template, Gosu, and tests. Click a node to inspect file evidence.</p>
+  </div>
+  <div class="head-meta">
+    {% if view %}{{ status(view.status.status) }}{% endif %}
+    <span class="muted">Run {{ run_id }}</span>
+  </div>
+</div>
+
+{% if view and view.status.status in ['queued', 'running'] %}
+<section class="panel" data-run-wait data-run-id="{{ run_id }}">
+  <div class="eyebrow">Analysis in progress</div>
+  <h2>Reading the snapshot</h2>
+  <progress class="progress" data-run-bar max="100" value="{{ view.status.progress.percent }}"></progress>
+  <p class="muted" data-run-label>{{ view.status.stage }} - {{ view.status.progress.percent }}%</p>
+</section>
+{% elif view %}
+
+{% if view.unsupported_count %}
+<div class="banner banner-warning">
+  <strong>{{ view.unsupported_count }} unsupported or corrupt files are listed, not hidden.</strong>
+  Results exclude them. <a href="/manifest?run={{ run_id }}&status=unsupported">Inspect the manifest</a>.
+</div>
+{% endif %}
+
+<div class="workbench-grid">
+  <section class="panel feature-panel" aria-label="Features">
+    <div class="panel-head">
+      <h2>Features</h2>
+      <span class="counter">{{ view.features|length }}</span>
+    </div>
+    <label class="visually-hidden" for="feature-search">Filter features</label>
+    <input id="feature-search" class="input" type="search" placeholder="Filter features..." data-filter-target="feature-row">
+    <div class="feature-list">
+      {% for feature in view.features %}
+      <a class="feature-row {{ 'selected' if view.selected_feature and feature.feature_id == view.selected_feature.feature_id }}"
+         href="/?run={{ run_id }}&feature={{ feature.feature_id }}" data-feature-row>
+        <span class="feature-id">{{ feature.feature_id }}</span>
+        <span class="feature-name">{{ feature.name }}</span>
+        <span class="feature-meta">
+          <span class="muted">{{ feature.evidence_ids|length }} evidence</span>
+          {{ confidence(feature.confidence) }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="panel-foot muted">
+      {% if view.selected_feature %}
+      <strong>{{ view.selected_feature.description }}</strong>
+      {% if view.selected_feature.open_questions %}
+      <ul class="question-list">
+        {% for question in view.selected_feature.open_questions %}<li>{{ question }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel spine-panel" aria-label="Feature spine">
+    <div class="panel-head">
+      <h2>Feature spine</h2>
+      <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence below</span>
+    </div>
+    {% if view.spine_layout %}
+    <div class="spine-scroll">
+      <svg class="spine-svg" viewBox="0 0 {{ view.spine_layout.width }} {{ view.spine_layout.height }}"
+           role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}">
+        {% for column in view.spine_layout.columns %}
+        <text class="column-label" x="{{ column.x }}" y="30">{{ column.label }}</text>
+        {% endfor %}
+        <g class="spine-edges">
+          {% for edge in view.spine_layout.edges %}
+          <path d="M {{ edge.x1 }} {{ edge.y1 }} C {{ edge.x1 + 18 }} {{ edge.y1 }}, {{ edge.x2 - 18 }} {{ edge.y2 }}, {{ edge.x2 }} {{ edge.y2 }}"
+                class="edge edge-{{ edge.kind }}"/>
+          {% endfor %}
+        </g>
+        <g class="spine-nodes">
+          {% for node in view.spine_layout.nodes %}
+          <g class="spine-node node-{{ node.kind }}" tabindex="0" role="button"
+             data-evidence-id="{{ node.evidence_id or '' }}" data-path="{{ node.artifact_path or '' }}"
+             aria-label="{{ node.label }} {{ node.kind }}">
+            <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="4"/>
+            <text class="node-label" x="{{ node.x + 9 }}" y="{{ node.y + 16 }}">{{ node.label }}</text>
+            <text class="node-kind" x="{{ node.x + 9 }}" y="{{ node.y + 30 }}">{{ node.kind }}</text>
+          </g>
+          {% endfor %}
+        </g>
+      </svg>
+    </div>
+    <details class="table-fallback">
+      <summary>Spine table fallback</summary>
+      <table class="data-table compact">
+        <thead><tr><th>Node</th><th>Kind</th><th>File</th><th>Confidence</th></tr></thead>
+        <tbody>
+          {% for node in view.spine_layout.nodes %}
+          <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </details>
+    {% else %}
+    <div class="empty-inline">
+      <p>No spine has been generated for this feature yet.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="panel evidence-panel" aria-label="Evidence drawer">
+    <div class="panel-head">
+      <h2>Evidence</h2>
+      <span class="muted">file + line/pointer</span>
+    </div>
+    <div class="evidence-drawer" data-evidence-drawer>
+      {% if selected_evidence %}
+      <div class="evidence-head">
+        <span class="pill pill-confidence">{{ selected_evidence.confidence }}</span>
+        <code>{{ selected_evidence.evidence_id }}</code>
+      </div>
+      <div class="evidence-path">{{ selected_evidence.path }}</div>
+      <div class="evidence-locator">{{ selected_evidence.locator.kind }} {{ selected_evidence.locator.value }}{% if selected_evidence.locator.line %}:{{ selected_evidence.locator.line }}{% endif %}</div>
+      <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
+      <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
+      {% else %}
+      <div class="empty-inline">
+        <p>Select a spine node or a feature evidence row to inspect its source.</p>
+        <p class="muted">Every reported link resolves to a file and line/pointer. Unresolved links are labelled.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="assistant">
+      <div class="panel-head">
+        <h3>Grounded assistant</h3>
+        <span class="badge badge-neutral">retrieval-only - model off</span>
+      </div>
+      <form data-assistant-form>
+        <label class="visually-hidden" for="assistant-question">Ask about this snapshot</label>
+        <input id="assistant-question" class="input" name="question" placeholder="Ask about evidence, gaps, findings..." required>
+        <button class="btn btn-primary btn-small" type="submit">Ask</button>
+      </form>
+      <div class="prompt-chips">
+        <button type="button" class="chip" data-assistant-prompt="Does this estate use territory rating?">Territory rating?</button>
+        <button type="button" class="chip" data-assistant-prompt="Why is the long type name a problem?">Long type?</button>
+        <button type="button" class="chip" data-assistant-prompt="Which files reference Motorcycle_Ext?">Motorcycle_Ext?</button>
+      </div>
+      <div class="assistant-result" data-assistant-result>
+        <p class="muted">Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+{% set long_type_findings = view.findings | selectattr('rule_id', 'equalto', 'PF-GW-NAM-001') | list %}
+{% if long_type_findings %}
+<section class="panel migration-signal" aria-label="Long type signal">
+  <div class="eyebrow">Estimate-moving signal</div>
+  <div class="signal-row">
+    <div>
+      <h2>{{ long_type_findings[0].title }}</h2>
+      <p class="muted">{{ long_type_findings[0].message }}</p>
+    </div>
+    <div class="signal-meta">
+      <span class="pill pill-error">24-char limit</span>
+      <a class="btn btn-small" href="/reconstruction?run={{ run_id }}&tab=mappings">Open reconstruction</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel" aria-label="Gaps and assumptions">
+  <div class="panel-head">
+    <h2>Unknowns and gaps</h2>
+    <span class="counter">{{ view.gaps|length }}</span>
+  </div>
+  {% if view.gaps %}
+  <div class="gap-grid">
+    {% for gap in view.gaps %}
+    <article class="gap-card">
+      <div class="gap-top"><span class="pill pill-kind">{{ gap.kind }}</span><span class="pill pill-impact impact-{{ gap.impact }}">{{ gap.impact }} impact</span></div>
+      <h3>{{ gap.subject }}</h3>
+      <p class="muted">{{ gap.evidence_sought }}</p>
+      <div class="muted">Owner: {{ gap.owner }} - Status: {{ gap.status }}</div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-inline"><p>No gaps were emitted. That is unusual and should be reviewed.</p></div>
+  {% endif %}
+</section>
+
+<script type="application/json" id="evidence-data">{{ view.evidence_by_id|tojson }}</script>
+{% else %}
+<section class="panel empty-inline"><p>This run has no artifacts yet.</p></section>
+{% endif %}
+{% endblock %}

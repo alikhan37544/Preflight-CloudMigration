@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "fixture": "acme-pc-2026.10",
+  "mappings": [
+    {
+      "mapping_id": "GM-01",
+      "rule_id": "R-CG-01",
+      "source_ref": "PAVehicle",
+      "source_layer": "apd_template",
+      "target_path": "codegen.PAVehicle.nameOverride",
+      "target_name": "PersonalVehicle",
+      "disposition": "mapped_transformed",
+      "provenance": "guidewire-doc"
+    },
+    {
+      "mapping_id": "GM-02",
+      "rule_id": "R-CG-02",
+      "source_ref": "PAVehicle.Year",
+      "source_layer": "apd_template",
+      "target_path": "codegen.PAVehicle.fields.Year.nameOverride",
+      "target_name": "ModelYear",
+      "disposition": "mapped_transformed",
+      "provenance": "guidewire-doc"
+    },
+    {
+      "mapping_id": "GM-03",
+      "rule_id": "R-CG-03",
+      "source_ref": "PADriver",
+      "source_layer": "apd_template",
+      "target_path": "codegen.PADriver.nameOverride",
+      "target_name": "VehicleDriver",
+      "disposition": "mapped_transformed",
+      "provenance": "guidewire-doc"
+    },
+    {
+      "mapping_id": "GM-04",
+      "rule_id": "R-CG-04",
+      "source_ref": "PALine",
+      "source_layer": "apd_template",
+      "target_path": "codegen.PALine.nameOverride",
+      "target_name": "PersonalAutoLine",
+      "disposition": "mapped_transformed",
+      "provenance": "guidewire-doc"
+    },
+    {
+      "mapping_id": "GM-05",
+      "rule_id": "R-GW-24-01",
+      "source_ref": "PersonalAutoRatingFactorConfiguration",
+      "source_layer": "apd_template",
+      "target_path": "codegen.PersonalAutoRatingFactor.nameOverride",
+      "target_name": "PersonalAutoRatingFactorConfiguration",
+      "disposition": "mapped_transformed",
+      "provenance": "guidewire-doc"
+    },
+    {
+      "mapping_id": "GM-06",
+      "rule_id": "R-API-01",
+      "source_ref": "PersonalVehicle.VehicleType",
+      "source_layer": "installed_entity",
+      "target_path": "schema.vehicleType",
+      "target_name": "vehicleType",
+      "disposition": "mapped_exact",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-07",
+      "rule_id": "R-API-02",
+      "source_ref": "PersonalVehicle.GarageLocation_Ext",
+      "source_layer": "installed_entity",
+      "target_path": "schema.garageLocation",
+      "target_name": "garageLocation",
+      "disposition": "mapped_transformed",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-08",
+      "rule_id": "R-API-03",
+      "source_ref": "PersonalVehicle.ModelYear",
+      "source_layer": "installed_entity",
+      "target_path": "schema.modelYear",
+      "target_name": "modelYear",
+      "disposition": "mapped_transformed",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-09",
+      "rule_id": "R-API-04",
+      "source_ref": "PersonalVehicle.Make",
+      "source_layer": "installed_entity",
+      "target_path": "schema.make",
+      "target_name": "make",
+      "disposition": "mapped_exact",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-10",
+      "rule_id": "R-API-05",
+      "source_ref": "PersonalVehicle.VIN",
+      "source_layer": "installed_entity",
+      "target_path": "schema.vin",
+      "target_name": "vin",
+      "disposition": "mapped_exact",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-11",
+      "rule_id": "R-API-06",
+      "source_ref": "PersonalVehicle.Usage",
+      "source_layer": "installed_entity",
+      "target_path": "schema.usage",
+      "target_name": "usage",
+      "disposition": "mapped_exact",
+      "provenance": "preflight-convention"
+    },
+    {
+      "mapping_id": "GM-12",
+      "rule_id": "R-TYP-01",
+      "source_ref": "VehicleType.Motorcycle_Ext",
+      "source_layer": "typelist",
+      "target_path": "schema.vehicleType.motorcycle",
+      "target_name": "motorcycle",
+      "disposition": "mapped_transformed",
+      "provenance": "preflight-convention"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+schema_version: "1.0"
+# Canonical mapping rule pack. Rows marked guidewire-doc carry a public source and
+# an exact quote; conventions require reviewer approval and reviewer-decision rows
+# are created during review.
+rules:
+  - rule_id: R-CG-01
+    source: PAVehicle
+    source_layer: apd_template
+    target: codegen.PAVehicle.nameOverride
+    target_name: PersonalVehicle
+    disposition: mapped_transformed
+    provenance: guidewire-doc
+    source_url: https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html
+    quote: "PAVehicle:\n  nameOverride: PersonalVehicle"
+  - rule_id: R-CG-02
+    source: PAVehicle.Year
+    source_layer: apd_template
+    target: codegen.PAVehicle.fields.Year.nameOverride
+    target_name: ModelYear
+    disposition: mapped_transformed
+    provenance: guidewire-doc
+    source_url: https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html
+    quote: "Year:\n  nameOverride: ModelYear"
+  - rule_id: R-CG-03
+    source: PADriver
+    source_layer: apd_template
+    target: codegen.PADriver.nameOverride
+    target_name: VehicleDriver
+    disposition: mapped_transformed
+    provenance: guidewire-doc
+    source_url: https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html
+    quote: "PADriver:\n  nameOverride: VehicleDriver"
+  - rule_id: R-CG-04
+    source: PALine
+    source_layer: apd_template
+    target: codegen.PALine.nameOverride
+    target_name: PersonalAutoLine
+    disposition: mapped_transformed
+    provenance: guidewire-doc
+    source_url: https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html
+    quote: "PALine:\n  nameOverride: PersonalAutoLine"
+  - rule_id: R-GW-24-01
+    source: PersonalAutoRatingFactorConfiguration
+    source_layer: apd_template
+    target: codegen.PersonalAutoRatingFactor.nameOverride
+    target_name: PersonalAutoRatingFactorConfiguration
+    disposition: mapped_transformed
+    provenance: guidewire-doc
+    source_url: https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+    quote: "APD limits type names to 24 characters; nameOverride restores the full installed name."
+  - rule_id: R-API-01
+    source: PersonalVehicle.VehicleType
+    source_layer: installed_entity
+    target: schema.vehicleType
+    target_name: vehicleType
+    disposition: mapped_exact
+    provenance: preflight-convention
+    rationale: Installed entity field is preserved as an API property for review.
+  - rule_id: R-API-02
+    source: PersonalVehicle.GarageLocation_Ext
+    source_layer: installed_entity
+    target: schema.garageLocation
+    target_name: garageLocation
+    disposition: mapped_transformed
+    provenance: preflight-convention
+    rationale: Custom suffix stripped for the API property; reviewer approval required.
+  - rule_id: R-API-03
+    source: PersonalVehicle.ModelYear
+    source_layer: installed_entity
+    target: schema.modelYear
+    target_name: modelYear
+    disposition: mapped_transformed
+    provenance: preflight-convention
+    rationale: Installed field lower-cased for the API property; reviewer approval required.
+  - rule_id: R-API-04
+    source: PersonalVehicle.Make
+    source_layer: installed_entity
+    target: schema.make
+    target_name: make
+    disposition: mapped_exact
+    provenance: preflight-convention
+    rationale: Installed entity field is preserved as an API property for review.
+  - rule_id: R-API-05
+    source: PersonalVehicle.VIN
+    source_layer: installed_entity
+    target: schema.vin
+    target_name: vin
+    disposition: mapped_exact
+    provenance: preflight-convention
+    rationale: Installed entity field is preserved as an API property for review.
+  - rule_id: R-API-06
+    source: PersonalVehicle.Usage
+    source_layer: installed_entity
+    target: schema.usage
+    target_name: usage
+    disposition: mapped_exact
+    provenance: preflight-convention
+    rationale: Installed entity field is preserved as an API property for review.
+  - rule_id: R-TYP-01
+    source: VehicleType.Motorcycle_Ext
+    source_layer: typelist
+    target: schema.vehicleType.motorcycle
+    target_name: motorcycle
+    disposition: mapped_transformed
+    provenance: preflight-convention
+    rationale: Custom typelist code lower-cased and stripped of _Ext; reviewer approval required.

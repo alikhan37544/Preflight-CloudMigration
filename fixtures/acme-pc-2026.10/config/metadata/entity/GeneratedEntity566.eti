@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="GeneratedEntity566">
+  <column name="Field566" type="Text"/>
+</entity>

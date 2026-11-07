@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "fixture": "acme-pc-2026.10",
+  "gaps": [
+    {
+      "gap_id": "G-01",
+      "kind": "missing_source",
+      "subject": "territory",
+      "impact": "high",
+      "anchor": "config/extensions/entity/PersonalVehicle.etx"
+    },
+    {
+      "gap_id": "G-02",
+      "kind": "unsupported",
+      "subject": "rating inputs",
+      "impact": "medium",
+      "anchor": "data/vehicle_rating_inputs.csv"
+    },
+    {
+      "gap_id": "G-03",
+      "kind": "ambiguous_reference",
+      "subject": "duplicate PAVehicleDV screen",
+      "impact": "medium",
+      "anchor": "config/web/pcf/policy/legacy/PAVehicleDV.pcf"
+    }
+  ]
+}

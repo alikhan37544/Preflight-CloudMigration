@@ -1,0 +1,255 @@
+"""API and product-shell tests: routes, CSRF, decisions, assistant, immutability.
+
+Written before app/main.py exists.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.config import Settings
+from app.main import create_app
+from app.services.intake import snapshot_hash
+
+REPO = Path(__file__).resolve().parents[1]
+DEMO = REPO / "fixtures" / "demo-slice-300"
+
+
+@pytest.fixture(scope="module")
+def api(tmp_path_factory):
+    data_dir = tmp_path_factory.mktemp("api-data")
+    settings = Settings(
+        data_dir=data_dir,
+        fixtures_dir=REPO / "fixtures",
+        reference_path=REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json",
+        secret_key="test-secret",
+        sync_runs=True,
+    )
+    app = create_app(settings)
+    with TestClient(app) as client:
+        home = client.get("/")
+        token = re.search(r'name="csrf-token" content="([^"]+)"', home.text)
+        assert token, "home page must expose a CSRF token"
+        yield client, token.group(1)
+
+
+@pytest.fixture(scope="module")
+def run_id(api):
+    client, token = api
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["status"] in {"queued", "running", "succeeded"}
+    return payload["run_id"]
+
+
+def test_health(api) -> None:
+    client, _ = api
+    assert client.get("/api/health").json()["status"] == "ok"
+
+
+def test_product_pages_render(api, run_id) -> None:
+    client, _ = api
+    for path in ["/", "/manifest", "/reconstruction", "/findings", "/evaluation", "/packet", "/runs", "/about", "/settings"]:
+        response = client.get(f"{path}?run={run_id}")
+        assert response.status_code == 200, path
+        assert "PreFlight" in response.text
+
+
+def test_workbench_shows_feature_and_disclaimer(api, run_id) -> None:
+    client, _ = api
+    response = client.get(f"/?run={run_id}&feature=PA-VEH-01")
+    text = response.text
+    assert "PA-VEH-01" in text
+    assert "Synthetic" in text
+    assert "Cloud Assurance: not run" in text
+    assert "Vehicle Information" in text
+
+
+def test_manifest_api_paginates(api, run_id) -> None:
+    client, _ = api
+    response = client.get(f"/api/runs/{run_id}/manifest?page=1&size=10")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 300
+    assert len(payload["artifacts"]) == 10
+
+
+def test_features_api(api, run_id) -> None:
+    client, _ = api
+    payload = client.get(f"/api/runs/{run_id}/features").json()
+    assert len(payload["features"]) == 8
+    detail = client.get(f"/api/runs/{run_id}/features/PA-VEH-01").json()
+    assert detail["feature"]["feature_id"] == "PA-VEH-01"
+    assert detail["feature"]["evidence_ids"]
+
+
+def test_metrics_and_packet_api(api, run_id) -> None:
+    client, _ = api
+    metrics = client.get(f"/api/runs/{run_id}/metrics").json()
+    assert [m["metric_id"] for m in metrics["metrics"]] == ["M1", "M2", "M3", "M4", "M5", "M6"]
+    packet = client.get(f"/api/runs/{run_id}/packet").json()
+    assert len(packet["pages"]) == 6
+
+
+def test_decision_persists_and_is_audited(api, run_id) -> None:
+    client, token = api
+    response = client.post(
+        f"/api/runs/{run_id}/decisions",
+        json={
+            "object_type": "mapping", "object_id": "M-12", "action": "reject",
+            "reason": "Typelist enum requires reviewer confirmation",
+        },
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    mappings = client.get(f"/api/runs/{run_id}/mappings").json()["mappings"]
+    rejected = next(m for m in mappings if m["mapping_id"] == "M-12")
+    assert rejected["reviewer_state"] == "rejected"
+    assumptions = client.get(f"/api/runs/{run_id}/assumptions").json()["assumptions"]
+    assert any("M-12" in a["statement"] or a["related_mapping_id"] == "M-12" for a in assumptions)
+    audit = client.get(f"/api/runs/{run_id}/audit").json()
+    assert audit["verified"] is True
+    assert any(e["action"] == "mapping.reject" for e in audit["events"])
+
+
+def test_rerun_without_force_reuses_run(api, run_id) -> None:
+    client, token = api
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": False},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200
+    assert response.json()["run_id"] == run_id
+
+
+def test_csrf_is_required(api, run_id) -> None:
+    client, _ = api
+    response = client.post(
+        f"/api/runs/{run_id}/decisions",
+        json={"object_type": "mapping", "object_id": "M-01", "action": "accept", "reason": "x"},
+    )
+    assert response.status_code == 403
+
+
+def test_assistant_refuses_without_evidence(api, run_id) -> None:
+    client, token = api
+    response = client.post(
+        f"/api/runs/{run_id}/assistant",
+        json={"question": "Does this estate use territory rating?"},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200
+    answer = response.json()
+    assert answer["grounded"] is False
+    assert "cannot determine" in answer["answer"].lower()
+
+
+def test_csp_header_present(api, run_id) -> None:
+    client, _ = api
+    response = client.get(f"/?run={run_id}")
+    csp = response.headers.get("content-security-policy", "")
+    assert "default-src 'self'" in csp
+    assert "object-src 'none'" in csp
+
+
+def test_source_untouched(api, run_id) -> None:
+    client, _ = api
+    manifest = client.get(f"/api/runs/{run_id}/manifest?page=1&size=1").json()
+    assert snapshot_hash(DEMO) == manifest["snapshot_hash"]
+
+
+
+
+def test_zip_snapshot_import(api, tmp_path) -> None:
+    import zipfile
+
+    client, token = api
+    archive = tmp_path / "demo.zip"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(DEMO.rglob("*")):
+            if path.is_file():
+                zf.write(path, path.relative_to(DEMO).as_posix())
+    import time
+
+    with archive.open("rb") as fh:
+        started = time.perf_counter()
+        response = client.post(
+            "/api/imports",
+            files={"file": ("demo.zip", fh, "application/zip")},
+            headers={"X-CSRF-Token": token},
+        )
+        elapsed = time.perf_counter() - started
+    assert response.status_code == 200, response.text
+    assert elapsed < 10.0, f"300-file import took {elapsed:.2f}s"
+    run_id = response.json()["run_id"]
+    status = client.get(f"/api/runs/{run_id}/status").json()
+    assert status["status"] == "succeeded"
+    features = client.get(f"/api/runs/{run_id}/features").json()["features"]
+    assert len(features) == 8
+    assert client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token}).status_code == 200
+
+
+def test_missing_run_pages_return_scoped_404(api) -> None:
+    client, _ = api
+    for path in ["/manifest", "/reconstruction", "/findings", "/evaluation", "/packet"]:
+        response = client.get(f"{path}?run=R-NOPE")
+        assert response.status_code == 404, path
+        assert "no longer exists" in response.text
+
+
+def test_manifest_excluded_filter_matches_banner(api, run_id) -> None:
+    client, _ = api
+    response = client.get(f"/manifest?run={run_id}&excluded=1")
+    assert response.status_code == 200
+    assert "4 matching (excluded files)" in response.text
+
+
+def test_packet_audit_head_matches_current_log(api, run_id) -> None:
+    client, token = api
+    client.post(
+        f"/api/runs/{run_id}/decisions",
+        json={"object_type": "mapping", "object_id": "M-02", "action": "defer",
+              "reason": "Needs more evidence"},
+        headers={"X-CSRF-Token": token},
+    )
+    audit = client.get(f"/api/runs/{run_id}/audit").json()
+    packet = client.get(f"/api/runs/{run_id}/packet").json()
+    assert packet["hashes"]["audit_head"] == audit["events"][-1]["hash"]
+
+
+def test_holdout_is_not_importable(api) -> None:
+    client, token = api
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "northstar-pc-2026.10", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 400
+
+
+def test_delete_run(api, run_id) -> None:
+    client, token = api
+    response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
+    assert response.status_code == 200
+    assert client.get(f"/api/runs/{run_id}/status").status_code == 404
+
+
+def test_running_run_shows_loading_state(api) -> None:
+    client, _ = api
+    store = client.app.state.store
+    store.create_run("R-LOADING", project_id="demo", snapshot_id="S-LOADING", fixture_id="demo-slice-300")
+    store.update_status("R-LOADING", status="running", stage="parse", percent=40.0)
+    response = client.get("/manifest?run=R-LOADING")
+    assert response.status_code == 200
+    assert "Analysis in progress" in response.text
+    assert "data-run-wait" in response.text

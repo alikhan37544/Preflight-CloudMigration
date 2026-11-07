@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="AutoPolicyQuestionsDV">
+  <Screen name="AutoPolicyQuestionsDV">
+    <CheckBox id="GarageKept" value="GarageKept" label="GarageKept"/>
+  </Screen>
+</PCF>

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "fixture": "northstar-pc-2026.10",
+  "numerator": 4,
+  "denominator": 4,
+  "capabilities": [
+    "coverage_selection",
+    "driver_information",
+    "policy_questions",
+    "vehicle_information"
+  ],
+  "holdout_sha256": "cbd48132f574dbea2493ba9a6da99696d9630937f94901bb9fd31f7db4f86c82",
+  "computed_at": "2026-11-07T20:33:00Z",
+  "caveat": "Pre-computed holdout aggregate; not imported into the demo or used for tuning."
+}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Scoped error</div>
+    <h1>Something went wrong</h1>
+  </div>
+</div>
+<section class="panel error-panel">
+  <h2>{{ error or "The requested page could not be rendered." }}</h2>
+  <p class="muted">The run may have failed or been deleted. Open the run history to retry, or start a new import.</p>
+  <div class="button-row">
+    <a class="btn btn-primary" href="/runs">Open run history</a>
+    <a class="btn" href="/">Back to workbench</a>
+  </div>
+</section>
+{% endblock %}

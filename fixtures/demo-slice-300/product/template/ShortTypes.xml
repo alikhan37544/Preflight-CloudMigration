@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="ShortTypes">
+  <type name="PAVehicle">
+    <field name="Year" type="Integer"/>
+    <field name="VehicleType" type="TypeKey"/>
+  </type>
+  <type name="PADriver">
+    <field name="FirstName" type="Text"/>
+  </type>
+</productTemplate>

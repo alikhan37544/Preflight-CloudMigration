@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PADriverDV">
+  <Screen name="PADriverDV">
+    <TextInput id="FirstName" value="FirstName" label="FirstName"/>
+    <TextInput id="LastName" value="LastName" label="LastName"/>
+    <TypeKeyInput id="ViolationType" value="ViolationType" label="ViolationType"/>
+  </Screen>
+</PCF>

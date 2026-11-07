@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="AutoCoverageDV">
+  <Screen name="AutoCoverageDV">
+    <TypeKeyInput id="CoverageType" value="CoverageType" label="CoverageType"/>
+  </Screen>
+</PCF>

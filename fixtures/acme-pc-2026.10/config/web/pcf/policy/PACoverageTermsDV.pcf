@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PACoverageTermsDV">
+  <Screen name="PACoverageTermsDV">
+    <TypeKeyInput id="TermType" value="TermType" label="TermType"/>
+    <TextInput id="TermValue" value="TermValue" label="TermValue"/>
+  </Screen>
+</PCF>

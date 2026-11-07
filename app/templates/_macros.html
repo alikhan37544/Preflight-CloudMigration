@@ -1,0 +1,19 @@
+{% macro severity(value) -%}
+<span class="pill pill-{{ value }}">{{ value|upper }}</span>
+{%- endmacro %}
+
+{% macro claim(value) -%}
+<span class="pill pill-claim">{{ value }}</span>
+{%- endmacro %}
+
+{% macro confidence(value) -%}
+<span class="pill pill-confidence">{{ value }}</span>
+{%- endmacro %}
+
+{% macro status(value) -%}
+<span class="pill pill-status status-{{ value }}">{{ value }}</span>
+{%- endmacro %}
+
+{% macro class_pill(value) -%}
+<span class="pill pill-class class-{{ value }}">{{ value }}</span>
+{%- endmacro %}

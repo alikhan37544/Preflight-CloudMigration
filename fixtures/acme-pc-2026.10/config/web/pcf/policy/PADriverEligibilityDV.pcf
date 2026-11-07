@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PADriverEligibilityDV">
+  <Screen name="PADriverEligibilityDV">
+    <CheckBox id="Eligible" value="Eligible" label="Eligible"/>
+    <TypeKeyInput id="Reason" value="Reason" label="Reason"/>
+  </Screen>
+</PCF>

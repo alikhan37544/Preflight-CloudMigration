@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productModel name="PersonalAuto">
+  <type name="PAVehicle"/>
+  <type name="PADriver"/>
+  <type name="PALine"/>
+  <type name="PACoverage"/>
+  <type name="PersonalAutoRatingFactorConfiguration"/>
+</productModel>

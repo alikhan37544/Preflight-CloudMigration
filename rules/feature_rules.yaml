@@ -1,0 +1,101 @@
+schema_version: "1.0"
+# Structural feature seeds. These are public domain words, not fixture literals.
+# Specific capabilities are listed before broader ones; negative lookaheads keep
+# one screen from being claimed by two features.
+features:
+  - id: PA-VEH-01
+    capability: vehicle_information
+    name: Vehicle Information
+    lob: PersonalAuto
+    description: Vehicle identity, model year, usage, type, and garage location.
+    seed:
+      pcf: 'Vehicle(?!Rating|Driver).*DV\.pcf$'
+      entity: '^[A-Za-z]*Vehicle$'
+      template: 'Vehicle$'
+      gosu: 'VehicleValidation'
+      test: 'Vehicle(Validation|RatingDB)Test\.gs$'
+    tokens: [vehicle]
+  - id: PA-VEH-02
+    capability: vehicle_rating
+    name: Vehicle Rating Factors
+    lob: PersonalAuto
+    description: Rating factor inputs associated with a vehicle.
+    seed:
+      pcf: 'VehicleRating.*DV\.pcf$'
+      entity: '^RatingFactor$'
+      template: 'RatingFactor'
+      gosu: 'VehicleRating|RatingFactor'
+      test: 'VehicleRating.*Test'
+    tokens: [vehicle, rating]
+  - id: PA-DRV-01
+    capability: driver_information
+    name: Driver Information
+    lob: PersonalAuto
+    description: Driver identity, licence, and violation data.
+    seed:
+      pcf: 'Driver(?!Eligibility).*DV\.pcf$'
+      entity: 'Driver$'
+      template: 'Driver$'
+      gosu: 'DriverValidation'
+      test: 'Driver.*Test'
+    tokens: [driver]
+  - id: PA-DRV-02
+    capability: driver_eligibility
+    name: Driver Eligibility
+    lob: PersonalAuto
+    description: Eligibility decision and reason for a driver.
+    seed:
+      pcf: 'DriverEligibility.*DV\.pcf$'
+      entity: '^DriverEligibility$'
+      template: 'DriverEligibility'
+      gosu: 'DriverEligibility'
+      test: 'DriverEligibility.*Test'
+    tokens: [driver, eligibility]
+  - id: PA-COV-01
+    capability: coverage_selection
+    name: Coverage Selection
+    lob: PersonalAuto
+    description: Selection of liability, collision, and comprehensive coverages.
+    seed:
+      pcf: 'Coverage(?!Term).*DV\.pcf$'
+      entity: 'Coverage$'
+      template: 'Coverage$'
+      gosu: 'CoverageValidation'
+      test: 'Coverage.*Test'
+    tokens: [coverage]
+  - id: PA-COV-02
+    capability: coverage_terms
+    name: Coverage Terms
+    lob: PersonalAuto
+    description: Coverage term type and value.
+    seed:
+      pcf: 'CoverageTerms?.*DV\.pcf$'
+      entity: '^PACoverageTerm$'
+      template: 'CoverageTerm'
+      gosu: 'CoverageTerm'
+      test: 'CoverageTerm.*Test'
+    tokens: [coverage, term]
+  - id: PA-POL-01
+    capability: policy_line
+    name: Policy Line and Editions
+    lob: PersonalAuto
+    description: Product line identity and edition binding.
+    seed:
+      pcf: null
+      entity: 'Line$'
+      template: 'Line$'
+      gosu: 'LineValidation'
+      test: 'Line.*Test'
+    tokens: [line, edition]
+  - id: PA-POL-02
+    capability: policy_questions
+    name: Policy Questions
+    lob: PersonalAuto
+    description: Underwriting and garage-keeping policy questions.
+    seed:
+      pcf: 'PolicyQuestions.*DV\.pcf$'
+      entity: null
+      template: null
+      gosu: 'PolicyQuestions'
+      test: 'PolicyQuestions.*Test'
+    tokens: [question, policy]

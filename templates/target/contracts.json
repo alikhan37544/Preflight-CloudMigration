@@ -1,0 +1,52 @@
+{
+  "mapping": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "feature_id", "mappings"],
+    "properties": {
+      "schema_version": {"const": "1.0"},
+      "feature_id": {"type": "string", "minLength": 1},
+      "mappings": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "source_layer", "target", "disposition", "rule_id", "provenance"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1},
+            "source_layer": {"type": "string", "minLength": 1},
+            "target": {"type": "string", "minLength": 1},
+            "disposition": {"enum": ["mapped_exact", "mapped_transformed", "intentionally_dropped", "not_applicable", "unresolved_gap", "unsupported"]},
+            "rule_id": {"type": "string", "minLength": 1},
+            "provenance": {"enum": ["guidewire-doc", "preflight-convention", "reviewer-decision"]}
+          }
+        }
+      }
+    }
+  },
+  "updater": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "create", "update"],
+    "properties": {
+      "schema_version": {"const": "1.0"},
+      "create": {"type": "object", "minProperties": 1},
+      "update": {"type": "object", "minProperties": 1}
+    }
+  },
+  "product_access": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "productCode", "productName", "enabled"],
+    "properties": {
+      "schema_version": {"const": "1.0"},
+      "productCode": {"type": "string", "pattern": "^[a-z]{2}$"},
+      "productName": {"type": "string", "minLength": 1},
+      "enabled": {"type": "boolean"}
+    }
+  }
+}

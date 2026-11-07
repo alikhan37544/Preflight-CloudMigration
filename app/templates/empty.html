@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Start a review</div>
+    <h1>No snapshot is open</h1>
+    <p class="lede">Import the bundled synthetic estate or open an existing run. PreFlight reads a snapshot
+    read-only, hashes every file, and keeps unsupported files visible.</p>
+  </div>
+</div>
+
+<section class="panel empty-state">
+  <h2>Bundled demo estate</h2>
+  <p>300 files, Personal Auto, Cloud Retrofit without APD App. No customer data.</p>
+  <div class="button-row">
+    <button class="btn btn-primary" type="button" data-import="demo-slice-300">Import 300-file demo slice</button>
+    <button class="btn" type="button" data-import="acme-pc-2026.10">Import full 650-file estate</button>
+    <a class="btn btn-ghost" href="/runs">Open run history</a>
+  </div>
+  <form class="upload-form" data-upload-form>
+    <label class="upload-label" for="snapshot-zip">Or import a snapshot zip</label>
+    <input id="snapshot-zip" class="input" type="file" name="file" accept=".zip,application/zip" required>
+    <button class="btn" type="submit">Analyze zip snapshot</button>
+    <span class="muted">Zip-slip, symlink, encryption, and ratio limits are enforced.</span>
+  </form>
+  <div class="import-progress" data-import-progress hidden>
+    <progress class="progress" data-import-bar max="100" value="0"></progress>
+    <div class="muted" data-import-label>Queued...</div>
+  </div>
+</section>
+
+<section class="grid-3">
+  <div class="panel">
+    <div class="eyebrow">Evidence first</div>
+    <h3>Every claim has a source</h3>
+    <p class="muted">Feature candidates are linked to file and line/pointer evidence, with parsed, linked,
+    inferred-review, and unresolved confidence labels.</p>
+  </div>
+  <div class="panel">
+    <div class="eyebrow">Unknowns are named</div>
+    <h3>Assumptions instead of silence</h3>
+    <p class="muted">Missing sources become gaps and impact-rated assumptions, not hidden defaults.</p>
+  </div>
+  <div class="panel">
+    <div class="eyebrow">Human approval</div>
+    <h3>Every change waits</h3>
+    <p class="muted">Draft mappings start pending. Accept, reject, edit, and defer decisions are audited.</p>
+  </div>
+</section>
+{% endblock %}

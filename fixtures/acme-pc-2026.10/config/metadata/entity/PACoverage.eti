@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="PACoverage">
+  <column name="CoverageType" type="TypeKey" typelist="CoverageType"/>
+  <column name="Limit" type="TypeKey" typelist="LimitType"/>
+</entity>

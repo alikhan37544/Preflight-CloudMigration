@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="LongTypeA">
+  <type name="PersonalAutoRatingFactorConfiguration">
+    <field name="Factor" type="Decimal"/>
+  </type>
+</productTemplate>

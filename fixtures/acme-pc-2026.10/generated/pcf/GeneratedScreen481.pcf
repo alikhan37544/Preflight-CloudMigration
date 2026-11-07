@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="GeneratedScreen481">
+  <Screen name="GeneratedScreen481">
+    <TextInput id="Field481" value="Field481" label="Field481"/>
+  </Screen>
+</PCF>

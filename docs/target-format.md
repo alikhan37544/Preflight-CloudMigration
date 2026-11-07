@@ -96,7 +96,6 @@ types:
       Year:
         nameOverride: ModelYear
       GarageLocation:
-        nameOverride: GarageLocation_Ext   # PreFlight convention; reviewer decision
         requiredForCreate: false
   PADriver:
     nameOverride: VehicleDriver

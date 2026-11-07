@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="GeneratedEntity32">
+  <column name="Field32" type="Text"/>
+</entity>

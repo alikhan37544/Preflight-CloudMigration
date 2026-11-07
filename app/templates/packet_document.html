@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PreFlight Review Packet - {{ run_id }}</title>
+<style>
+  :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#f6f8fa; color:var(--ink); font:14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
+  .page { max-width: 980px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
+  h1,h2,h3 { margin:0 0 8px; line-height:1.2; }
+  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; }
+  .brandbar { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:20px; }
+  .mark { font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; color:var(--brand); }
+  .badge { display:inline-block; border:1px solid var(--line); border-radius:3px; padding:2px 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .badge.synthetic { color:var(--warn); border-color:#e3c08e; background:#fdf7ec; }
+  .muted { color:var(--muted); }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin:14px 0; }
+  .kpi { border:1px solid var(--line); padding:12px 14px; }
+  .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
+  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:13px; }
+  th,td { text-align:left; border-bottom:1px solid var(--line); padding:7px 8px; vertical-align:top; }
+  th { background:#f1f4f7; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
+  .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
+  .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
+  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; word-break:break-all; }
+  footer { margin-top:36px; border-top:1px solid var(--line); padding-top:12px; font-size:11px; color:var(--muted); }
+  .pagebreak { page-break-before: always; }
+  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brandbar">
+    <div>
+      <div class="mark">PreFlight - Cloud-Readiness Review</div>
+      <h1>Review Packet</h1>
+      <div class="muted">{{ project_id }} / {{ fixture_id }} / run {{ run_id }}</div>
+    </div>
+    <div style="text-align:right">
+      <span class="badge synthetic">Synthetic estate</span>
+      <div class="muted" style="margin-top:6px">{{ created_at }}</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Official Cloud Assurance: not run.</strong> This packet contains advisory, pattern-based
+    findings and a local, non-deployable extension draft. It is not a Guidewire Cloud Assurance result
+    and not a certification.
+  </div>
+
+  <h2>1. Cover</h2>
+  <table>
+    <tr><th>Estate</th><td>{{ project_id }}</td></tr>
+    <tr><th>Fixture</th><td>{{ fixture_id }}</td></tr>
+    <tr><th>Release context</th><td>{{ release_context }}</td></tr>
+    <tr><th>Snapshot hash</th><td class="hash">{{ snapshot_hash }}</td></tr>
+    <tr><th>Files</th><td>{{ file_count }} ({{ unsupported_count }} unsupported/corrupt, listed)</td></tr>
+    <tr><th>Audit head</th><td class="hash">{{ audit_head }}</td></tr>
+  </table>
+
+  <h2>2. Executive summary</h2>
+  <div class="grid">
+    <div class="kpi"><div class="n">{{ feature_count }}</div><div class="l">features assembled</div></div>
+    <div class="kpi"><div class="n">{{ finding_count }}</div><div class="l">advisory findings</div></div>
+    <div class="kpi"><div class="n">{{ mapping_count }}</div><div class="l">explicit dispositions</div></div>
+  </div>
+  <p>{{ executive_summary }}</p>
+  <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
+  productivity claims.</p>
+
+  <h2>3. Coverage and confidence</h2>
+  <p><strong>Coverage ceiling.</strong> {{ coverage_summary }}</p>
+  {% if metrics %}
+  <table>
+    <tr><th>Metric</th><th>Value</th><th>Numerator</th><th>Denominator</th><th>Caveat</th></tr>
+    {% for metric in metrics %}
+    <tr>
+      <td>{{ metric.metric_id }} - {{ metric.label }}</td>
+      <td>{{ "%.2f"|format(metric.value) }}</td>
+      <td>{{ metric.numerator }}</td>
+      <td>{{ metric.denominator }}</td>
+      <td class="muted">{{ metric.caveat }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <h2>4. Assumption register</h2>
+  {% if assumptions %}
+  <table>
+    <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th></tr>
+    {% for item in assumptions %}
+    <tr>
+      <td>{{ item.assumption_id }}</td>
+      <td>{{ item.statement }}</td>
+      <td>{{ item.impact }} ({{ item.impact_range_days[0] }}-{{ item.impact_range_days[1] }} engineer-days)</td>
+      <td>{{ item.question_to_ask }}</td>
+      <td>{{ item.owner }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No assumptions were created for this run.</p>
+  {% endif %}
+
+  <h2>5. Findings</h2>
+  {% if findings %}
+  <table>
+    <tr><th>Rule</th><th>Title</th><th>Severity</th><th>Claim strength</th><th>Decision</th></tr>
+    {% for finding in findings %}
+    <tr>
+      <td>{{ finding.rule_id }}</td>
+      <td>{{ finding.title }}</td>
+      <td>{{ finding.severity }}</td>
+      <td>{{ finding.claim_strength }}{% if finding.standard_id %} / {{ finding.standard_id }}{% endif %}</td>
+      <td>{{ finding.decision }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No advisory findings were produced.</p>
+  {% endif %}
+
+  <h2>6. Evidence and audit appendix</h2>
+  <table>
+    <tr><th>Evidence</th><th>File</th><th>Locator</th><th>Excerpt</th></tr>
+    {% for item in evidence_sample %}
+    <tr>
+      <td>{{ item.evidence_id }}</td>
+      <td>{{ item.path }}</td>
+      <td>{{ item.locator.kind.value if item.locator.kind.value is defined else item.locator.kind }} {{ item.locator.value }}{% if item.locator.line %}:{{ item.locator.line }}{% endif %}</td>
+      <td><code>{{ item.excerpt }}</code></td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="muted">Evidence excerpts are redacted at capture where a secret was detected. The review log is
+  hash-chained and can be verified with <code>preflight verify-audit</code>.</p>
+  <table>
+    <tr><th>Hash</th><th>Value</th></tr>
+    {% for name, value in hashes.items() %}
+    <tr><td>{{ name }}</td><td class="hash">{{ value }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <footer>
+    {{ disclaimer }}
+  </footer>
+</div>
+</body>
+</html>

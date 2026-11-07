@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="PersonalAuto">
+  <type name="PAVehicle">
+    <field name="Year" type="Integer"/>
+    <field name="VehicleType" type="TypeKey"/>
+    <field name="GarageLocation" type="Text"/>
+    <field name="Make" type="Text"/>
+    <field name="VIN" type="Text"/>
+    <field name="Usage" type="TypeKey"/>
+  </type>
+  <type name="PADriver">
+    <field name="FirstName" type="Text"/>
+    <field name="LastName" type="Text"/>
+    <field name="LicenseNumber" type="Text"/>
+  </type>
+  <type name="PALine">
+    <field name="ProductCode" type="Text"/>
+    <field name="Edition" type="Text"/>
+  </type>
+  <type name="PACoverage">
+    <field name="CoverageType" type="TypeKey"/>
+    <field name="Limit" type="TypeKey"/>
+  </type>
+  <type name="PACoverageTerm">
+    <field name="TermType" type="Text"/>
+    <field name="TermValue" type="Integer"/>
+  </type>
+  <type name="DriverEligibility">
+    <field name="Eligible" type="Boolean"/>
+    <field name="Reason" type="TypeKey"/>
+  </type>
+  <type name="PAVehicleRatingFactor">
+    <field name="FactorType" type="TypeKey"/>
+    <field name="FactorValue" type="Decimal"/>
+  </type>
+</productTemplate>

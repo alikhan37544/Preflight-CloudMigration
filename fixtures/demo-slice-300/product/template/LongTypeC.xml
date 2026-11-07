@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="LongTypeC">
+  <type name="PersonalAutoEligibilityConfiguration">
+    <field name="Eligible" type="Boolean"/>
+  </type>
+</productTemplate>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="PACoverageDV">
+  <Screen name="PACoverageDV">
+    <TypeKeyInput id="CoverageType" value="CoverageType" label="CoverageType"/>
+    <TypeKeyInput id="Limit" value="Limit" label="Limit"/>
+  </Screen>
+</PCF>

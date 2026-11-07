@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "fixture": "northstar-pc-2026.10",
+  "features": [
+    {
+      "feature_id": "PA-VEH-01",
+      "capability": "vehicle_information",
+      "name": "Vehicle Information",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/auto/AutoVehicleDV.pcf",
+        "config/metadata/entity/AutoVehicle.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-DRV-01",
+      "capability": "driver_information",
+      "name": "Driver Information",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/auto/AutoDriverDV.pcf",
+        "config/metadata/entity/AutoDriver.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-COV-01",
+      "capability": "coverage_selection",
+      "name": "Coverage Selection",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/auto/AutoCoverageDV.pcf",
+        "config/metadata/entity/AutoCoverage.eti"
+      ]
+    },
+    {
+      "feature_id": "PA-POL-02",
+      "capability": "policy_questions",
+      "name": "Policy Questions",
+      "lob": "PersonalAuto",
+      "anchors": [
+        "config/web/pcf/auto/AutoPolicyQuestionsDV.pcf"
+      ]
+    }
+  ],
+  "holdout": true,
+  "note": "Naming-shift holdout. Never imported into the demo or used to author rules."
+}

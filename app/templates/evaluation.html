@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Measured, with denominators</div>
+    <h1>Evaluation</h1>
+    <p class="lede">Six headline metrics on the controlled synthetic demo slice. Raw counts, 95% Wilson
+    intervals, baselines, and known limitations are shown. Demo metrics are in-sample; the holdout
+    aggregate is pre-computed and not imported.</p>
+  </div>
+  <div class="head-meta"><span class="badge badge-synthetic">not a benchmark</span></div>
+</div>
+
+{% if view.metrics.metrics %}
+<section class="metric-grid">
+  {% for metric in view.metrics.metrics if metric.primary %}
+  <article class="metric-card">
+    <div class="eyebrow">{{ metric.metric_id }}</div>
+    <div class="metric-value">{{ metric.value|percent }}</div>
+    <div class="metric-label">{{ metric.label }}</div>
+    <div class="metric-fraction">{{ metric.numerator }} / {{ metric.denominator }}{% if metric.interval_low is not none %} &middot; 95% CI {{ metric.interval_low|percent }}-{{ metric.interval_high|percent }}{% endif %}</div>
+    <div class="metric-caveat">{{ metric.caveat }}</div>
+  </article>
+  {% endfor %}
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel-head"><h2>Baselines</h2><span class="muted">independent or naive comparators</span></div>
+    <table class="data-table compact">
+      <thead><tr><th>Baseline</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for name, value in view.metrics.baselines.items() %}
+        <tr><td>{{ name|replace('_', ' ') }}</td><td>{{ value|num }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if view.metrics.margins %}
+    <table class="data-table compact">
+      <thead><tr><th>Margin</th><th>Baseline</th><th>Delta</th><th>Required</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for metric_id, margin in view.metrics.margins.items() %}
+        <tr>
+          <td>{{ metric_id }}</td>
+          <td>{{ margin.baseline|num }}</td>
+          <td>{{ margin.delta|num }}</td>
+          <td>+{{ margin.required_pp }}pp</td>
+          <td><span class="pill {{ 'pill-verified-id' if margin.pass else 'pill-error' }}">{{ 'PASS' if margin.pass else 'NOT SUPPORTED' }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Supporting metrics</h2></div>
+    <table class="data-table compact">
+      <thead><tr><th>Metric</th><th>Value</th><th>n / d</th></tr></thead>
+      <tbody>
+        {% for metric in view.metrics.supporting %}
+        <tr><td>{{ metric.label }}</td><td>{{ metric.value|num }}</td><td>{{ metric.numerator }} / {{ metric.denominator }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><h2>Per-rule findings</h2><span class="muted">TP / FP / FN</span></div>
+  <table class="data-table compact">
+    <thead><tr><th>Rule</th><th>TP</th><th>FP</th><th>FN</th><th>Precision</th><th>Recall</th></tr></thead>
+    <tbody>
+      {% for rule_id, stats in view.metrics.per_rule.items() %}
+      <tr>
+        <td><code>{{ rule_id }}</code></td>
+        <td>{{ stats.tp }}</td><td>{{ stats.fp }}</td><td>{{ stats.fn }}</td>
+        <td>{{ (stats.tp / (stats.tp + stats.fp)) if (stats.tp + stats.fp) else 0|num }}</td>
+        <td>{{ (stats.tp / (stats.tp + stats.fn)) if (stats.tp + stats.fn) else 0|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>Limitations</h2></div>
+  <ul class="limitation-list">
+    <li>One synthetic main fixture plus a naming-shift holdout. Not a benchmark and not a generalisation claim.</li>
+    <li>No live tenant, no customer code, no Cloud API generation, and no deployment.</li>
+    <li>Findings are pattern-based and advisory. Official Cloud Assurance was not run.</li>
+    <li>Impact ranges are heuristic planning ranges, not quotes or measured productivity.</li>
+    <li>Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed and never imported.</li>
+    <li>M3 audits excerpt support at the source, not semantic entailment. M6 uses three positives and three hard negatives per rule; intervals remain wide at this n.</li>
+    <li>No human inter-annotator study was run; the reference target and concordance process are labelled AI-assisted.</li>
+  </ul>
+</section>
+{% else %}
+<section class="panel empty-inline">
+  <h2>No metrics yet</h2>
+  <p>Evaluation requires a completed run with a reconstruction and a sealed reference target.</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="ShortTypesC">
+  <type name="PACoverage">
+    <field name="Limit" type="TypeKey"/>
+  </type>
+</productTemplate>

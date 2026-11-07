@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="PersonalVehicleDriver">
+  <column name="FirstName" type="Text"/>
+  <column name="LastName" type="Text"/>
+  <column name="LicenseNumber" type="Text"/>
+  <column name="DateOfBirth" type="Date"/>
+  <column name="ViolationType" type="TypeKey" typelist="ViolationType"/>
+</entity>

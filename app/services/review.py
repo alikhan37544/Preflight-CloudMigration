@@ -1,0 +1,321 @@
+"""Deterministic advisory review engine.
+
+Rules operate on comment/string-masked Gosu or structured XML. Every finding
+carries a claim-strength label; heuristics never claim a standard ID.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import yaml
+
+from app.models import (
+    ClaimStrength,
+    Confidence,
+    Evidence,
+    Finding,
+    Locator,
+    LocatorKind,
+    Manifest,
+    Severity,
+    StandardFamily,
+    make_evidence,
+)
+from app.services.discovery import DiscoveryResult
+from app.services.parsers.gosu import mask_comments, mask_source, parse_gunit, scan_gosu
+from app.services.parsers.product import parse_template_xml
+
+RULES_PATH = Path(__file__).resolve().parents[2] / "rules" / "review_rules.yaml"
+
+THEME_RULES = {"PF-GW-LOG-001", "PF-GW-LOG-002"}
+
+SECRET_KEYS = re.compile(
+    r'(?i)\b(api[_-]?key|secret|password|passwd|token|credential)\s*(?::\s*[^=\n]+?)?=\s*"([^"]*)"'
+)
+SECRET_PLACEHOLDERS = {
+    "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
+    "${secret}", "{{secret}}", "replace_me", "replaceme", "todo", "tbd", "n/a",
+    "none", "null", "********",
+}
+SENSITIVE_LOGGED = re.compile(r"(?i)\.(VIN|SSN|password|licence|license|dateOfBirth|apiKey)\b")
+
+
+@dataclass
+class ReviewResult:
+    findings: list[Finding] = field(default_factory=list)
+    readiness: list[Finding] = field(default_factory=list)
+    evidence: list[Evidence] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+def load_rules(path: Path = RULES_PATH) -> list[dict]:
+    with path.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    return data.get("rules", [])
+
+
+class _Evidence:
+    def __init__(self) -> None:
+        self.items: list[Evidence] = []
+
+    def add(self, *, path: str, line: int, excerpt: str, method: str,
+            confidence: Confidence = Confidence.PARSED, redacted: bool = False) -> Evidence:
+        ev = make_evidence(
+            evidence_id=f"REV-{len(self.items) + 1:04d}",
+            path=path,
+            locator=Locator(kind=LocatorKind.LINE, value=f"line {line}", line=max(1, line)),
+            excerpt=excerpt,
+            method=method,
+            confidence=confidence,
+            redacted=redacted,
+        )
+        self.items.append(ev)
+        return ev
+
+
+def _line_at(source: str, position: int) -> int:
+    return source.count("\n", 0, position) + 1
+
+
+def _excerpt_at(source: str, line: int, span: int = 3) -> str:
+    lines = source.splitlines()
+    start = max(0, line - 1)
+    return "\n".join(lines[start:start + span]).strip()
+
+
+def _match_brace(masked: str, open_index: int) -> int:
+    depth = 0
+    for index in range(open_index, len(masked)):
+        if masked[index] == "{":
+            depth += 1
+        elif masked[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+    return -1
+
+
+def _finding(index: int, meta: dict, *, evidence: Evidence, message: str) -> Finding:
+    return Finding(
+        finding_id=f"F-{index:03d}",
+        rule_id=meta["rule_id"],
+        rule_version=meta.get("version", "1.0"),
+        title=meta["title"],
+        severity=Severity(meta["severity"]),
+        confidence=Confidence.PARSED,
+        claim_strength=ClaimStrength(meta["claim_strength"]),
+        standard_family=StandardFamily(meta.get("standard_family", "none")),
+        standard_id=meta.get("standard_id"),
+        standard_title=meta.get("standard_title"),
+        standard_url=meta.get("standard_url"),
+        access=meta.get("access", "none"),
+        evidence_ids=[evidence.evidence_id],
+        message=message,
+        remediation=meta.get("remediation", ""),
+    )
+
+
+def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
+               *, include_thesis: bool = False) -> ReviewResult:
+    rules = {rule["rule_id"]: rule for rule in load_rules()}
+    collector = _Evidence()
+    findings: list[Finding] = []
+    readiness: list[Finding] = []
+    warnings: list[str] = []
+
+    def emit(rule_id: str, *, evidence: Evidence, message: str, bucket: list[Finding]) -> None:
+        meta = rules[rule_id]
+        bucket.append(_finding(len(findings) + len(readiness) + 1, meta, evidence=evidence, message=message))
+
+    for artifact in manifest.artifacts:
+        if artifact.status.value not in {"parsed", "partial"}:
+            continue
+        rel = artifact.path
+        path = root / rel
+        kind = artifact.kind
+
+        if kind == "gosu":
+            try:
+                doc = scan_gosu(path)
+            except Exception as exc:
+                warnings.append(f"{rel}: {exc}")
+                continue
+            raw, masked = doc.raw, doc.masked
+
+            for rule_id in ["PF-GW-SQL-001", "PF-GW-PKG-001", "PF-GW-SRV-001"]:
+                if rule_id not in rules:
+                    continue
+                patterns = rules[rule_id]["detection"].get("patterns", [])
+                hit = None
+                for pattern in patterns:
+                    match = re.search(pattern, masked)
+                    if match:
+                        hit = match
+                        break
+                if hit:
+                    line = _line_at(raw, hit.start())
+                    ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="regex_masked")
+                    emit(rule_id, evidence=ev,
+                         message=f"{rules[rule_id]['title']} detected at {rel}:{line}.",
+                         bucket=findings)
+
+            if "PF-GW-SEC-001" in rules:
+                code_only = mask_comments(raw)
+                for match in SECRET_KEYS.finditer(code_only):
+                    value = match.group(2)
+                    lowered = value.strip().lower()
+                    if lowered in SECRET_PLACEHOLDERS:
+                        continue
+                    if re.fullmatch(r"\*+", value.strip()):
+                        continue
+                    if lowered.startswith(("your_", "your-", "replace_", "replace-")):
+                        continue
+                    if value.startswith("<") and value.endswith(">"):
+                        continue
+                    if value.startswith("${") or value.startswith("{{"):
+                        continue
+                    if any(token in value for token in [" + ", " +", "+ ", "(", ")", "==", "!="]):
+                        continue
+                    fingerprint = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
+                    line = _line_at(raw, match.start())
+                    excerpt = _excerpt_at(raw, line).replace(value, f"[REDACTED:{fingerprint}]")
+                    ev = collector.add(path=rel, line=line, excerpt=excerpt,
+                                       method="regex_masked", redacted=True)
+                    emit("PF-GW-SEC-001", evidence=ev,
+                         message=(
+                             f"Hard-coded value assigned to '{match.group(1)}' at {rel}:{line}. "
+                             f"Value redacted (fingerprint {fingerprint})."
+                         ), bucket=findings)
+                    break
+
+            if "PF-GW-EXC-001" in rules:
+                for match in re.finditer(r"catch\s*\([^)]*\)\s*\{", masked):
+                    open_index = masked.find("{", match.end() - 1)
+                    close_index = _match_brace(masked, open_index)
+                    if close_index == -1:
+                        continue
+                    if re.sub(r"[\s;]+", "", masked[open_index + 1:close_index]) == "":
+                        line = _line_at(raw, match.start())
+                        ev = collector.add(path=rel, line=line,
+                                           excerpt=_excerpt_at(raw, line, span=5), method="lexer")
+                        emit("PF-GW-EXC-001", evidence=ev,
+                             message=f"Empty catch block at {rel}:{line}.", bucket=findings)
+
+            if "PF-GW-TX-001" in rules:
+                seen_commits: set[int] = set()
+                for block in doc.find_blocks("runWithNewBundle"):
+                    if block.commit_line is None or block.commit_line in seen_commits:
+                        continue
+                    seen_commits.add(block.commit_line)
+                    ev = collector.add(path=rel, line=block.commit_line,
+                                       excerpt=_excerpt_at(raw, block.start_line, span=max(1, block.end_line - block.start_line + 1)),
+                                       method="lexer")
+                    emit("PF-GW-TX-001", evidence=ev,
+                         message=f"Explicit commit inside runWithNewBundle at {rel}:{block.commit_line}.",
+                         bucket=findings)
+
+            if include_thesis and "PF-GW-LOG-001" in rules:
+                code_only = mask_comments(raw)
+                lines = code_only.splitlines()
+                index = 0
+                while index < len(lines):
+                    start = index
+                    window = lines[index]
+                    if re.search(r"\b(log|logger|System\.out|print)\b", window) and "(" in window:
+                        balance = window.count("(") - window.count(")")
+                        while balance > 0 and index + 1 < len(lines):
+                            index += 1
+                            window += "\n" + lines[index]
+                            balance += lines[index].count("(") - lines[index].count(")")
+                        if SENSITIVE_LOGGED.search(window):
+                            line_number = start + 1
+                            ev = collector.add(path=rel, line=line_number,
+                                               excerpt=_excerpt_at(raw, line_number, span=min(4, index - start + 1)),
+                                               method="lexer")
+                            emit("PF-GW-LOG-001", evidence=ev,
+                                 message=f"Sensitive field written to a log at {rel}:{line_number}.",
+                                 bucket=findings)
+                            break
+                    index += 1
+
+            if include_thesis and "PF-GW-LOG-002" in rules:
+                patterns = rules["PF-GW-LOG-002"]["detection"].get("patterns", [])
+                for pattern in patterns:
+                    match = re.search(pattern, masked)
+                    if match:
+                        line = _line_at(raw, match.start())
+                        ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="lexer")
+                        emit("PF-GW-LOG-002", evidence=ev,
+                             message=f"Print or stack-trace output at {rel}:{line}.", bucket=findings)
+                        break
+
+        elif kind == "gunit" and "PF-GW-GUNIT-001" in rules:
+            try:
+                test = parse_gunit(path)
+            except Exception as exc:
+                warnings.append(f"{rel}: {exc}")
+                continue
+            if test.db_calls:
+                raw = path.read_text(encoding="utf-8", errors="replace")
+                line = next((i + 1 for i, text in enumerate(raw.splitlines()) if any(token in text for token in test.db_calls)), 1)
+                ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="lexer")
+                emit("PF-GW-GUNIT-001", evidence=ev,
+                     message=f"Pure unit test uses database calls ({', '.join(test.db_calls)}) at {rel}:{line}.",
+                     bucket=findings)
+
+        elif kind == "template_xml" and "PF-GW-NAM-001" in rules:
+            try:
+                template = parse_template_xml(path)
+            except Exception as exc:
+                warnings.append(f"{rel}: {exc}")
+                continue
+            for type_doc in template.types:
+                if len(type_doc.name) > 24:
+                    ev = collector.add(path=rel, line=type_doc.line, excerpt=type_doc.excerpt,
+                                       method="xml_xpath", confidence=Confidence.LINKED)
+                    emit("PF-GW-NAM-001", evidence=ev,
+                         message=(
+                             f"APD type '{type_doc.name}' is {len(type_doc.name)} characters; "
+                             "the APD limit is 24. Add a codegen nameOverride to avoid truncation. Synthetic fixture type."
+                         ), bucket=findings)
+
+        elif kind == "product_xml" and "PF-GW-SBT-001" in rules:
+            raw = path.read_text(encoding="utf-8", errors="replace")
+            sbt_element = None
+            try:
+                from app.services.parsers._xml import safe_parser
+                from lxml import etree
+
+                tree = etree.parse(str(path), safe_parser())
+                for element in tree.getroot().iter():
+                    if not isinstance(element.tag, str):
+                        continue
+                    value = (element.get("standardsBasedTemplate") or "").strip().lower()
+                    if value == "true":
+                        sbt_element = (element, int(element.sourceline or 1))
+                        break
+            except Exception:
+                sbt_element = None
+            if sbt_element is not None:
+                _element, line = sbt_element
+                ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line),
+                                   method="xml_xpath", confidence=Confidence.LINKED)
+                meta = rules["PF-GW-SBT-001"]
+                readiness.append(
+                    _finding(len(findings) + 1, meta, evidence=ev,
+                             message=(
+                                 f"SBT marker detected in {rel}. SBT lines could not be converted to "
+                                 "APD-managed lines per the Olos release note; confirm on the target release."
+                             ))
+                )
+
+    return ReviewResult(
+        findings=findings,
+        readiness=readiness,
+        evidence=collector.items,
+        warnings=warnings,
+    )

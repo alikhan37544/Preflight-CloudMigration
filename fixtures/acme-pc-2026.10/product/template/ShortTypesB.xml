@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="ShortTypesB">
+  <type name="PAVehicle">
+    <field name="Year" type="Integer"/>
+  </type>
+</productTemplate>

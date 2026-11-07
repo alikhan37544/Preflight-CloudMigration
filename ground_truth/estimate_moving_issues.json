@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "fixture": "acme-pc-2026.10",
+  "issues": [
+    {"id": "EMI-01", "statement": "Long APD type name exceeds the 24-character limit.", "signal_type": "finding_rule", "signal": "PF-GW-NAM-001", "impact": "high"},
+    {"id": "EMI-02", "statement": "Field-level codegen override for ModelYear is absent.", "signal_type": "mapping_rule", "signal": "R-CG-02", "impact": "high"},
+    {"id": "EMI-03", "statement": "Custom typelist value has no target enum disposition.", "signal_type": "mapping_rule", "signal": "R-TYP-01", "impact": "high"},
+    {"id": "EMI-04", "statement": "Custom garage-location field has no API schema disposition.", "signal_type": "mapping_rule", "signal": "R-API-02", "impact": "high"},
+    {"id": "EMI-05", "statement": "DB-coupled test will be brittle in CI.", "signal_type": "finding_rule", "signal": "PF-GW-GUNIT-001", "impact": "medium"},
+    {"id": "EMI-06", "statement": "Hidden internal package reference will block cloud compilation.", "signal_type": "finding_rule", "signal": "PF-GW-PKG-001", "impact": "high"}
+  ],
+  "decoys": ["gap:territory", "gap:duplicate-screen"]
+}

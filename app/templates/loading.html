@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Analysis in progress</div>
+    <h1>{{ title }}</h1>
+    <p class="lede">The snapshot is being read, parsed, and reviewed. This page will refresh when the run completes.</p>
+  </div>
+  <div class="head-meta"><span class="badge badge-neutral">queued / running</span></div>
+</div>
+<section class="panel" data-run-wait data-run-id="{{ run_id }}">
+  <div class="panel-head"><h2>Pipeline</h2><span class="muted" data-run-label>{{ view.status.stage }} - {{ view.status.progress.percent }}%</span></div>
+  <progress class="progress" data-run-bar max="100" value="{{ view.status.progress.percent }}"></progress>
+  <p class="muted">Stage: {{ view.status.stage }}. Files processed: {{ view.status.progress.files_done }} / {{ view.status.progress.files_total }}.</p>
+  <p class="muted">The source snapshot is read-only. Unsupported files will be listed, not hidden.</p>
+</section>
+{% endblock %}
