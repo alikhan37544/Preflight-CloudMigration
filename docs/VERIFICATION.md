@@ -19,7 +19,7 @@
 | 3 | Product confirmation | final product gate | **SHIP** | **9/10** | no genuine blockers; only non-blocking polish |
 | 3 | Evaluation confirmation | final metric gate | FIX → fixed | 7–8/10 | F1 fraction labels, baseline descriptions, M6 line-matching claim |
 | 3 | Claims/FP confirmation | final precision gate | FIX → fixed | 7–8/10 | SEC adjacent-comment/escaped-quote redaction |
-| 3 | Final focused confirmation | named blockers | **pass after fix** | — | 60 targeted tests, 196 full-suite tests, freeze hashes pass |
+| 3 | Final focused confirmation | SEC redaction, evaluation labels, freeze | **SHIP** | **10/10** | 61 targeted tests, zero raw secret values in evidence/artifacts, 21/21 freeze hashes, screenshot hash match |
 
 ## Fixes applied after the final reviews
 
@@ -49,6 +49,10 @@ preflight verify-audit R-DEMO-001         OK (8 events)
 packet audit head == audit log head       true
 Playwright golden path                    22 passed (accept/reject, evidence drawer, packet, evaluation)
 ```
+
+## Final status
+
+**Final focused gate: SHIP, 10/10.** SEC redaction is closed (adjacent comments and escaped quotes), evaluation labels match the computed values, and the frozen hashes reproduce. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 
