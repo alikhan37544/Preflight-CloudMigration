@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-07T21:27:34Z",
-  "commit": "7142fb36ef48f36837f730aba6289e6e73e29591",
+  "frozen_at": "2026-11-07T21:43:24Z",
+  "commit": "a18d35bd21ff9993659a1c87f7fc9f8ffe26c5c4",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
