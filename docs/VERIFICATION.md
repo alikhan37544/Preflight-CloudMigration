@@ -19,7 +19,7 @@
 | 3 | Product confirmation | final product gate | **SHIP** | **9/10** | no genuine blockers; only non-blocking polish |
 | 3 | Evaluation confirmation | final metric gate | FIX → fixed | 7–8/10 | F1 fraction labels, baseline descriptions, M6 line-matching claim |
 | 3 | Claims/FP confirmation | final precision gate | FIX → fixed | 7–8/10 | SEC adjacent-comment/escaped-quote redaction |
-| 3 | Final focused confirmation | named blockers | **pass after fix** | — | 60 targeted tests, 195 full-suite tests, freeze hashes pass |
+| 3 | Final focused confirmation | named blockers | **pass after fix** | — | 60 targeted tests, 196 full-suite tests, freeze hashes pass |
 
 ## Fixes applied after the final reviews
 
@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 195 passed (after final freeze)
+pytest -q                                 196 passed (after final freeze)
 pytest tests/test_false_positives.py ...  60 passed targeted
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
