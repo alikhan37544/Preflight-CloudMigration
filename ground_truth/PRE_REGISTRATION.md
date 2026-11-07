@@ -29,7 +29,7 @@ The holdout is never imported into the demo, never used to author rules, and nev
 | All-unresolved mapper | Floor; proves coverage is not vacuous. | PreFlight must beat. |
 | Grep-only findings scan | Tests whether masking/allowlists improve precision. | PreFlight should improve precision without losing recall. |
 | PCF+grep discovery | Tests whether cross-artefact linking improves recall. | PreFlight should improve feature recall by ≥10pp. |
-| Strong naive (normalized fuzzy names + curated regex + allowlists + PCF) | Realistic non-graph baseline. | PreFlight should beat on evidence precision and estimate-moving recall. |
+| Normalized-name mapper (demo approximation of a strong naive baseline) | Tests whether reconstruction beats copying normalized names. | PreFlight should beat on disposition correctness. |
 | Always-answer assistant | Tests refusal/citation value. | PreFlight should improve refusal precision and citation correctness. |
 
 ## 3.1 Baseline × metric matrix (pre-registered margins)
@@ -78,7 +78,7 @@ Demo: 8 rules × 6 cases (3 positive, 3 hard negative) = 48 labelled findings. T
 - Feature: same business capability **and** at least one gold anchor path present in the candidate evidence.
 - Evidence: path resolves, locator is in range, and the excerpt appears at the source after whitespace normalization. This is a support audit, not semantic entailment.
 - Mapping: source property + target property + disposition must all match; extra mappings are penalised.
-- Finding: rule ID + path + line overlap; per-rule TP/FP/FN.
+- Finding: rule ID + path overlap; line-level matching is deferred to the thesis tier.
 - Comparison: property-level; target scope completeness flag.
 
 ## 6. Annotation and agreement

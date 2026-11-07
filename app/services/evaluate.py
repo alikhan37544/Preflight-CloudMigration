@@ -231,9 +231,9 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         _metric("M5", "Estimate-moving issue recall", m5_recall_num, len(issue_ids),
                 fixture_id=fixture_id, tier=tier, primary=True,
                 caveat=CAVEAT + f" Top-8 allowance: {m5_recall_num} TP / {top8_slots} slots. " + DEMO_NOTE),
-        _metric("M6", "Finding micro-F1", 2 * tp_total, f1_den,
+        _metric("M6", "Finding micro-F1 (2TP / (2TP+FP+FN))", 2 * tp_total, f1_den,
                 fixture_id=fixture_id, tier=tier, primary=True,
-                caveat=CAVEAT + " No F1 interval; bootstrap deferred to the thesis tier. " + DEMO_NOTE,
+                caveat=CAVEAT + f" {tp_total} TP / {fp_total} FP / {fn_total} FN across 8 rules; fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. " + DEMO_NOTE,
                 interval=False),
     ]
 
@@ -254,7 +254,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         _metric("SCHEMA-CONFORMANCE", "Local schema conformance",
                 len(reconstruction.changes) - len(reconstruction.validation_errors),
                 len(reconstruction.changes), fixture_id=fixture_id, tier=tier, primary=False),
-        _metric("REFERENCE-F1", "Reference-target macro-F1 (correct rows / rows)",
+        _metric("REFERENCE-F1", "Reference-target macro-F1 (scaled to rows)",
                 int(round(comparison.macro_f1 * reference_rows)), reference_rows,
                 fixture_id=fixture_id, tier=tier, primary=False),
     ]
@@ -331,11 +331,11 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     baselines = {
         "identity_mapper": identity_correct / max(1, len(gold_mappings)),
         "all_unresolved": 0.0,
-        "strong_naive_mapper": strong_naive_correct / max(1, len(gold_mappings)),
+        "normalized_name_mapper": strong_naive_correct / max(1, len(gold_mappings)),
         "pcf_grep_discovery": pcf_baseline,
         "grep_only_findings": grep_precision,
         "grep_only_findings_f1": grep_f1,
-        "always_answer_assistant": 0.0,
+        "always_answer_assistant_refusal_recall": 0.0,
     }
 
     metric_values = {m.metric_id: m.value for m in metrics}

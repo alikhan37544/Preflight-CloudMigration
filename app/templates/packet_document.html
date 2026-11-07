@@ -91,14 +91,14 @@
   <h2>4. Assumption register</h2>
   {% if assumptions %}
   <table>
-    <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th></tr>
+    <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr>
     {% for item in assumptions %}
     <tr>
       <td>{{ item.assumption_id }}</td>
       <td>{{ item.statement }}</td>
       <td>{{ item.impact }} ({{ item.impact_range_days[0] }}-{{ item.impact_range_days[1] }} engineer-days)</td>
       <td>{{ item.question_to_ask }}</td>
-      <td>{{ item.owner }}</td>
+      <td>{{ item.owner }}</td><td>{{ item.status }}</td>
     </tr>
     {% endfor %}
   </table>

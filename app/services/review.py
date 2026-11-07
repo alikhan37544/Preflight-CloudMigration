@@ -34,7 +34,7 @@ RULES_PATH = Path(__file__).resolve().parents[2] / "rules" / "review_rules.yaml"
 THEME_RULES = {"PF-GW-LOG-001", "PF-GW-LOG-002"}
 
 SECRET_KEYS = re.compile(
-    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[^=\n]+?)?=\s*"([^"]*)"'
+    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"([^"]*)"'
 )
 SECRET_PLACEHOLDERS = {
     "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
@@ -181,6 +181,8 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                     name = match.group(1)
                     normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
                     parts = [part for part in re.split(r"[_\-\s]+", normalized) if part]
+                    if parts and parts[-1] in SAFE_KEY_SUFFIXES:
+                        continue
                     sensitive = any(part in SENSITIVE_NAME_PARTS for part in parts)
                     if not sensitive and normalized.endswith("_key"):
                         sensitive = bool(set(parts[:-1]) & {"api", "private", "access", "secret", "client", "signing", "encryption"})
@@ -205,7 +207,8 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                         continue
                     fingerprint = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
                     line = _line_at(raw, match.start())
-                    excerpt = _excerpt_at(raw, line).replace(value, f"[REDACTED:{fingerprint}]")
+                    excerpt = _excerpt_at(raw, line)
+                    excerpt = re.sub(r'"[^"]*"', '"[REDACTED]"', excerpt)
                     ev = collector.add(path=rel, line=line, excerpt=excerpt,
                                        method="regex_masked", redacted=True)
                     emit("PF-GW-SEC-001", evidence=ev,
@@ -213,7 +216,6 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                              f"Hard-coded value assigned to '{name}' at {rel}:{line}. "
                              f"Value redacted (fingerprint {fingerprint})."
                          ), bucket=findings)
-                    break
 
             if "PF-GW-EXC-001" in rules:
                 for match in re.finditer(r"catch\s*\([^)]*\)\s*\{", masked):

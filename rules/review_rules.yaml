@@ -17,8 +17,6 @@ rules:
         - 'java\.sql\.(Connection|DriverManager|Statement|PreparedStatement|ResultSet|SQLException|CallableStatement)'
         - 'javax\.sql\.'
         - 'DriverManager\.getConnection\s*\('
-        - '\.\s*createStatement\s*\('
-        - '\.\s*prepareStatement\s*\('
   - rule_id: PF-GW-SEC-001
     version: "1.0"
     title: Hard-coded secret

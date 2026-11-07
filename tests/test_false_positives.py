@@ -384,3 +384,62 @@ class DoubleCommit {
     })
     matches = [f for f in review.findings if f.rule_id == "PF-GW-TX-001"]
     assert len(matches) == 2
+
+
+def test_custom_receiver_statement_calls_are_not_sql(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/CustomDao.gs": '''package gate
+class CustomDao {
+  function run(dao : CustomDao) {
+    dao.createStatement("hello")
+    dao.prepareStatement("hello")
+  }
+}
+''',
+    })
+    assert paths_for(review, "PF-GW-SQL-001") == set()
+
+
+def test_safe_suffix_secret_names_are_not_flagged(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/SafeNames.gs": '''package gate
+class SafeNames {
+  var tokenUrl = "https://example.test/token"
+  var passwordPolicy = "standard-policy"
+  var secretName = "primary"
+  var tokenEndpoint = "https://example.test"
+}
+''',
+    })
+    assert paths_for(review, "PF-GW-SEC-001") == set()
+
+
+def test_multiple_secrets_are_found_and_all_values_redacted(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/MultiSecret.gs": '''package gate
+class MultiSecret {
+  var apiKey = "sk-live-aaa111"
+  var password = "hunter2"
+  var clientSecret = "cs-live-bbb222"
+}
+''',
+    })
+    matches = [f for f in review.findings if f.rule_id == "PF-GW-SEC-001"]
+    assert len(matches) == 3
+    for finding in matches:
+        for evidence_id in finding.evidence_ids:
+            ev = next(e for e in review.evidence if e.evidence_id == evidence_id)
+            assert "hunter2" not in ev.excerpt
+            assert "sk-live-aaa111" not in ev.excerpt
+            assert "cs-live-bbb222" not in ev.excerpt
+
+
+def test_parameter_property_secret_is_detected(tmp_path: Path) -> None:
+    review = review_files(tmp_path, {
+        "gsrc/gate/ParamSecret.gs": '''package gate
+class ParamSecret {
+  function set(c : Config) { c.password = "hunter2" }
+}
+''',
+    })
+    assert "gsrc/gate/ParamSecret.gs" in paths_for(review, "PF-GW-SEC-001")
