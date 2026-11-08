@@ -278,3 +278,12 @@ def test_delete_run(api, run_id) -> None:
     response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
     assert response.status_code == 200
     assert client.get(f"/api/runs/{run_id}/status").status_code == 404
+
+
+def test_settings_page_content(api) -> None:
+    client, _ = api
+    response = client.get("/settings")
+    assert response.status_code == 200
+    assert "Review context" in response.text
+    assert "Data policy" in response.text
+    assert "holdout locked" in response.text

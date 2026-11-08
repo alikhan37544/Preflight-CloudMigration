@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 196 passed (after final freeze)
+pytest -q                                 197 passed (after final freeze)
 pytest tests/test_false_positives.py ...  60 passed targeted
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
@@ -52,7 +52,7 @@ Playwright golden path                    22 passed (accept/reject, evidence dra
 
 ## Final status
 
-**Final focused gate: SHIP, 10/10.** SEC redaction is closed (adjacent comments and escaped quotes), evaluation labels match the computed values, and the frozen hashes reproduce. The residual limitations below remain disclosed.
+**Final focused gate: SHIP, 10/10.** Settings-page regression caught in the end-to-end re-run and fixed with a route-content test. SEC redaction is closed (adjacent comments and escaped quotes), evaluation labels match the computed values, and the frozen hashes reproduce. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 
