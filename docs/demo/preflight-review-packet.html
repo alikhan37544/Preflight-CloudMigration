@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PreFlight Review Packet - R-DEMO-001</title>
+<style>
+  :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#f6f8fa; color:var(--ink); font:14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
+  .page { max-width: 980px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
+  h1,h2,h3 { margin:0 0 8px; line-height:1.2; }
+  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; }
+  .brandbar { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:20px; }
+  .mark { font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; color:var(--brand); }
+  .badge { display:inline-block; border:1px solid var(--line); border-radius:3px; padding:2px 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .badge.synthetic { color:var(--warn); border-color:#e3c08e; background:#fdf7ec; }
+  .muted { color:var(--muted); }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin:14px 0; }
+  .kpi { border:1px solid var(--line); padding:12px 14px; }
+  .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
+  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:13px; }
+  th,td { text-align:left; border-bottom:1px solid var(--line); padding:7px 8px; vertical-align:top; }
+  th { background:#f1f4f7; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
+  .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
+  .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
+  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; word-break:break-all; }
+  footer { margin-top:36px; border-top:1px solid var(--line); padding-top:12px; font-size:11px; color:var(--muted); }
+  .pagebreak { page-break-before: always; }
+  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brandbar">
+    <div>
+      <div class="mark">PreFlight - Cloud-Readiness Review</div>
+      <h1>Review Packet</h1>
+      <div class="muted">demo / demo-slice-300 / run R-DEMO-001</div>
+    </div>
+    <div style="text-align:right">
+      <span class="badge synthetic">Synthetic estate</span>
+      <div class="muted" style="margin-top:6px">2026-11-08T04:46:34Z</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Official Cloud Assurance: not run.</strong> This packet contains advisory, pattern-based
+    findings and a local, non-deployable extension draft. It is not a Guidewire Cloud Assurance result
+    and not a certification.
+  </div>
+
+  <h2>1. Cover</h2>
+  <table>
+    <tr><th>Estate</th><td>demo</td></tr>
+    <tr><th>Fixture</th><td>demo-slice-300</td></tr>
+    <tr><th>Release context</th><td>Qusar 2026.08 (review context)</td></tr>
+    <tr><th>Snapshot hash</th><td class="hash">20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404</td></tr>
+    <tr><th>Files</th><td>300 (4 unsupported/corrupt, listed)</td></tr>
+    <tr><th>Audit head</th><td class="hash">ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f</td></tr>
+  </table>
+
+  <h2>2. Executive summary</h2>
+  <div class="grid">
+    <div class="kpi"><div class="n">8</div><div class="l">features assembled</div></div>
+    <div class="kpi"><div class="n">24</div><div class="l">advisory findings</div></div>
+    <div class="kpi"><div class="n">12</div><div class="l">explicit dispositions</div></div>
+  </div>
+  <p>8 feature candidates were assembled from 300 files. 24 advisory findings were recorded, each with evidence and a claim-strength label. 12 source properties received an explicit disposition; unresolved items became assumptions instead of silent gaps.</p>
+  <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
+  productivity claims.</p>
+
+  <h2>3. Coverage and confidence</h2>
+  <p><strong>Coverage ceiling.</strong> 296 files parsed; 4 unsupported or corrupt files are listed in the manifest rather than hidden. Confidence labels are parsed, linked, inferred-review, or unresolved. This packet makes no deployability or certification claim.</p>
+  
+  <table>
+    <tr><th>Metric</th><th>Value</th><th>Numerator</th><th>Denominator</th><th>Caveat</th></tr>
+    
+    <tr>
+      <td>M1 - Feature discovery recall</td>
+      <td>1.00</td>
+      <td>8</td>
+      <td>8</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+    <tr>
+      <td>M2 - Feature discovery precision</td>
+      <td>1.00</td>
+      <td>8</td>
+      <td>8</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+    <tr>
+      <td>M3 - Evidence-link support precision (30-link audit)</td>
+      <td>1.00</td>
+      <td>30</td>
+      <td>30</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+    <tr>
+      <td>M4 - Disposition correctness</td>
+      <td>1.00</td>
+      <td>12</td>
+      <td>12</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+    <tr>
+      <td>M5 - Estimate-moving issue recall</td>
+      <td>1.00</td>
+      <td>6</td>
+      <td>6</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Top-8 allowance: 6 TP / 8 slots. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+    <tr>
+      <td>M6 - Finding micro-F1 (2TP / (2TP+FP+FN))</td>
+      <td>1.00</td>
+      <td>48</td>
+      <td>48</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. 24 TP / 0 FP / 0 FN across 8 rules; fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. Demo slice is in-sample (a subset of the development fixture).</td>
+    </tr>
+    
+  </table>
+  
+
+  <h2>4. Assumption register</h2>
+  
+  <table>
+    <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr>
+    
+    <tr>
+      <td>A-01</td>
+      <td>Territory_Ext exists in the installed entity, but no rating or territory source artefact was found in this snapshot.</td>
+      <td>high (3.0-5.0 engineer-days)</td>
+      <td>Which rating table or service consumes Territory_Ext, and is it in scope for this Retrofit?</td>
+      <td>unassigned</td><td>open</td>
+    </tr>
+    
+    <tr>
+      <td>A-02</td>
+      <td>Rating inputs were not in a supported export, so rating behaviour cannot be traced from this snapshot.</td>
+      <td>medium (2.0-3.0 engineer-days)</td>
+      <td>Can the team provide a supported rating input export before scope is agreed?</td>
+      <td>unassigned</td><td>open</td>
+    </tr>
+    
+    <tr>
+      <td>A-03</td>
+      <td>The long APD type name exceeds 24 characters; the draft adds a nameOverride to avoid truncation compile errors.</td>
+      <td>high (7.0-9.0 engineer-days)</td>
+      <td>Which teams own the 11 references, and can the nameOverride be validated on the target release?</td>
+      <td>unassigned</td><td>open</td>
+    </tr>
+    
+  </table>
+  
+
+  <h2>5. Findings</h2>
+  
+  <table>
+    <tr><th>Rule</th><th>Title</th><th>Severity</th><th>Claim strength</th><th>Decision</th></tr>
+    
+    <tr>
+      <td>PF-GW-EXC-001</td>
+      <td>Swallowed exception</td>
+      <td>warning</td>
+      <td>verified-id / ERR00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-EXC-001</td>
+      <td>Swallowed exception</td>
+      <td>warning</td>
+      <td>verified-id / ERR00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-EXC-001</td>
+      <td>Swallowed exception</td>
+      <td>warning</td>
+      <td>verified-id / ERR00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SRV-001</td>
+      <td>Custom servlet</td>
+      <td>warning</td>
+      <td>verified-policy</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SRV-001</td>
+      <td>Custom servlet</td>
+      <td>warning</td>
+      <td>verified-policy</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SRV-001</td>
+      <td>Custom servlet</td>
+      <td>warning</td>
+      <td>verified-policy</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-PKG-001</td>
+      <td>Hidden or internal package reference</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1191</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-PKG-001</td>
+      <td>Hidden or internal package reference</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1191</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-PKG-001</td>
+      <td>Hidden or internal package reference</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1191</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SQL-001</td>
+      <td>Direct JDBC or SQL access</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SQL-001</td>
+      <td>Direct JDBC or SQL access</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SQL-001</td>
+      <td>Direct JDBC or SQL access</td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SEC-001</td>
+      <td>Hard-coded secret</td>
+      <td>error</td>
+      <td>verified-id / SEC00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SEC-001</td>
+      <td>Hard-coded secret</td>
+      <td>error</td>
+      <td>verified-id / SEC00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-SEC-001</td>
+      <td>Hard-coded secret</td>
+      <td>error</td>
+      <td>verified-id / SEC00-G</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-TX-001</td>
+      <td>Explicit commit inside runWithNewBundle</td>
+      <td>warning</td>
+      <td>secondary</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-TX-001</td>
+      <td>Explicit commit inside runWithNewBundle</td>
+      <td>warning</td>
+      <td>secondary</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-TX-001</td>
+      <td>Explicit commit inside runWithNewBundle</td>
+      <td>warning</td>
+      <td>secondary</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-GUNIT-001</td>
+      <td>Database access in a pure unit test</td>
+      <td>warning</td>
+      <td>heuristic</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-GUNIT-001</td>
+      <td>Database access in a pure unit test</td>
+      <td>warning</td>
+      <td>heuristic</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-GUNIT-001</td>
+      <td>Database access in a pure unit test</td>
+      <td>warning</td>
+      <td>heuristic</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-NAM-001</td>
+      <td>APD type name exceeds 24 characters</td>
+      <td>error</td>
+      <td>verified-doc</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-NAM-001</td>
+      <td>APD type name exceeds 24 characters</td>
+      <td>error</td>
+      <td>verified-doc</td>
+      <td>open</td>
+    </tr>
+    
+    <tr>
+      <td>PF-GW-NAM-001</td>
+      <td>APD type name exceeds 24 characters</td>
+      <td>error</td>
+      <td>verified-doc</td>
+      <td>open</td>
+    </tr>
+    
+  </table>
+  
+
+  <h2>6. Evidence and audit appendix</h2>
+  <table>
+    <tr><th>Evidence</th><th>File</th><th>Locator</th><th>Excerpt</th></tr>
+    
+    <tr>
+      <td>EV-0001</td>
+      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
+      <td>xpath /PCF/Screen/TypeKeyInput[1]:4</td>
+      <td><code>&lt;TypeKeyInput id=&#34;VehicleType&#34; value=&#34;VehicleType&#34; label=&#34;VehicleType&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0002</td>
+      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
+      <td>xpath /PCF/Screen/TextInput[1]:5</td>
+      <td><code>&lt;TextInput id=&#34;ModelYear&#34; value=&#34;ModelYear&#34; label=&#34;ModelYear&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0003</td>
+      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
+      <td>xpath /PCF/Screen/TextInput[2]:6</td>
+      <td><code>&lt;TextInput id=&#34;GarageLocation_Ext&#34; value=&#34;GarageLocation_Ext&#34; label=&#34;GarageLocation_Ext&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0004</td>
+      <td>config/extensions/entity/PersonalVehicle.etx</td>
+      <td>xpath /entityExtension/column[1]:3</td>
+      <td><code>&lt;column name=&#34;GarageLocation_Ext&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0005</td>
+      <td>config/extensions/entity/PersonalVehicle.etx</td>
+      <td>xpath /entityExtension/column[2]:4</td>
+      <td><code>&lt;column name=&#34;Territory_Ext&#34; type=&#34;Integer&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0006</td>
+      <td>config/metadata/entity/PersonalVehicle.eti</td>
+      <td>xpath /entity/column[1]:3</td>
+      <td><code>&lt;column name=&#34;ModelYear&#34; type=&#34;Integer&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0007</td>
+      <td>config/metadata/entity/PersonalVehicle.eti</td>
+      <td>xpath /entity/column[2]:4</td>
+      <td><code>&lt;column name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0008</td>
+      <td>config/metadata/entity/PersonalVehicle.eti</td>
+      <td>xpath /entity/column[3]:5</td>
+      <td><code>&lt;column name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0009</td>
+      <td>config/metadata/entity/PersonalVehicle.eti</td>
+      <td>xpath /entity/column[4]:6</td>
+      <td><code>&lt;column name=&#34;Usage&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleUsage&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0010</td>
+      <td>config/metadata/entity/PersonalVehicle.eti</td>
+      <td>xpath /entity/column[5]:7</td>
+      <td><code>&lt;column name=&#34;VehicleType&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleType&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0011</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]:3</td>
+      <td><code>&lt;type name=&#34;PAVehicle&#34;&gt;
+    &lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;
+    &lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;
+    &lt;field name=&#34;GarageLocation&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;Make&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;Usage&#34; type=&#34;TypeKey&#34;/&gt;
+  &lt;/type&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0012</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[1]:4</td>
+      <td><code>&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0013</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[2]:5</td>
+      <td><code>&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0014</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[3]:6</td>
+      <td><code>&lt;field name=&#34;GarageLocation&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0015</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[4]:7</td>
+      <td><code>&lt;field name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0016</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[5]:8</td>
+      <td><code>&lt;field name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0017</td>
+      <td>product/template/PersonalAutoTemplate.xml</td>
+      <td>xpath /productTemplate/type[1]/field[6]:9</td>
+      <td><code>&lt;field name=&#34;Usage&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0018</td>
+      <td>product/template/ShortTypes.xml</td>
+      <td>xpath /productTemplate/type[1]:3</td>
+      <td><code>&lt;type name=&#34;PAVehicle&#34;&gt;
+    &lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;
+    &lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;
+  &lt;/type&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0019</td>
+      <td>product/template/ShortTypes.xml</td>
+      <td>xpath /productTemplate/type[1]/field[1]:4</td>
+      <td><code>&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</code></td>
+    </tr>
+    
+    <tr>
+      <td>EV-0020</td>
+      <td>product/template/ShortTypes.xml</td>
+      <td>xpath /productTemplate/type[1]/field[2]:5</td>
+      <td><code>&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+    </tr>
+    
+  </table>
+  <p class="muted">Evidence excerpts are redacted at capture where a secret was detected. The review log is
+  hash-chained and can be verified with <code>preflight verify-audit</code>.</p>
+  <table>
+    <tr><th>Hash</th><th>Value</th></tr>
+    
+    <tr><td>snapshot</td><td class="hash">20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404</td></tr>
+    
+    <tr><td>rulepack</td><td class="hash">d151a780899b712d3b8ad6595606142b20594460afa754336f7248340051bcae</td></tr>
+    
+    <tr><td>reference_target</td><td class="hash">7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541</td></tr>
+    
+    <tr><td>audit_head</td><td class="hash">ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f</td></tr>
+    
+  </table>
+
+  <footer>
+    PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. This packet is generated from a synthetic fixture; it contains no customer data or confidential Guidewire information. Findings are pattern-based heuristics, not official Cloud Standards checks. Official Cloud Assurance: not run. Impact ranges are heuristic planning ranges, not quotes.
+  </footer>
+</div>
+</body>
+</html>

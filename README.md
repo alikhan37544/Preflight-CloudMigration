@@ -1,109 +1,300 @@
 # PreFlight
 
-**Independent Cloud-Readiness Review for InsuranceSuite-Style Estates.**
+**Independent Cloud-Readiness Review for Guidewire-Style Insurance Estates**
 
-PreFlight is an offline, evidence-first review product for legacy Guidewire-style estates. It scans a
-snapshot read-only, assembles business features across PCF, entities, typelists, extracted templates,
-Gosu, and Cloud API configuration, and produces an evidence-linked review packet with one local Cloud API
-extension draft, an impact-rated assumption register, and a hash-chained review trail.
+PreFlight is an offline, evidence-first review workstation for legacy Guidewire-style policy administration estates. It assembles business features across PCF, entity metadata, typelists, extracted templates, Gosu, and Cloud API configuration; links every claim to file evidence; surfaces documented blockers and evidence gaps; and produces a reviewable local Cloud API extension draft plus an impact-rated assumption register for one feature slice.
 
 > Every claim has evidence; every unknown has a name; every change waits for a human.
 
-**Scenario:** Cloud Retrofit without APD App for a non-APD-native Personal Auto estate. The target draft is
-local and non-deployable. PreFlight is not an APD converter, Cloud Retrofit replacement, Cloud Assurance
-scorer, generic Gosu linter, live-tenant connector, or autonomous migration agent. **Official Cloud
-Assurance: not run.**
+**[Snapshot `v1.0.0`](https://github.com/SaundaryaSingh/Preflight-CloudMigration/releases/tag/v1.0.0)** · **Synthetic demo estate** · **Official Cloud Assurance: not run**
+
+[![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![Tests](https://img.shields.io/badge/tests-197%20passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Status](https://img.shields.io/badge/status-demo--ready-informational)
+
+![PreFlight Workbench](docs/screenshots/workbench-1440.png)
+
+---
+
+## The problem
+
+A Guidewire migration estimate is only as good as its inventory. Before an APD conversion or Cloud Retrofit engagement, teams need to know:
+
+- What customisation actually exists across PCF, entities, typelists, templates, Gosu, tests, and API configuration?
+- Which business feature does each artefact belong to?
+- Which fields have an explicit target disposition, and which are silently missing?
+- Which documented blockers will move the estimate?
+- What exactly is unknown, who owns the question, and what evidence would answer it?
+
+Generic linters answer none of those questions. PreFlight is built around the inventory, the evidence graph, and the review packet.
+
+## What PreFlight does
+
+1. **Inventories every file** in a read-only snapshot, hash, parser status, unsupported/corrupt files, and source immutability check.
+2. **Assembles feature candidates** across PCF screens, installed entities, typelists, extracted APD templates, Gosu, and GUnit tests.
+3. **Links every claim to evidence** with a file path and line/pointer, excerpt, method, confidence, and excerpt hash.
+4. **Reviews migration-specific patterns** with claim-strength labels: verified standard ID, verified policy, verified document, secondary, or heuristic.
+5. **Reconstructs a local Cloud API extension draft** for one feature slice: `_ext` schema, mapping, updater, codegen config, and product access file.
+6. **Produces explicit dispositions** for source properties and turns unresolved items into an assumption register with impact ranges and questions to ask.
+7. **Benchmarks the method** on frozen synthetic fixtures with a sealed reference target, baselines, hard negatives, and a naming-shift holdout.
+8. **Exports a review packet** with evidence, assumptions, findings, hashes, and a hash-chained audit trail.
+
+## What it is not
+
+- It does not convert products to APD.
+- Not a Cloud Retrofit replacement.
+- Not an official Cloud Assurance score, pass, or certification.
+- Not a generic Gosu linter; SonarQube and Cloud Assurance own generic linting.
+- Not a live-tenant connector, autonomous migration agent, or deployment tool.
+- The extension draft is **local and non-deployable**.
+
+## Snapshot
+
+| Item | Value |
+|---|---|
+| Version | `v1.0.0` |
+| Date | 2026-11-08 |
+| Demo run | `R-DEMO-001` |
+| Fixture | `demo-slice-300` (300 synthetic files) |
+| Feature slice | `PA-VEH-01` Vehicle Information |
+| Features | 8 |
+| Advisory findings | 24 from 8 rules |
+| Mappings | 12 explicit dispositions |
+| Assumptions | 3 |
+| Tests | 197 passing |
+| Frozen evaluation hashes | `ground_truth/FROZEN.json` |
+| Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
+| Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
+
+### Measured snapshot
+
+| Metric | Result | Caveat |
+|---|---:|---|
+| M1 Feature recall | 8 / 8 | In-sample synthetic demo slice |
+| M2 Feature precision | 8 / 8 | In-sample synthetic demo slice |
+| M3 Evidence-link support precision | 30 / 30 | 30-link stratified audit; excerpt support, not semantic entailment |
+| M4 Disposition correctness | 12 / 12 | Source + target + disposition; extras penalised |
+| M5 Estimate-moving issue recall | 6 / 6 | Top-8 allowance is 6 TP / 8 slots (2 fixed decoys) |
+| M6 Finding micro-F1 | 48 / 48 | 8 rules × 3 positives + 3 hard negatives |
+
+These are controlled synthetic-fixture measurements, not a benchmark and not a generalisation claim. The naming-shift holdout is pre-computed and never imported into the demo.
+
+## Product tour
+
+| Workbench | Reconstruction |
+|---|---|
+| ![Workbench](docs/screenshots/workbench-1440.png) | ![Reconstruction](docs/screenshots/reconstruction-1440.png) |
+
+| Findings | Evaluation |
+|---|---|
+| ![Findings](docs/screenshots/findings-1440.png) | ![Evaluation](docs/screenshots/evaluation-1440.png) |
+
+| Manifest | Review packet |
+|---|---|
+| ![Manifest](docs/screenshots/manifest-1440.png) | ![Packet](docs/screenshots/packet-1440.png) |
 
 ## Quick start
 
+Requirements: Linux/macOS, Python 3.12, `uv`, and `tmux` for the demo server.
+
 ```bash
-make install        # Python 3.12 venv, dependencies, Chromium
-make demo           # generate fixtures, seed R-DEMO-001, start tmux session
-# open http://127.0.0.1:8000/?run=R-DEMO-001
+git clone https://github.com/SaundaryaSingh/Preflight-CloudMigration.git
+cd Preflight-CloudMigration
+make install       # create .venv, install deps, download Chromium
+make demo          # generate fixtures, seed R-DEMO-001, start tmux server
 ```
 
-The demo server auto-restarts if it is stopped inside tmux. Detach with `Ctrl+b` then `d`; stop the
-demo with `make stop`. Do not use `Ctrl+C` to leave the demo. `/health`, `/api/health`, and `/v1/models`
-are available for local probe compatibility; `/v1/models` returns an empty model list because PreFlight
-is not an LLM server.
+Open:
 
-Or foreground:
+**http://127.0.0.1:8000/?run=R-DEMO-001**
+
+The demo server auto-restarts if it is stopped inside tmux. Leave it in the background:
+
+```text
+Ctrl+b, then d
+```
+
+Stop it deliberately:
+
+```bash
+make stop
+```
+
+Foreground alternative:
 
 ```bash
 make demo-fg
 ```
 
-The demo uses `fixtures/demo-slice-300` for live import; `fixtures/northstar-pc-2026.10` is a holdout and
-is never imported into the demo or used to author rules.
+## Five-minute judge demo
 
-## What the demo shows
+The full runbook is in [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md).
 
-1. **Workbench** — eight features, a cross-artefact spine, evidence drawer, grounded assistant, gaps.
-2. **Manifest** — 300 files hashed; unsupported, binary, and corrupt files listed, not hidden.
-3. **Reconstruction** — 12 explicit dispositions, draft files and diff, three impact-rated assumptions,
-   accept/reject/defer with audit.
-4. **Findings** — eight demo rules with claim strength, a deliberate `Query` hard negative, and
-   “Official Cloud Assurance: not run.”
-5. **Evaluation** — six headline metrics with numerators/denominators, Wilson intervals, baselines and margins, per-rule table, caveats.
-6. **Packet** — six sections, assumption register, hashes, audit head, downloadable HTML.
-
-## Tests
-
-```bash
-make test           # full pytest suite (unit, API, security, pipeline, E2E)
-make e2e            # Playwright golden path + screenshots
-make claims         # claims-ledger and rule-coverage gate
-make verify         # verify the hash-chained audit log
-```
-
-Test-first order: models → intake → parsers → store → discovery → reconstruction → review → compare →
-evaluate → assistant → pipeline → API → security → claims → E2E.
+| Time | Screen | Beat |
+|---|---|---|
+| 0:00 | Workbench | 300 files, hashed and read-only; feature spine; click a node for evidence |
+| 0:50 | Manifest | 4 unsupported/corrupt files listed, not hidden; source hash unchanged |
+| 1:10 | Reconstruction | 12 dispositions; accept one, reject one; new assumption appears; audit |
+| 2:15 | Findings | 24 findings from 8 rules; claim strength; hard negative; SBT flag |
+| 3:10 | Assistant | Territory question refuses; `Motorcycle_Ext` question answers with citations |
+| 3:40 | Evaluation | Six metrics, intervals, baselines, per-rule table, limitations |
+| 4:25 | Packet | Six sections, owner/status, hashes, audit head, downloadable HTML |
+| 4:50 | Close | “Every claim has evidence; every unknown has a name; every change waits for a human.” |
 
 ## Architecture
 
-- Python 3.12, FastAPI, Jinja2, vanilla JS/CSS.
-- `lxml` for XML/PCF, `ruamel.yaml` with line marks, Pydantic v2 contracts, JSON run store with SQLite-free
-  inspectability and a hash-chained `audit.jsonl`.
-- Source snapshot is read-only; hashes are checked before and after analysis.
-- Draft writes only under `data/runs/<run>/draft/`; `_gen` files are never written or edited.
-- Security: loopback bind, Host/Origin allowlist, CSRF synchronizer token, SameSite=Strict, CSP,
-  zip-slip/bomb controls, safe XML/YAML, secret redaction at capture, POST-only mutations.
-- No telemetry, no external calls, no live tenant, optional LLM off.
-
-## Layout
-
 ```text
-app/                 FastAPI routes, contracts, services, templates, static
-app/services/        intake, parsers, discovery, reconstruction, review, compare, evaluate, assistant
-rules/               feature, mapping, and review rule packs (YAML)
-fixtures/            synthetic main estate, demo slice, naming-shift holdout
-ground_truth/        pre-registration, frozen hashes, gold features/mappings/findings, reference target
-scripts/             fixture generator, seed, freeze, claims lint
-tests/               test-first suite and browser golden path
-docs/                claims ledger, target format, security contract, screenshots
-plans/               vetted build contract and handoff
+Snapshot
+  → Intake        manifest, hashes, classification, unsupported files
+  → Parse         PCF, entity, typelist, product/template XML, YAML, Gosu scanner
+  → Discover      feature candidates, evidence graph, confidence, gaps
+  → Review        8 demo rules with masking, allowlists, hard negatives
+  → Reconstruct   12 mapping rules, local _ext draft, diff, assumptions
+  → Compare       preserved / changed / missing / added / unresolved
+  → Evaluate      M1–M6, baselines, margins, per-rule table
+  → Packet        six-section review artifact, hashes, audit head
 ```
 
-## Claims and boundaries
+**Stack:** Python 3.12 · FastAPI · Jinja2 · vanilla JS/CSS · `lxml` · `ruamel.yaml` · Pydantic v2 · JSON run store · pytest · Playwright.
 
-- Independent research prototype; not affiliated with, endorsed by, or certified by Guidewire Software, Inc.
-- Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, APD, Jutro, Integration
-  Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are
-  trademarks or registered trademarks of Guidewire Software, Inc.
-- Synthetic fixture only; no customer data or confidential Guidewire information.
-- Findings are pattern-based heuristics and claim strength is labelled per finding. They are not official
-  Cloud Standards checks.
-- Impact ranges are heuristic planning ranges, not quotes or measured productivity claims.
-- No reviewer-effort or real-estate generalisation claim.
+**Invariants:**
 
-See `docs/claims-ledger.json` (canonical machine-readable ledger), `docs/target-format.md`,
-`docs/security.md`, and `ground_truth/PRE_REGISTRATION.md`.
+- Source snapshots are read-only and hashed before and after analysis.
+- `_gen` files are never edited; only `_ext`, codegen, and product-access drafts are proposed.
+- Every draft change starts `pending`.
+- Every feature has at least one parsed anchor.
+- Unsupported, binary, and corrupt files are listed, never silently dropped.
+- No external calls, no telemetry, no live tenant, no LLM required.
+
+## Repository layout
+
+```text
+app/                 FastAPI routes, Pydantic contracts, services, templates, static assets
+app/services/        intake, parsers, discovery, reconstruction, review, compare, evaluate, assistant
+rules/               feature, mapping, and review rule packs
+fixtures/            synthetic main estate, demo slice, naming-shift holdout
+ground_truth/        pre-registration, frozen hashes, gold labels, reference target
+docs/                claims ledger, target format, security contract, demo runner, verification
+docs/demo/           review-packet snapshot and run summary
+templates/target/    local target contracts
+scripts/             fixture generator, seed, freeze, claims lint, demo server
+tests/               unit, API, security, adversarial precision, pipeline, and Playwright tests
+plans/               vetted planning contract and build handoff
+```
+
+## Evidence and review rules
+
+Demo rules:
+
+- `PF-GW-SQL-001` — direct JDBC/SQL (`IS-TLS-1238`)
+- `PF-GW-SEC-001` — hard-coded secret (`SEC00-G`)
+- `PF-GW-PKG-001` — hidden/internal package (`IS-TLS-1191`)
+- `PF-GW-EXC-001` — swallowed exception (`ERR00-G`)
+- `PF-GW-TX-001` — explicit commit inside `runWithNewBundle` (secondary)
+- `PF-GW-SRV-001` — custom servlet (verified policy)
+- `PF-GW-NAM-001` — APD type name over 24 characters (verified document)
+- `PF-GW-GUNIT-001` — database access in a pure unit test (heuristic)
+
+`PF-GW-SBT-001` is a separate readiness flag for Standards Based Template estates.
+
+Every finding carries a claim-strength label. No finding is presented as a Cloud Assurance violation. **Official Cloud Assurance: not run.**
+
+## Reconstruction slice
+
+`PA-VEH-01` traces:
+
+- PCF `PAVehicleDV.pcf`
+- installed entity `PersonalVehicle.eti`
+- extension `PersonalVehicle.etx`
+- typelist `VehicleType.tti` / `.ttx`
+- extracted template `PersonalAutoTemplate.xml`
+- Gosu validation and tests
+- 12 explicit dispositions
+- territory gap and rating-input gap as assumptions
+- long type `PersonalAutoRatingFactorConfiguration` (37 characters) with a synthetic-example label
+
+## Testing
+
+```bash
+make test       # full suite: 197 tests
+make e2e        # Playwright golden path
+make claims     # claims-ledger and rule-coverage gate
+make verify     # hash-chained audit verification
+make lint       # compile + claims lint
+```
+
+Coverage includes:
+
+- Pydantic contracts and serialization
+- intake safety (zip-slip, symlink, ratio, corrupt XML)
+- parser line/pointer evidence
+- feature discovery and holdout isolation
+- reconstruction, mapping rule pack, local schema conformance
+- adversarial false-positive gates for every review rule
+- API, CSRF, Host/Origin, CSP, XSS, secret redaction
+- full pipeline, packet, audit chain
+- browser golden path, offline network check, screenshots
+
+## Independent verification
+
+The full record is in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+
+| Gate | Result |
+|---|---|
+| Final focused verification | **SHIP, 10/10** |
+| Product gate | **SHIP, 9/10** |
+| Claims / precision / reproducibility | 10/10 after redaction fix |
+| Freeze hashes | 21/21 recompute |
+| Audit chain | `R-DEMO-001: OK` |
+
+Final focused verifier summary: no genuine blockers; all previously reported precision, redaction, evaluation-label, packet, and state issues were closed and re-tested.
+
+## Data, security, and boundaries
+
+- Local-only bind (`127.0.0.1`), Host/Origin allowlist, CSRF token, SameSite=Strict.
+- CSP, Jinja autoescape, no inline event handlers.
+- Zip extraction rejects traversal, symlinks, encryption, NUL, drive letters, and compression bombs.
+- XML parsing disables entities, DTD, network, and huge trees.
+- YAML rejects tags; config uses safe loading.
+- Secrets are redacted at capture; only a fingerprint is stored.
+- Review log is hash-chained and verifiable; it is not non-repudiation.
+- No customer data, tenant, credentials, telemetry, or external calls.
+- Synthetic fixtures only; no confidential Guidewire content is redistributed.
 
 ## Known limitations
 
 - The reference target is internally authored and AI-assisted; it is not independently blind.
-- Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed.
+- Demo metrics are in-sample on the development slice; the holdout is pre-computed and naming-shift only.
 - M3 audits excerpt support at the source, not semantic entailment.
 - M5 uses a fixed two-decoy top-8 allowance, not a learned ranking.
-- No human inter-annotator study was run; no reviewer-effort or generalisation claim is made.
+- M6 line-level matching is deferred; the demo uses path-level matching.
+- No human inter-annotator study; no reviewer-effort or real-estate generalisation claim.
 - The extension draft is local and non-deployable; it is not compiled or tenant-validated.
+
+## Claims and legal
+
+PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc.
+
+Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. in the United States and/or other countries. All other trademarks belong to their owners.
+
+All fixtures are synthetic. Findings are pattern-based heuristics, not official Cloud Standards checks, and are not legal, security, or compliance advice. Impact ranges are heuristic planning ranges, not quotes. **Official Cloud Assurance: not run.**
+
+The canonical claims ledger is [`docs/claims-ledger.json`](docs/claims-ledger.json); the Markdown version is generated.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
+
+## Citation
+
+```bibtex
+@software{preflight2026,
+  title  = {PreFlight: Independent Cloud-Readiness Review for Guidewire-Style Estates},
+  author = {Singh, Saundarya},
+  year   = {2026},
+  url    = {https://github.com/SaundaryaSingh/Preflight-CloudMigration},
+  note   = {Offline evidence-first review prototype; synthetic fixtures}
+}
+```

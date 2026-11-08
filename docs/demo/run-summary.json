@@ -1,0 +1,59 @@
+{
+  "snapshot": "v1.0.0",
+  "date": "2026-11-08",
+  "run_id": "R-DEMO-001",
+  "fixture": "demo-slice-300",
+  "source_files": 300,
+  "features": 8,
+  "findings": 24,
+  "rules": 8,
+  "mappings": 12,
+  "assumptions": 3,
+  "metrics": [
+    {
+      "id": "M1",
+      "label": "Feature discovery recall",
+      "numerator": 8,
+      "denominator": 8,
+      "value": 1.0
+    },
+    {
+      "id": "M2",
+      "label": "Feature discovery precision",
+      "numerator": 8,
+      "denominator": 8,
+      "value": 1.0
+    },
+    {
+      "id": "M3",
+      "label": "Evidence-link support precision (30-link audit)",
+      "numerator": 30,
+      "denominator": 30,
+      "value": 1.0
+    },
+    {
+      "id": "M4",
+      "label": "Disposition correctness",
+      "numerator": 12,
+      "denominator": 12,
+      "value": 1.0
+    },
+    {
+      "id": "M5",
+      "label": "Estimate-moving issue recall",
+      "numerator": 6,
+      "denominator": 6,
+      "value": 1.0
+    },
+    {
+      "id": "M6",
+      "label": "Finding micro-F1 (2TP / (2TP+FP+FN))",
+      "numerator": 48,
+      "denominator": 48,
+      "value": 1.0
+    }
+  ],
+  "audit_head": "ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f",
+  "frozen_commit": "a18d35bd21ff9993659a1c87f7fc9f8ffe26c5c4",
+  "official_cloud_assurance": "not run"
+}

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this prototype, cite the repository."
+title: "PreFlight: Independent Cloud-Readiness Review for Guidewire-Style Estates"
+authors:
+  - family-names: Singh
+    given-names: Saundarya
+year: 2026
+version: 1.0.0
+url: "https://github.com/SaundaryaSingh/Preflight-CloudMigration"
+license: MIT
+type: software
+abstract: >-
+  An offline, evidence-first review workstation for Guidewire-style legacy
+  policy administration estates. It assembles feature candidates across PCF,
+  entity metadata, typelists, extracted templates, Gosu, and Cloud API
+  configuration; links claims to file evidence; surfaces documented blockers
+  and gaps; and produces a reviewable local Cloud API extension draft with an
+  impact-rated assumption register for one feature slice.
