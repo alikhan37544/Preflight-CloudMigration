@@ -55,6 +55,9 @@ def test_health(api) -> None:
     client, _ = api
     assert client.get("/api/health").json()["status"] == "ok"
     assert client.get("/health").json()["status"] == "ok"
+    models = client.get("/v1/models")
+    assert models.status_code == 200
+    assert models.json()["data"] == []
 
 
 def test_product_pages_render(api, run_id) -> None:

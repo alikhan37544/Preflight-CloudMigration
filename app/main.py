@@ -459,6 +459,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health_alias():
         return {"status": "ok", "version": "0.1.0"}
 
+    @app.get("/v1/models")
+    def openai_models_compat():
+        # PreFlight is not an LLM server. Some local AI/IDE extensions probe this
+        # OpenAI-compatible path; return a truthful empty model list instead of 404.
+        return {"object": "list", "data": [], "preflight": "not an LLM; no models"}
+
     @app.get("/api/runs")
     def list_runs():
         store: RunStore = app.state.store
