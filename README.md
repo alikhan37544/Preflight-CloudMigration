@@ -22,6 +22,11 @@ make demo           # generate fixtures, seed R-DEMO-001, start tmux session
 # open http://127.0.0.1:8000/?run=R-DEMO-001
 ```
 
+The demo server auto-restarts if it is stopped inside tmux. Detach with `Ctrl+b` then `d`; stop the
+demo with `make stop`. Do not use `Ctrl+C` to leave the demo. `/health`, `/api/health`, and `/v1/models`
+are available for local probe compatibility; `/v1/models` returns an empty model list because PreFlight
+is not an LLM server.
+
 Or foreground:
 
 ```bash

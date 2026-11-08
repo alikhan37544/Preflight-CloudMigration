@@ -36,7 +36,7 @@ verify:
 demo: fixtures
 	$(PY) -m scripts.seed_demo --force
 	-@tmux kill-session -t preflight 2>/dev/null || true
-	tmux new-session -d -s preflight '$(UVICORN) app.main:app --host 127.0.0.1 --port 8000'
+	tmux new-session -d -s preflight '$(CURDIR)/scripts/run_demo_server.sh'
 	@echo "PreFlight demo started in tmux session 'preflight'."
 	@echo "Open http://127.0.0.1:8000/?run=R-DEMO-001"
 	@echo "Attach with: tmux attach -t preflight"
