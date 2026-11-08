@@ -455,6 +455,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         return {"status": "ok", "version": "0.1.0"}
 
+    @app.get("/health")
+    def health_alias():
+        return {"status": "ok", "version": "0.1.0"}
+
     @app.get("/api/runs")
     def list_runs():
         store: RunStore = app.state.store
