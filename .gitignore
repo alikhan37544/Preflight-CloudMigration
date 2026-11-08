@@ -6,3 +6,5 @@ __pycache__/
 data/runs/
 data/*.sqlite
 worktrees/
+
+*.egg-info/
