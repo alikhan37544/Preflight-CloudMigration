@@ -8,6 +8,7 @@ network requests and console errors.
 from __future__ import annotations
 
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -25,40 +26,77 @@ from playwright.sync_api import expect, sync_playwright  # noqa: E402
 REPO = Path(__file__).resolve().parents[1]
 DEMO = REPO / "fixtures" / "demo-slice-300"
 REFERENCE = REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json"
-PORT = 8765
-BASE = f"http://127.0.0.1:{PORT}"
+RUN_ID = "R-E2E"
+
+
+def _free_port() -> int:
+    """Ask the OS for an unused loopback port instead of hard-coding 8765."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _wait_for_seeded_run(base: str, proc: subprocess.Popen, timeout: float = 45.0) -> None:
+    """Wait for health *and* a succeeded run with a clear timeout error."""
+    deadline = time.time() + timeout
+    last_error = "no response yet"
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            output = ""
+            if proc.stdout:
+                output = proc.stdout.read().decode(errors="replace")
+            raise RuntimeError(f"server exited before the seeded run was ready:\n{output}")
+        try:
+            health = httpx.get(f"{base}/api/health", timeout=1.0)
+            if health.status_code != 200:
+                last_error = f"health returned {health.status_code}"
+            else:
+                status = httpx.get(f"{base}/api/runs/{RUN_ID}/status", timeout=1.0)
+                if status.status_code == 200:
+                    payload = status.json()
+                    if payload.get("status") == "succeeded":
+                        return
+                    last_error = f"run status was {payload.get('status')!r}"
+                else:
+                    last_error = f"run status returned {status.status_code}"
+        except Exception as exc:  # noqa: BLE001 - retry until the deadline
+            last_error = repr(exc)
+        time.sleep(0.25)
+    raise RuntimeError(
+        f"seeded run {RUN_ID} did not reach 'succeeded' within {timeout:.0f}s "
+        f"at {base}: {last_error}"
+    )
 
 
 @pytest.fixture(scope="module")
 def server(tmp_path_factory):
     data = tmp_path_factory.mktemp("e2e-data")
     store = RunStore(data)
-    store.create_run("R-E2E", project_id="demo", snapshot_id="S-E2E", fixture_id="demo-slice-300")
+    store.create_run(RUN_ID, project_id="demo", snapshot_id="S-E2E",
+                     fixture_id="demo-slice-300")
     execute_run(
-        DEMO, store, "R-E2E", project_id="demo", fixture_id="demo-slice-300",
+        DEMO, store, RUN_ID, project_id="demo", fixture_id="demo-slice-300",
         tier="demo", reference_path=REFERENCE,
     )
+    port = _free_port()
+    base = f"http://127.0.0.1:{port}"
     env = os.environ.copy()
     env["PREFLIGHT_DATA_DIR"] = str(data)
     env["PREFLIGHT_FIXTURES_DIR"] = str(REPO / "fixtures")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT)],
+        [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
         cwd=REPO, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
-    deadline = time.time() + 30
-    ready = False
-    while time.time() < deadline:
-        try:
-            if httpx.get(f"{BASE}/api/health", timeout=1.0).status_code == 200:
-                ready = True
-                break
-        except Exception:
-            time.sleep(0.25)
-    if not ready:
+    try:
+        _wait_for_seeded_run(base, proc)
+    except Exception:
         proc.terminate()
-        output = proc.stdout.read().decode(errors="replace") if proc.stdout else ""
-        raise RuntimeError(f"server did not start:\n{output}")
-    yield data
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        raise
+    yield {"data": data, "base": base}
     proc.terminate()
     try:
         proc.wait(timeout=10)
@@ -68,7 +106,8 @@ def server(tmp_path_factory):
 
 @pytest.mark.e2e
 def test_golden_path(server) -> None:
-    shots = Path(server) / "screenshots"
+    base = server["base"]
+    shots = Path(server["data"]) / "screenshots"
     shots.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
     page_errors: list[str] = []
@@ -82,7 +121,7 @@ def test_golden_path(server) -> None:
         page.on("request", lambda request: requests.append(request.url))
 
         # Workbench
-        page.goto(f"{BASE}/?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/?run=R-E2E", wait_until="networkidle")
         expect(page.locator("h1")).to_contain_text("Feature workbench")
         expect(page.locator(".feature-row")).to_have_count(8)
         expect(page.locator(".spine-node")).not_to_have_count(0)
@@ -97,14 +136,14 @@ def test_golden_path(server) -> None:
         expect(page.locator("[data-assistant-result]")).to_contain_text("Cannot determine", timeout=8000)
 
         # Manifest
-        page.goto(f"{BASE}/manifest?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/manifest?run=R-E2E", wait_until="networkidle")
         expect(page.locator("h1")).to_have_text("Manifest")
         expect(page.locator(".manifest-table tbody tr")).not_to_have_count(0)
         expect(page.locator("body")).to_contain_text("excluded files")
         page.screenshot(path=str(shots / "manifest-1440.png"), full_page=True)
 
         # Reconstruction: accept the first mapping
-        page.goto(f"{BASE}/reconstruction?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/reconstruction?run=R-E2E", wait_until="networkidle")
         expect(page.locator("h1")).to_have_text("Reconstruction")
         first_accept = page.locator('[data-decision="accept"][data-object-type="mapping"]').first
         first_accept.click()
@@ -119,7 +158,7 @@ def test_golden_path(server) -> None:
         expect(page.locator("[data-tab-panel='assumptions']")).to_contain_text("A-DEC-")
 
         # Findings
-        page.goto(f"{BASE}/findings?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/findings?run=R-E2E", wait_until="networkidle")
         expect(page.locator("body")).to_contain_text("Official Cloud Assurance: not run")
         page.locator('a:has-text("Inspect")').first.click()
         expect(page.locator(".detail-panel")).to_contain_text("Remediation")
@@ -127,27 +166,27 @@ def test_golden_path(server) -> None:
         page.screenshot(path=str(shots / "findings-1440.png"), full_page=True)
 
         # Evaluation
-        page.goto(f"{BASE}/evaluation?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/evaluation?run=R-E2E", wait_until="networkidle")
         expect(page.locator(".metric-card")).to_have_count(6)
         expect(page.locator("body")).to_contain_text("not a benchmark")
         page.screenshot(path=str(shots / "evaluation-1440.png"), full_page=True)
 
         # Packet
-        page.goto(f"{BASE}/packet?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/packet?run=R-E2E", wait_until="networkidle")
         expect(page.locator("body")).to_contain_text("Download packet HTML")
         expect(page.locator("body")).to_contain_text("tamper-evident")
         page.screenshot(path=str(shots / "packet-1440.png"), full_page=True)
 
         # 1280 viewport
         page.set_viewport_size({"width": 1280, "height": 800})
-        page.goto(f"{BASE}/?run=R-E2E", wait_until="networkidle")
+        page.goto(f"{base}/?run=R-E2E", wait_until="networkidle")
         page.screenshot(path=str(shots / "workbench-1280.png"), full_page=True)
 
         browser.close()
 
     external = [
         url for url in requests
-        if not url.startswith(BASE) and not url.startswith("data:") and not url.startswith("blob:")
+        if not url.startswith(base) and not url.startswith("data:") and not url.startswith("blob:")
     ]
     assert external == [], external
     assert console_errors == [], console_errors

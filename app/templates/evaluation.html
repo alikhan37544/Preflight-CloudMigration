@@ -3,13 +3,16 @@
 
 {% block content %}
 {% set evaluation = view.evaluation %}
+{% set headline_metrics = view.metrics.metrics|selectattr('primary')|list %}
+{% set headline_count = headline_metrics|length %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Measured, with denominators</div>
     <h1>Evaluation</h1>
-    <p class="lede">Six headline metrics on the controlled synthetic demo slice. Raw counts, 95% Wilson
+    <p class="lede">{% if headline_count %}{{ headline_count }} headline metric{{ '' if headline_count == 1 else 's' }} on the controlled synthetic demo slice. Raw counts, 95% Wilson
     intervals, baselines, and known limitations are shown. Demo metrics are in-sample; the holdout
-    aggregate is pre-computed and not imported.</p>
+    aggregate is pre-computed and not imported.{% else %}No evaluation metrics are available for this run. Evaluation requires a completed
+    reconstruction and a frozen reference target; the empty state below explains what is missing.{% endif %}</p>
   </div>
   <div class="head-meta"><span class="badge badge-synthetic">not a benchmark</span></div>
 </div>
@@ -24,7 +27,7 @@
   {% endfor %}
 </section>
 
-<section class="metric-grid" aria-label="Six headline metrics">
+<section class="metric-grid" aria-label="{{ headline_count }} headline metric{{ '' if headline_count == 1 else 's' }}">
   {% for metric in view.metrics.metrics if metric.primary %}
   <article class="metric-card" data-metric="{{ metric.metric_id }}">
     <div class="eyebrow">{{ metric.metric_id }}</div>
@@ -207,10 +210,11 @@
     <li>Findings are pattern-based and advisory. Official Cloud Assurance was not run.</li>
     <li>Impact ranges are heuristic planning ranges, not quotes or measured productivity.</li>
     <li>Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed and never imported.</li>
-    <li>M3 audits excerpt support at the source, not semantic entailment. M6 uses three positives and three hard negatives per rule; no F1 interval is shown at this n.</li>
+    <li>M3 audits excerpt support at the source, not semantic entailment. The M6 scoring corpus uses three positives and three hard negatives per rule; the findings table lists observed findings only, not the corpus rows. No F1 interval is shown at this n.</li>
     <li>No human inter-annotator study was run; the reference target and concordance process are labelled AI-assisted.</li>
     <li>The reference target is internally authored by the same build team, not independent; this is reported as a limitation.</li>
-    <li>M5 reports recall with a fixed two-decoy top-8 allowance, not a learned ranking of all tool output. The same run shows 6/6 recall and 6/8 top-8 allowance.</li>
+    {% set m5_metric = view.metrics.metrics|selectattr('metric_id', 'equalto', 'M5')|first %}
+    <li>M5 reports recall with a fixed two-decoy top-8 allowance, not a learned ranking of all tool output.{% if m5_metric and evaluation.m5_top8 %} The same run shows {{ m5_metric.numerator }}/{{ m5_metric.denominator }} recall and {{ evaluation.m5_top8.fraction }} top-8 allowance.{% endif %}</li>
     <li>The always-answer assistant refusal-recall baseline is pre-registered but not a meaningful comparator for this demo.</li>
   </ul>
 </details>

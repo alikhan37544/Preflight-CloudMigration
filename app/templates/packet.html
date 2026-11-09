@@ -2,11 +2,12 @@
 {% from "_macros.html" import claim, severity %}
 
 {% block content %}
+{% set packet_section_count = view.packet.pages|length if view.packet else 0 %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Review artifact</div>
     <h1>Review packet</h1>
-    <p class="lede">A six-section packet you can review, challenge, and approve. Local draft; not a quote,
+    <p class="lede">{% if packet_section_count %}A {{ packet_section_count }}-section packet you can review, challenge, and approve.{% else %}A review packet appears here once this run has a reconstruction draft.{% endif %} Local draft; not a quote,
     not a certification, not a deployment.</p>
   </div>
   <div class="head-meta">
