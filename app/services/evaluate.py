@@ -21,6 +21,7 @@ from app.services.compare import CompareResult
 from app.services.discovery import DiscoveryResult
 from app.services.parsers._xml import safe_parser
 from app.services.reconstruction import ReconstructionResult
+from app.services.redaction import redact_excerpt
 from app.services.review import ReviewResult, load_rules
 
 CAVEAT = (
@@ -38,6 +39,7 @@ class EvaluationResult:
     margins: dict[str, dict] = field(default_factory=dict)
     per_rule: dict[str, dict[str, int]] = field(default_factory=dict)
     m5_precision: float = 0.0
+    warnings: list[str] = field(default_factory=list)
 
 
 def wilson_interval(successes: int, trials: int, z: float = 1.959963984540054) -> tuple[float, float]:
@@ -69,6 +71,41 @@ def _norm(text: str) -> str:
 
 def _excerpt_digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+_PLACEHOLDER_EXCERPTS = {
+    "not-in-file", "not in file", "not found", "missing", "placeholder",
+    "todo", "tbd", "fixme", "lorem ipsum", "n/a", "na", "none", "null",
+    "undefined", "redacted", "...", "???",
+}
+_PLACEHOLDER_PATTERN = re.compile(
+    r"^(?:"
+    r"(?:todo|tbd|fixme|placeholder|lorem ipsum)\b.*"
+    r"|not[-_ ]?in[-_ ]?file\b.*"
+    r"|[x*._\-]{3,}"
+    r"|(?:\.\.\.|…)+"
+    r")$",
+    re.IGNORECASE,
+)
+
+
+def _meaningful_excerpt(text: str) -> bool:
+    """Reject empty, tiny, and placeholder-like excerpts.
+
+    The support audit is a locator check, not a semantic entailment check, so a
+    minimum amount of real text is required before the locator is resolved.
+    """
+    normalized = _norm(text)
+    if len(normalized) < 8:
+        return False
+    if not re.search(r"[A-Za-z0-9]{3,}", normalized):
+        return False
+    lowered = normalized.lower()
+    if lowered in _PLACEHOLDER_EXCERPTS:
+        return False
+    if _PLACEHOLDER_PATTERN.fullmatch(lowered):
+        return False
+    return True
 
 
 def _line_window_supports(lines: list[str], line: int | None, excerpt: str,
@@ -138,33 +175,69 @@ def _xpath_supports(path: Path, xpath: str, excerpt: str) -> bool | None:
 
 
 def audit_evidence_support(root: Path, evidence) -> bool:
-    """Check that a sample link resolves and the excerpt appears at the locator."""
+    """Check that a link resolves inside the fixture and the excerpt appears.
+
+    Redacted review evidence is checked against a redacted copy of the source so
+    that a persisted fingerprint remains verifiable without retaining secrets.
+    """
     excerpt = evidence.excerpt or ""
-    if not _norm(excerpt):
+    if not _meaningful_excerpt(excerpt):
         return False
     digest = _excerpt_digest(excerpt)
     if evidence.excerpt_sha != digest:
         return False
     if evidence.locator.excerpt_sha and evidence.locator.excerpt_sha != digest:
         return False
-    path = root / evidence.path
+    try:
+        root_path = Path(root).resolve()
+        path = (root_path / evidence.path).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return False
+    if not path.is_relative_to(root_path):
+        return False
     if not path.is_file():
         return False
     text = path.read_text(encoding="utf-8", errors="replace")
+    if getattr(evidence, "redacted", False):
+        text, _ = redact_excerpt(text)
     lines = text.splitlines()
-    if evidence.locator.kind is LocatorKind.XPATH:
+    if evidence.locator.kind is LocatorKind.XPATH and not getattr(evidence, "redacted", False):
         resolved = _xpath_supports(path, evidence.locator.value, excerpt)
         if resolved is not None:
             return resolved
     return _line_window_supports(lines, evidence.locator.line, excerpt)
 
 
+_GROUNDING_TOKEN = re.compile(r"[A-Za-z0-9]+")
+_COMMON_GROUNDING_TOKENS = frozenset({
+    "auto", "config", "configuration", "coverage", "data", "driver", "entity",
+    "factor", "field", "form", "info", "information", "line", "name", "object",
+    "personal", "policy", "question", "questions", "rating", "record", "screen",
+    "selection", "table", "template", "term", "terms", "type", "value", "vehicle",
+})
+
+
+def _grounding_tokens(mapping) -> list[str]:
+    tokens: list[str] = []
+    for raw in (mapping.source_ref or "", mapping.source_name or ""):
+        for token in _GROUNDING_TOKEN.findall(raw):
+            lowered = token.lower()
+            if len(lowered) >= 3 and lowered not in tokens:
+                tokens.append(lowered)
+    return tokens
+
+
 def _mapping_grounding_text(root: Path, manifest: Manifest,
-                            discovery: DiscoveryResult) -> str:
+                            discovery: DiscoveryResult,
+                            supported_evidence: list | None = None) -> str:
     """Evidence text that can ground a mapping on a non-empty snapshot."""
     if manifest.file_count <= 0:
         return ""
-    parts = [item.excerpt for item in discovery.evidence if item.excerpt]
+    allowed = None if supported_evidence is None else {id(item) for item in supported_evidence}
+    parts = [
+        item.excerpt for item in discovery.evidence
+        if item.excerpt and (allowed is None or id(item) in allowed)
+    ]
     parts.extend(manifest.unsupported_paths)
     for artifact in manifest.artifacts:
         parts.append(artifact.path)
@@ -179,12 +252,25 @@ def _mapping_grounding_text(root: Path, manifest: Manifest,
 
 
 def _mapping_grounded(mapping, grounding_text: str, manifest: Manifest) -> bool:
+    """Require real snapshot text, not a generic single-word match.
+
+    A mapping passes when its full ``source_ref`` appears, or when at least two
+    of its significant source tokens appear and at least one of those is not a
+    generic domain word. Empty values and a lone ``Vehicle``/``Policy`` token
+    cannot ground a mapping.
+    """
     if manifest.file_count <= 0 or not grounding_text:
         return False
-    return any(
-        token and token.lower() in grounding_text
-        for token in (mapping.source_ref, mapping.source_name)
-    )
+    tokens = _grounding_tokens(mapping)
+    non_common = {token for token in tokens if token not in _COMMON_GROUNDING_TOKENS}
+    if not non_common:
+        return False
+    source_ref = _norm(mapping.source_ref or "").lower()
+    if (source_ref and source_ref in grounding_text
+            and (len(tokens) >= 2 or source_ref not in _COMMON_GROUNDING_TOKENS)):
+        return True
+    matched = {token for token in tokens if token in grounding_text}
+    return len(matched) >= 2 and bool(matched & non_common)
 
 
 def _explicit_issue_anchors(issue: dict) -> set[str]:
@@ -256,17 +342,32 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                  fixture_root: Path | None = None) -> EvaluationResult:
     root = Path(ground_truth_dir)
     resolved_root = Path(fixture_root) if fixture_root is not None else Path("fixtures") / fixture_id
+    warnings: list[str] = []
     gold_features = json.loads((root / "features.json").read_text(encoding="utf-8"))["features"]
     gold_mappings = json.loads((root / "mappings.json").read_text(encoding="utf-8"))["mappings"]
     gold_findings = json.loads((root / "findings.json").read_text(encoding="utf-8"))["rules"]
-    evidence_by_id = {e.evidence_id: e for e in discovery.evidence}
+
+    # Audit every discovery link once. Only locator-supported evidence may anchor
+    # a feature, ground a mapping, or support the headline evidence metric.
+    supported_discovery = [
+        item for item in discovery.evidence
+        if audit_evidence_support(resolved_root, item)
+    ]
+    supported_by_id: dict[str, list] = defaultdict(list)
+    for item in supported_discovery:
+        supported_by_id[item.evidence_id].append(item)
     feature_paths = {
-        f.feature_id: {evidence_by_id[eid].path for eid in f.evidence_ids if eid in evidence_by_id}
+        f.feature_id: {
+            item.path
+            for eid in f.evidence_ids
+            for item in supported_by_id.get(eid, [])
+        }
         for f in discovery.features
     }
 
-    # M1/M2: require the capability and at least one gold anchor path. Each gold
-    # feature can consume at most one emitted feature, so duplicates become FP.
+    # M1/M2: require the capability and at least one audited gold anchor path.
+    # Each gold feature can consume at most one emitted feature, so duplicates
+    # become FP.
     matched_gold = 0
     used_features: set[int] = set()
     for gold in gold_features:
@@ -281,13 +382,17 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 break
     emitted_correct = len(used_features)
 
-    # M3: stratified 30-link audit, excerpt must appear at the source.
+    # M3: audit all discovery links. The 30-link stratified sample is retained as
+    # a supporting cross-check so a single aggregate cannot hide a bad tail item.
+    evidence_good = len(supported_discovery)
     sample = _stratified_sample(discovery.evidence, 30)
-    evidence_good = sum(1 for item in sample if audit_evidence_support(resolved_root, item))
+    sample_good = sum(1 for item in sample if audit_evidence_support(resolved_root, item))
 
     # M4: source, target, and disposition must all match; the mapping must also
     # be grounded by snapshot evidence, not merely restate the static rule pack.
-    grounding_text = _mapping_grounding_text(resolved_root, manifest, discovery)
+    grounding_text = _mapping_grounding_text(
+        resolved_root, manifest, discovery, supported_discovery
+    )
     used_tool: set[int] = set()
     mapping_correct = 0
     for gold in gold_mappings:
@@ -314,11 +419,15 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     issues_payload = json.loads(issues_path.read_text(encoding="utf-8")) if issues_path.is_file() else {"issues": [], "decoys": []}
     manifest_paths = {artifact.path for artifact in manifest.artifacts}
     review_evidence_by_id = {item.evidence_id: item for item in review.evidence}
+    review_supported = {
+        item.evidence_id: audit_evidence_support(resolved_root, item)
+        for item in review.evidence
+    }
     finding_paths: dict[str, set[str]] = defaultdict(set)
     for finding in review.findings:
         for evidence_id in finding.evidence_ids:
             ev = review_evidence_by_id.get(evidence_id)
-            if ev:
+            if ev and review_supported.get(evidence_id):
                 finding_paths[finding.rule_id].add(ev.path)
     mapping_outputs: dict[str, set[str]] = defaultdict(set)
     for mapping in reconstruction.mappings:
@@ -350,8 +459,9 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     m5_precision = (m5_top8_num / top8_slots) if top8_slots else 0.0
 
     # M6: micro-F1 over labelled positives/negatives; per-rule macro reported separately.
-    # Any found path that is not a labelled positive is a false positive, including
-    # findings on files that the gold set does not label at all.
+    # Only findings with at least one locator-supported evidence link contribute a
+    # path. Any supported path that is not a labelled positive is a false positive,
+    # including findings on files that the gold set does not label at all.
     per_rule: dict[str, dict[str, int]] = {}
     tp_total = fp_total = fn_total = 0
     f1_scores: list[float] = []
@@ -373,25 +483,36 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
 
     metrics = [
         _metric("M1", "Feature discovery recall", matched_gold, len(gold_features),
-                fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
+                fixture_id=fixture_id, tier=tier, primary=True,
+                caveat=CAVEAT + " Anchors count only when the linked evidence passes the locator-support audit. " + DEMO_NOTE),
         _metric("M2", "Feature discovery precision", emitted_correct, len(discovery.features),
-                fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
-        _metric("M3", "Evidence-link support precision (30-link audit)", evidence_good, len(sample),
-                fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
+                fixture_id=fixture_id, tier=tier, primary=True,
+                caveat=CAVEAT + " Anchors count only when the linked evidence passes the locator-support audit. " + DEMO_NOTE),
+        _metric("M3", "Evidence-link support precision (all links)", evidence_good,
+                len(discovery.evidence),
+                fixture_id=fixture_id, tier=tier, primary=True,
+                caveat=CAVEAT + " Every discovery link is audited for path containment, excerpt SHA, non-placeholder excerpt, and locator support; support is not semantic entailment. " + DEMO_NOTE),
         _metric("M4", "Disposition correctness", mapping_correct, mapping_denominator,
-                fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
+                fixture_id=fixture_id, tier=tier, primary=True,
+                caveat=CAVEAT + " A mapping must also be grounded by the full source_ref or at least two significant snapshot tokens. " + DEMO_NOTE),
         _metric("M5", "Estimate-moving issue recall", m5_recall_num, len(issue_ids),
                 fixture_id=fixture_id, tier=tier, primary=True,
                 caveat=CAVEAT + f" Top-8 allowance: {m5_top8_num} TP / {top8_slots} slots. " + DEMO_NOTE),
         _metric("M6", "Finding micro-F1 (2TP / (2TP+FP+FN))", 2 * tp_total, f1_den,
                 fixture_id=fixture_id, tier=tier, primary=True,
-                caveat=CAVEAT + f" {tp_total} TP / {fp_total} FP / {fn_total} FN across 8 rules; fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. " + DEMO_NOTE,
+                caveat=CAVEAT + f" {tp_total} TP / {fp_total} FP / {fn_total} FN across 8 rules; TP requires at least one locator-supported evidence link on a labelled positive path. Fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. " + DEMO_NOTE,
                 interval=False),
     ]
 
     reference_rows = len(comparison.rows) or 1
     silent_den = len(gold_mappings)
     supporting = [
+        _metric("M3-SAMPLE", "30-link stratified sample", sample_good, len(sample),
+                fixture_id=fixture_id, tier=tier, primary=False,
+                caveat=(
+                    "Deterministic round-robin across sorted evidence paths; supporting "
+                    "cross-check only, not the headline. Support is not semantic entailment."
+                )),
         _metric("M5-TOP8", "M5 top-8 allowance (TP / slots)", m5_top8_num, top8_slots,
                 fixture_id=fixture_id, tier=tier, primary=False,
                 caveat=(
@@ -416,14 +537,51 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     ]
 
     holdout_path = root / "holdout_metrics.json"
-    if holdout_path.is_file():
-        holdout = json.loads(holdout_path.read_text(encoding="utf-8"))
-        supporting.append(
-            _metric("HOLDOUT-RECALL", "Holdout feature recall (pre-computed; not imported)",
-                    holdout["numerator"], holdout["denominator"],
-                    fixture_id=holdout.get("fixture", "northstar-pc-2026.10"), tier=tier, primary=False,
-                    caveat=holdout.get("caveat", "Pre-computed holdout aggregate; not imported into the demo."))
+    holdout_base = "Pre-computed holdout aggregate; not imported into the demo."
+    holdout_fixture = "northstar-pc-2026.10"
+    holdout_num, holdout_den = 0, 1
+    if not holdout_path.is_file():
+        holdout_caveat = (
+            "INVALID holdout aggregate; clamped for display (aggregate absent). "
+            + holdout_base
         )
+        warnings.append("Holdout aggregate absent; reported as an explicit invalid metric.")
+    else:
+        try:
+            holdout = json.loads(holdout_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            holdout = None
+            warnings.append("Holdout aggregate unreadable; reported as an explicit invalid metric.")
+        if not isinstance(holdout, dict):
+            holdout_caveat = (
+                "INVALID holdout aggregate; clamped for display (aggregate unreadable). "
+                + holdout_base
+            )
+        else:
+            holdout_fixture = str(holdout.get("fixture") or holdout_fixture)
+            raw_num = holdout.get("numerator")
+            raw_den = holdout.get("denominator")
+            numeric = (
+                isinstance(raw_num, int) and not isinstance(raw_num, bool)
+                and isinstance(raw_den, int) and not isinstance(raw_den, bool)
+            )
+            if numeric and raw_den > 0 and 0 <= raw_num <= raw_den:
+                holdout_num, holdout_den = raw_num, raw_den
+                holdout_caveat = str(holdout.get("caveat") or holdout_base)
+            else:
+                holdout_den = max(1, raw_den) if numeric else 1
+                holdout_num = max(0, min(raw_num, holdout_den)) if numeric else 0
+                holdout_caveat = (
+                    "INVALID holdout aggregate; clamped for display. "
+                    + str(holdout.get("caveat") or holdout_base)
+                )
+                warnings.append("Invalid holdout aggregate; clamped for display.")
+    supporting.append(
+        _metric("HOLDOUT-RECALL", "Holdout feature recall (pre-computed; not imported)",
+                holdout_num, holdout_den,
+                fixture_id=holdout_fixture, tier=tier, primary=False,
+                caveat=holdout_caveat)
+    )
 
     # Independent baselines.
     identity_correct = 0
@@ -507,4 +665,5 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     return EvaluationResult(
         metrics=metrics, supporting=supporting, baselines=baselines,
         margins=margins, per_rule=per_rule, m5_precision=m5_precision,
+        warnings=warnings,
     )
