@@ -24,8 +24,11 @@
   .kpi { border:1px solid var(--line); padding:12px 14px; }
   .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
   table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:12px; }
+  caption { text-align:left; color:var(--muted); font-size:11px; font-weight:600; padding:0 0 6px; }
   th,td { text-align:left; border-bottom:1px solid var(--line); padding:6px 7px; vertical-align:top; }
   th { background:#f1f4f7; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+  .table-scroll { max-width: 100%; }
+  .table-scroll:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
   .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
   .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
   .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
@@ -39,7 +42,14 @@
   th, td { overflow-wrap: anywhere; }
   @media screen and (max-width: 1200px) {
     .page { margin: 12px; padding: 22px; max-width: none; }
-    table { display: block; width: 100%; overflow-x: auto; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+    table[data-columns="2"] { min-width: 320px; }
+    table[data-columns="3"] { min-width: 420px; }
+    table[data-columns="4"] { min-width: 520px; }
+    table[data-columns="5"] { min-width: 600px; }
+    table[data-columns="6"] { min-width: 680px; }
+    table[data-columns="7"] { min-width: 760px; }
+    table[data-columns="8"] { min-width: 840px; }
     .grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media screen and (max-width: 600px) {
@@ -47,9 +57,6 @@
     .page { margin: 0; padding: 14px; border: 0; }
     h2 { font-size: 17px; }
     .grid { grid-template-columns: 1fr; }
-    tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
-    th, td { display: block; border: 0; padding: 2px 0; }
-    thead { display: none; }
   }
   @media print {
     @page { size: A4 landscape; margin: 10mm; }

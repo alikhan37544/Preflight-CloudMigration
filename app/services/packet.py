@@ -17,6 +17,7 @@ import re
 import json
 from collections import defaultdict
 from datetime import datetime, timezone
+from html import escape as html_escape, unescape as html_unescape
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -331,42 +332,76 @@ def _excluded_files(manifest: Manifest) -> list[dict]:
 
 
 
-_TABLE_CAPTIONS = [
-    "Packet cover",
-    "Packet counts",
-    "Headline metrics",
-    "Excluded and unsupported files",
-    "Assumption register",
-    "Dispositions",
-    "Draft changes",
-    "Advisory findings",
-    "Readiness flags",
-    "Review evidence",
-    "Discovery evidence",
-    "Audit trail",
-    "Artifact hashes",
-]
+_TABLE_RE = re.compile(r"<table([^>]*)>(.*?)</table>", flags=re.S | re.I)
+_ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", flags=re.S | re.I)
+_TH_RE = re.compile(r"<th[^>]*>(.*?)</th>", flags=re.S | re.I)
+_TD_RE = re.compile(r"<td[^>]*>", flags=re.I)
+_TAG_RE = re.compile(r"<[^>]+>")
+_HEADING_RE = re.compile(r"<h[23][^>]*>(.*?)</h[23]>", flags=re.S | re.I)
+
+
+def _plain_text(fragment: str) -> str:
+    """Collapse a small HTML fragment to readable caption text."""
+    text = html_unescape(_TAG_RE.sub(" ", fragment))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _caption_for_table(inner: str, index: int, prefix: str) -> tuple[str, int]:
+    """Derive a caption from the table's own first-row header cells.
+
+    A positional caption list mislabels tables as soon as a finding group is
+    added or removed. Deriving the caption from the header cells keeps the
+    caption aligned with the table, and the column count drives the mobile
+    horizontal-scroll width.
+    """
+    if index == 0:
+        # The cover is the first key-value table: its labels are row headers.
+        return "Packet cover", 2
+    first_row = _ROW_RE.search(inner)
+    if first_row:
+        header_cells = [_plain_text(cell) for cell in _TH_RE.findall(first_row.group(1))]
+        header_cells = [cell for cell in header_cells if cell]
+        if header_cells and not _TD_RE.search(first_row.group(1)):
+            labels = list(dict.fromkeys(header_cells))
+            return f"Table: {' · '.join(labels)}", len(header_cells)
+    headings = list(_HEADING_RE.finditer(prefix))
+    if headings:
+        heading = _plain_text(headings[-1].group(1))
+        if heading:
+            return f"Table: {heading}", len(header_cells) if first_row else 2
+    return f"Packet table {index + 1}", len(header_cells) if first_row else 2
 
 
 def _accessible_tables(html: str) -> str:
-    """Add captions, header sections, and scoped cells to the static packet."""
+    """Add captions, header sections, scopes, and keyboard scroll regions.
+
+    Each table gets a caption derived from its own header row (or its nearest
+    section heading as a fallback), scoped header cells, and a wrapper that can
+    be scrolled with the keyboard at narrow viewports. The wrapper also keeps
+    ``thead`` visible on mobile instead of stacking unlabelled cells.
+    """
     counter = 0
 
     def replace(match):
         nonlocal counter
-        inner = match.group(1)
-        caption = _TABLE_CAPTIONS[counter] if counter < len(_TABLE_CAPTIONS) else f"Packet table {counter + 1}"
+        attrs, inner = match.group(1), match.group(2)
+        caption, columns = _caption_for_table(inner, counter, html[:match.start()])
         counter += 1
-        first_row = re.search(r"<tr>(.*?)</tr>", inner, flags=re.S)
-        if first_row and "<th>" in first_row.group(1) and "<td>" not in first_row.group(1):
-            header = re.sub(r"<th>", '<th scope="col">', first_row.group(0))
+        first_row = _ROW_RE.search(inner)
+        if first_row and _TH_RE.search(first_row.group(1)) and not _TD_RE.search(first_row.group(1)):
+            header = re.sub(r"<th(?![^>]*\bscope=)", '<th scope="col"', first_row.group(0), flags=re.I)
             rest = inner[first_row.end():]
             inner = f"<thead>{header}</thead><tbody>{rest}</tbody>"
         else:
-            inner = re.sub(r"<th>", '<th scope="row">', inner)
-        return f"<table><caption>{caption}</caption>{inner}</table>"
+            inner = re.sub(r"<th(?![^>]*\bscope=)", '<th scope="row"', inner, flags=re.I)
+        escaped = html_escape(caption, quote=True)
+        return (
+            f'<div class="table-scroll" role="group" aria-label="{escaped}" tabindex="0">'
+            f'<table{attrs} data-columns="{columns}">'
+            f"<caption>{escaped}</caption>{inner}</table></div>"
+        )
 
-    return re.sub(r"<table>(.*?)</table>", replace, html, flags=re.S)
+    return _TABLE_RE.sub(replace, html)
 
 
 def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, release_context: str,

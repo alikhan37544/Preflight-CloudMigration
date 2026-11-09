@@ -129,7 +129,7 @@
         {% endif %}
         <span class="muted">State: <span data-state>{{ change_state }}</span></span>
       </div>
-      <pre class="diff">{{ change.diff }}</pre>
+      <pre class="diff" tabindex="0" role="region" aria-label="Diff for change {{ change.change_id }}: {{ change.target_path }}">{{ change.diff }}</pre>
     </details>
     {% endfor %}
     {% else %}

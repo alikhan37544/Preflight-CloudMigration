@@ -35,6 +35,8 @@ body {
 }
 a { color: var(--brand); text-decoration: none; }
 a:hover { text-decoration: underline; }
+.text-link { color: var(--brand-dark); text-decoration: underline; text-underline-offset: 2px; }
+.text-link:hover { color: var(--brand); text-decoration: underline; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .side-link[aria-current="page"] { font-weight: 700; }
 code, .hash, pre { font-family: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, monospace; }
@@ -526,6 +528,7 @@ html, body { max-width: 100%; }
 /* Visual polish pass: spine fit, findings table, evaluation charts, a11y */
 .btn:focus-visible, .input:focus-visible, .tab:focus-visible, .chip:focus-visible,
 .side-link:focus-visible, .table-scroll:focus-visible, .spine-scroll:focus-visible,
+.diff:focus-visible, .assistant-transcript:focus-visible,
 summary:focus-visible, .feature-row:focus-visible {
   outline: 3px solid var(--focus); outline-offset: 2px;
 }

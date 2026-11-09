@@ -173,6 +173,21 @@ def test_reconstruction_shows_cloud_retrofit_scope_note(api, run_id) -> None:
         assert "local, non-deployable draft" in text
 
 
+def test_scrollable_diff_and_assistant_are_keyboard_focusable(api, run_id) -> None:
+    client, _ = api
+    draft = client.get(f"/reconstruction?run={run_id}&tab=draft").text
+    assert re.search(
+        r'<pre class="diff" tabindex="0" role="region" aria-label="Diff for change C-',
+        draft,
+    )
+    workbench = client.get(f"/?run={run_id}&feature=PA-VEH-01").text
+    assert (
+        'class="assistant-transcript" data-assistant-transcript aria-live="polite" '
+        'aria-relevant="additions" role="region" aria-label="Assistant transcript" tabindex="0"'
+        in workbench
+    )
+
+
 def test_findings_show_standard_family(api, run_id) -> None:
     client, _ = api
     cloud = client.get(f"/findings?run={run_id}&selected=F-008").text
@@ -754,6 +769,26 @@ def test_packet_refresh_preserves_readiness_and_run_context(api, run_id) -> None
     assert status["release_context"] in page
 
 
+def test_packet_page_tables_have_captions_and_column_scopes(api, run_id) -> None:
+    client, _ = api
+    page = client.get(f"/packet?run={run_id}").text
+    tables = re.findall(r"<table[^>]*>(.*?)</table>", page, flags=re.S)
+    assert len(tables) >= 5
+    for table in tables:
+        assert "<caption>" in table
+        assert 'scope="col"' in table
+    for caption in [
+        "Readiness flags included in the review packet.",
+        "Mapping and disposition ledger included in the review packet.",
+        "Draft changes awaiting approval in the review packet.",
+    ]:
+        assert caption in page
+    for header in ["Flag", "Rule", "Claim", "Standard", "State",
+                   "Disposition", "Provenance", "Reviewer state",
+                   "Change", "Approval state", "Target path"]:
+        assert f'<th scope="col">{header}</th>' in page, header
+
+
 def test_packet_refresh_failure_is_visible_and_export_blocks(api, run_id, monkeypatch) -> None:
     client, _ = api
     # Force the refresh path instead of the unchanged-input cache hit.
@@ -977,6 +1012,10 @@ def test_settings_page_content(api) -> None:
     assert "Data policy" in response.text
     assert "rule-pack totals, estate-wide" in response.text
     assert "holdout locked" in response.text
+    # Inline links are underlined/darkened and the import link reaches the upload flow.
+    assert '<a class="text-link" href="/runs">Runs</a>' in response.text
+    assert '<a class="text-link" href="/import">empty workbench</a>' in response.text
+    assert 'href="/">empty workbench' not in response.text
 
 
 # -- decision integrity, run guards, deletion and corruption ----------------

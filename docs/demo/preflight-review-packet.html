@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PreFlight Review Packet - R-DEMO-001</title>
-<meta name="packet-sha256" content="e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a">
+<meta name="packet-sha256" content="8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895">
 <meta name="packet-hash-scope" content="sha256-of-normalized-rendered-html">
 <style>
   :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
@@ -24,8 +24,11 @@
   .kpi { border:1px solid var(--line); padding:12px 14px; }
   .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
   table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:12px; }
+  caption { text-align:left; color:var(--muted); font-size:11px; font-weight:600; padding:0 0 6px; }
   th,td { text-align:left; border-bottom:1px solid var(--line); padding:6px 7px; vertical-align:top; }
   th { background:#f1f4f7; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+  .table-scroll { max-width: 100%; }
+  .table-scroll:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
   .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
   .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
   .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
@@ -39,7 +42,14 @@
   th, td { overflow-wrap: anywhere; }
   @media screen and (max-width: 1200px) {
     .page { margin: 12px; padding: 22px; max-width: none; }
-    table { display: block; width: 100%; overflow-x: auto; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+    table[data-columns="2"] { min-width: 320px; }
+    table[data-columns="3"] { min-width: 420px; }
+    table[data-columns="4"] { min-width: 520px; }
+    table[data-columns="5"] { min-width: 600px; }
+    table[data-columns="6"] { min-width: 680px; }
+    table[data-columns="7"] { min-width: 760px; }
+    table[data-columns="8"] { min-width: 840px; }
     .grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media screen and (max-width: 600px) {
@@ -47,9 +57,6 @@
     .page { margin: 0; padding: 14px; border: 0; }
     h2 { font-size: 17px; }
     .grid { grid-template-columns: 1fr; }
-    tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
-    th, td { display: block; border: 0; padding: 2px 0; }
-    thead { display: none; }
   }
   @media print {
     @page { size: A4 landscape; margin: 10mm; }
@@ -65,7 +72,7 @@
 </style>
 </head>
 <body>
-<div class="page">
+<main class="page">
   <div class="brandbar">
     <div>
       <div class="mark">PreFlight - Cloud-Readiness Review</div>
@@ -74,7 +81,7 @@
     </div>
     <div style="text-align:right">
       <span class="badge synthetic">Synthetic estate</span>
-      <div class="muted" style="margin-top:6px">2026-11-09T19:59:12Z</div>
+      <div class="muted" style="margin-top:6px">2026-11-09T21:07:12Z</div>
     </div>
   </div>
 
@@ -85,17 +92,17 @@
   </div>
 
   <h2>1. Cover</h2>
-  <table>
-    <tr><th>Estate</th><td>demo</td></tr>
-    <tr><th>Fixture</th><td>demo-slice-300</td></tr>
-    <tr><th>Release context</th><td>Qusar 2026.08 (review context)</td></tr>
-    <tr><th>Scope boundary</th><td>Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; local, non-deployable draft; field-level nameOverride only applies on this path.</td></tr>
-    <tr><th>Snapshot hash</th><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
-    <tr><th>Files</th><td>300 (4 unsupported/corrupt, listed)</td></tr>
-    <tr><th>Audit head</th><td class="hash">d7e3a32dd4a11a0a4daa6995261218eab815cdb18122539a41439fd63ffdb276</td></tr>
-    <tr><th>Audit chain verified</th><td><span class="badge ok">yes</span> (9 events)</td></tr>
-    <tr><th>Packet hash</th><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
-  </table>
+  <div class="table-scroll" role="group" aria-label="Packet cover" tabindex="0"><table data-columns="2"><caption>Packet cover</caption>
+    <tr><th scope="row">Estate</th><td>demo</td></tr>
+    <tr><th scope="row">Fixture</th><td>demo-slice-300</td></tr>
+    <tr><th scope="row">Release context</th><td>Qusar 2026.08 (review context)</td></tr>
+    <tr><th scope="row">Scope boundary</th><td>Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; local, non-deployable draft; field-level nameOverride only applies on this path.</td></tr>
+    <tr><th scope="row">Snapshot hash</th><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
+    <tr><th scope="row">Files</th><td>300 (4 unsupported/corrupt, listed)</td></tr>
+    <tr><th scope="row">Audit head</th><td class="hash">0d0e91a4927315ccb746e88866ce509506290f4d5e80f4cfe321352f08ec7d4d</td></tr>
+    <tr><th scope="row">Audit chain verified</th><td><span class="badge ok">yes</span> (9 events)</td></tr>
+    <tr><th scope="row">Packet hash</th><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
+  </table></div>
 
   <h2>2. Executive summary</h2>
   <div class="grid">
@@ -110,8 +117,7 @@
   </div>
   <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
   productivity claims.</p>
-  <table>
-    <tr><th>Packet count</th><th>Value</th><th>Packet count</th><th>Value</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Packet count · Value" tabindex="0"><table data-columns="4"><caption>Table: Packet count · Value</caption><thead><tr><th scope="col">Packet count</th><th scope="col">Value</th><th scope="col">Packet count</th><th scope="col">Value</th></tr></thead><tbody>
     
     
     <tr><td>files</td><td>300</td>
@@ -170,13 +176,12 @@
     
     
     
-  </table>
+  </tbody></table></div>
 
   <h2>3. Coverage and confidence</h2>
   <p><strong>Coverage ceiling.</strong> 296 files parsed; 4 unsupported or corrupt files are listed below rather than hidden. Confidence labels are parsed, linked, inferred-review, or unresolved. This packet makes no deployability or certification claim.</p>
   
-  <table>
-    <tr><th>Metric</th><th>Value</th><th>Numerator</th><th>Denominator</th><th>Caveat</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Metric · Value · Numerator · Denominator · Caveat" tabindex="0"><table data-columns="5"><caption>Table: Metric · Value · Numerator · Denominator · Caveat</caption><thead><tr><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">Numerator</th><th scope="col">Denominator</th><th scope="col">Caveat</th></tr></thead><tbody>
     
     <tr>
       <td>M1 - Feature discovery recall</td>
@@ -226,13 +231,12 @@
       <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. 24 TP / 0 FP / 0 FN across 8 rules; TP requires at least one locator-supported evidence link on a labelled positive path. Fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h3>Excluded and unsupported files (4)</h3>
   
-  <table>
-    <tr><th>Path</th><th>Status</th><th>Kind</th><th>Reason / warning</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Path · Status · Kind · Reason / warning" tabindex="0"><table data-columns="4"><caption>Table: Path · Status · Kind · Reason / warning</caption><thead><tr><th scope="col">Path</th><th scope="col">Status</th><th scope="col">Kind</th><th scope="col">Reason / warning</th></tr></thead><tbody>
     
     <tr>
       <td><code>assets/dealer-logo.png</code></td>
@@ -262,14 +266,13 @@
       <td class="muted">File type is outside the supported parsers.</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h2>4. Assumption register and disposition ledger</h2>
   <h3>Assumption register (3)</h3>
   
-  <table>
-    <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: ID · Statement · Impact · Question to ask · Owner · Status" tabindex="0"><table data-columns="6"><caption>Table: ID · Statement · Impact · Question to ask · Owner · Status</caption><thead><tr><th scope="col">ID</th><th scope="col">Statement</th><th scope="col">Impact</th><th scope="col">Question to ask</th><th scope="col">Owner</th><th scope="col">Status</th></tr></thead><tbody>
     
     <tr>
       <td>A-01</td>
@@ -295,13 +298,12 @@
       <td>unassigned</td><td>open</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h3>Mapping and disposition ledger (12)</h3>
   
-  <table>
-    <tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: ID · Source · Target · Disposition · Provenance · Reviewer state" tabindex="0"><table data-columns="6"><caption>Table: ID · Source · Target · Disposition · Provenance · Reviewer state</caption><thead><tr><th scope="col">ID</th><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Provenance</th><th scope="col">Reviewer state</th></tr></thead><tbody>
     
     <tr>
       <td>M-01</td>
@@ -411,13 +413,12 @@
       <td><span class="pill">pending</span></td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h3>Changes awaiting approval (5)</h3>
   
-  <table>
-    <tr><th>ID</th><th>Approval state</th><th>Target path</th><th>Mapping</th><th>Reviewer</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: ID · Approval state · Target path · Mapping · Reviewer" tabindex="0"><table data-columns="5"><caption>Table: ID · Approval state · Target path · Mapping · Reviewer</caption><thead><tr><th scope="col">ID</th><th scope="col">Approval state</th><th scope="col">Target path</th><th scope="col">Mapping</th><th scope="col">Reviewer</th></tr></thead><tbody>
     
     <tr>
       <td>C-01</td>
@@ -459,7 +460,7 @@
       <td>unassigned</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h2>5. Findings</h2>
@@ -471,8 +472,7 @@
     <span class="pill">warning</span>
     <span class="pill">verified-id / ERR00-G</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-002</td>
@@ -533,14 +533,13 @@
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-GUNIT-001 - Database access in a pure unit test
     <span class="pill">warning</span>
     <span class="pill">heuristic</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-020</td>
@@ -597,14 +596,13 @@
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-NAM-001 - APD truncates product-template type names over 24 characters
     <span class="pill">error</span>
     <span class="pill">verified-doc</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-023</td>
@@ -663,14 +661,13 @@
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-PKG-001 - Hidden or internal package reference
     <span class="pill">error</span>
     <span class="pill">verified-id / IS-TLS-1191</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-008</td>
@@ -728,14 +725,13 @@ class HiddenPackageC {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-SEC-001 - Hard-coded secret
     <span class="pill">error</span>
     <span class="pill">verified-id / SEC00-G</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-014</td>
@@ -792,14 +788,13 @@ class HiddenPackageC {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-SQL-001 - Direct JDBC or SQL access
     <span class="pill">error</span>
     <span class="pill">verified-id / IS-TLS-1238</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-011</td>
@@ -857,14 +852,13 @@ class PersonalVehicleQueryC {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-SRV-001 - Custom servlet
     <span class="pill">warning</span>
     <span class="pill">verified-policy</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-005</td>
@@ -923,14 +917,13 @@ class LegacyVehicleServletC extends HttpServlet {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   <h3 class="group">PF-GW-TX-001 - Explicit commit inside runWithNewBundle
     <span class="pill">warning</span>
     <span class="pill">secondary</span>
   </h3>
-  <table>
-    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Finding · Title / message · Severity · Claim / standard · Decision · Source · Supporting evidence</caption><thead><tr><th scope="col">Finding</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Decision</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-017</td>
@@ -989,14 +982,13 @@ class LegacyVehicleServletC extends HttpServlet {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
   
 
   <h3>Readiness flags (1) - separate from advisory findings</h3>
   
-  <table>
-    <tr><th>Flag</th><th>Rule</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Source</th><th>Supporting evidence</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Flag · Rule · Title / message · Severity · Claim / standard · Source · Supporting evidence" tabindex="0"><table data-columns="7"><caption>Table: Flag · Rule · Title / message · Severity · Claim / standard · Source · Supporting evidence</caption><thead><tr><th scope="col">Flag</th><th scope="col">Rule</th><th scope="col">Title / message</th><th scope="col">Severity</th><th scope="col">Claim / standard</th><th scope="col">Source</th><th scope="col">Supporting evidence</th></tr></thead><tbody>
     
     <tr>
       <td>F-001</td>
@@ -1017,7 +1009,7 @@ class LegacyVehicleServletC extends HttpServlet {</div>
       </td>
     </tr>
     
-  </table>
+  </tbody></table></div>
   
 
   <h2>6. Evidence and audit appendix</h2>
@@ -1027,8 +1019,7 @@ class LegacyVehicleServletC extends HttpServlet {</div>
   locators are unchanged.</p>
 
   <h3>Review evidence linked to findings (25)</h3>
-  <table>
-    <tr><th>ID</th><th>Linked finding(s)</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: ID · Linked finding(s) · Path · Locator · Excerpt · Excerpt SHA-256 · Confidence · Method" tabindex="0"><table data-columns="8"><caption>Table: ID · Linked finding(s) · Path · Locator · Excerpt · Excerpt SHA-256 · Confidence · Method</caption><thead><tr><th scope="col">ID</th><th scope="col">Linked finding(s)</th><th scope="col">Path</th><th scope="col">Locator</th><th scope="col">Excerpt</th><th scope="col">Excerpt SHA-256</th><th scope="col">Confidence</th><th scope="col">Method</th></tr></thead><tbody>
     
     <tr>
       <td>REV-0001</td>
@@ -1351,11 +1342,10 @@ class PersonalVehicleQueryC {</div></td>
       <td>xml_xpath</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
 
   <h3>Discovery evidence (101)</h3>
-  <table>
-    <tr><th>ID</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: ID · Path · Locator · Excerpt · Excerpt SHA-256 · Confidence · Method" tabindex="0"><table data-columns="7"><caption>Table: ID · Path · Locator · Excerpt · Excerpt SHA-256 · Confidence · Method</caption><thead><tr><th scope="col">ID</th><th scope="col">Path</th><th scope="col">Locator</th><th scope="col">Excerpt</th><th scope="col">Excerpt SHA-256</th><th scope="col">Confidence</th><th scope="col">Method</th></tr></thead><tbody>
     
     <tr>
       <td>EV-0001</td>
@@ -2411,109 +2401,107 @@ class PersonalVehicleQueryC {</div></td>
       <td>xml_xpath</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
 
   <h3>Audit trail (9 events)</h3>
   <p><strong>Audit chain verified: yes</strong>. The local log is
   tamper-evident, not non-repudiation. Verify with <code>preflight verify-audit R-DEMO-001</code>.</p>
-  <table>
-    <tr><th>Seq</th><th>Timestamp</th><th>Action</th><th>Object</th><th>Actor</th><th>Hash</th><th>Prev hash</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Seq · Timestamp · Action · Object · Actor · Hash · Prev hash" tabindex="0"><table data-columns="7"><caption>Table: Seq · Timestamp · Action · Object · Actor · Hash · Prev hash</caption><thead><tr><th scope="col">Seq</th><th scope="col">Timestamp</th><th scope="col">Action</th><th scope="col">Object</th><th scope="col">Actor</th><th scope="col">Hash</th><th scope="col">Prev hash</th></tr></thead><tbody>
     
     <tr>
       <td>0</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.intake</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">78d6e7ddfb9dc0f7</td>
+      <td class="hash">6b5c2f2d2f480c46</td>
       <td class="hash">GENESIS</td>
     </tr>
     
     <tr>
       <td>1</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.parse</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">e5bf1ed678f7a246</td>
-      <td class="hash">78d6e7ddfb9dc0f7</td>
+      <td class="hash">0339c28716cf1fb9</td>
+      <td class="hash">6b5c2f2d2f480c46</td>
     </tr>
     
     <tr>
       <td>2</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.review</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">088a49aa305efb1e</td>
-      <td class="hash">e5bf1ed678f7a246</td>
+      <td class="hash">9dfc30ca9114dec4</td>
+      <td class="hash">0339c28716cf1fb9</td>
     </tr>
     
     <tr>
       <td>3</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.reconstruct</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">944b22e585ae9a49</td>
-      <td class="hash">088a49aa305efb1e</td>
+      <td class="hash">7fc10a83b24d93a9</td>
+      <td class="hash">9dfc30ca9114dec4</td>
     </tr>
     
     <tr>
       <td>4</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.compare</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">072577b8b772f7a3</td>
-      <td class="hash">944b22e585ae9a49</td>
+      <td class="hash">15e2a117dba384e4</td>
+      <td class="hash">7fc10a83b24d93a9</td>
     </tr>
     
     <tr>
       <td>5</td>
-      <td>2026-11-09T19:58:51Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.evaluate</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">ecbe17889e3a289a</td>
-      <td class="hash">072577b8b772f7a3</td>
+      <td class="hash">f1de22b6a8a824ea</td>
+      <td class="hash">15e2a117dba384e4</td>
     </tr>
     
     <tr>
       <td>6</td>
-      <td>2026-11-09T19:58:52Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>stage.packet</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">b9ceb6161fc0f37e</td>
-      <td class="hash">ecbe17889e3a289a</td>
+      <td class="hash">d6b96b13f15d83da</td>
+      <td class="hash">f1de22b6a8a824ea</td>
     </tr>
     
     <tr>
       <td>7</td>
-      <td>2026-11-09T19:58:52Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>run.immutability.verified</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">6800846e2d3c9804</td>
-      <td class="hash">b9ceb6161fc0f37e</td>
+      <td class="hash">d3a6f8b887a42c50</td>
+      <td class="hash">d6b96b13f15d83da</td>
     </tr>
     
     <tr>
       <td>8</td>
-      <td>2026-11-09T19:58:52Z</td>
+      <td>2026-11-09T21:06:58Z</td>
       <td>run.succeeded</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">d7e3a32dd4a11a0a</td>
-      <td class="hash">6800846e2d3c9804</td>
+      <td class="hash">0d0e91a4927315cc</td>
+      <td class="hash">d3a6f8b887a42c50</td>
     </tr>
     
-  </table>
+  </tbody></table></div>
 
   <h3>Hashes</h3>
-  <table>
-    <tr><th>Hash</th><th>Value</th></tr>
+  <div class="table-scroll" role="group" aria-label="Table: Hash · Value" tabindex="0"><table data-columns="2"><caption>Table: Hash · Value</caption><thead><tr><th scope="col">Hash</th><th scope="col">Value</th></tr></thead><tbody>
     
     <tr><td>snapshot</td><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
     
@@ -2523,7 +2511,7 @@ class PersonalVehicleQueryC {</div></td>
     
     <tr><td>ground_truth_manifest</td><td class="hash">260a20fad95f69b0806dd062754da296f5a525a7456308b885558e7f8f3e0587</td></tr>
     
-    <tr><td>audit_head</td><td class="hash">d7e3a32dd4a11a0a4daa6995261218eab815cdb18122539a41439fd63ffdb276</td></tr>
+    <tr><td>audit_head</td><td class="hash">0d0e91a4927315ccb746e88866ce509506290f4d5e80f4cfe321352f08ec7d4d</td></tr>
     
     <tr><td>features</td><td class="hash">d04bdcc3bda1e8bb26d665fafed9592962a15f36cfe490d4ca3218dd22aecbc0</td></tr>
     
@@ -2543,18 +2531,18 @@ class PersonalVehicleQueryC {</div></td>
     
     <tr><td>gaps</td><td class="hash">36fc86c518ceaff006be00963de431aa9e79c8bade422c7e366690f2cbef0895</td></tr>
     
-    <tr><td>packet_json</td><td class="hash">f8f85121e84e9cf011b4a040159f0c6a51b7c73add667b10a0ed208858351706</td></tr>
+    <tr><td>packet_json</td><td class="hash">17fce73c99fbd8696c6e06b4cbf542449f39c47c91852f02abab1af6fbd74b03</td></tr>
     
-    <tr><td>packet</td><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
+    <tr><td>packet</td><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
     
-    <tr><td>packet_html</td><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
+    <tr><td>packet_html</td><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
     
-  </table>
+  </tbody></table></div>
   <p class="muted"><strong>Packet hash scope.</strong> SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.</p>
 
   <footer>
     PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. This packet is generated from a synthetic fixture; it contains no customer data or confidential Guidewire information. Findings are pattern-based heuristics, not official Cloud Standards checks. Official Cloud Assurance: not run. Impact ranges are heuristic planning ranges, not quotes.
   </footer>
-</div>
+</main>
 </body>
 </html>
