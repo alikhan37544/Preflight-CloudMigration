@@ -8,9 +8,13 @@
     "external_requests": 0,
     "print_pages": 16,
     "pdf": "docs/presentation/PreFlight-deck.pdf",
-    "validation": "Playwright at 1920x1080, 1440x900, 390x844: 16 slides navigated; 0 console errors; 0 external requests; 0 overflow"
+    "validation": "Playwright at 1920x1080, 1440x900, 1280x720, 1024x768, 390x844: 16 slides; 0 console errors; 0 external requests; 0 clipping/overflow at desktop; 0 horizontal overflow at 390; PDF 16 pages at 1200x675 pt",
+    "pdf_pages": 16,
+    "pdf_page_size": "1200 x 675.12 pts",
+    "pdf_sha256": "bfb47326fe2a5842769efaf2e802c87731fb332cbefaca4dc26ac9c7c66ecb38",
+    "pdf_bytes": 928803
   },
-  "generated_at": "2026-11-09T13:12:18+00:00",
+  "generated_at": "2026-11-09T15:45:00+00:00",
   "run": {
     "run_id": "R-DEMO-001",
     "fixture": "demo-slice-300",
@@ -24,20 +28,24 @@
     "mappings": 12,
     "changes": 5,
     "assumptions": 3,
-    "assumptions_after_demo_reject": 4,
     "excluded": {
       "total": 4,
       "binary": 2,
       "corrupt": 1,
       "unsupported": 1
     },
-    "audit_events": 9,
     "audit_verified": true,
     "snapshot_hash": "20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404",
-    "packet_hash": "09fac7ee737f40f9c4d7a5223464d137c0b1063868555e42d15743e53f206a5a",
-    "audit_head": "2567dbf4f3ded9b51b2afe0ef3dcd4b3171785464e80e14b1799a4d0f8383a4d",
     "official_cloud_assurance": "not run",
-    "note": "packet/audit hashes are capture-time; reviewer decisions or a packet refresh change them"
+    "note": "packet/audit hashes are capture-time; reviewer decisions or a packet refresh change them. Seed: 9 events / 3 assumptions. After Accept M-01 + Reject M-12: 11 events / 4 assumptions / A-DEC-04.",
+    "assumptions_after_actions": 4,
+    "mappings_pending_seed": 12,
+    "audit_events_seed": 9,
+    "audit_events_after_actions": 11,
+    "packet_hash_predecision": "ffed4c95e0955d412f77ef52c47e4e12d16c3993e2b392c16320a63491fd33c2",
+    "audit_head_predecision": "c94ffe175b97889853d73c692dc299b48acce1fa7f9a86f6e9ffb20bc47b33dc",
+    "packet_hash_after_actions": "b01e901a82ca24a5cd8425f0357cd6a87cc317661c452ed87a4b9a272ab9397a",
+    "audit_head_after_actions": "8f7090ad22292f69336fa7726bac49be131f0843ba64cc91566492b2be355ada"
   },
   "metrics": [
     {
@@ -124,7 +132,8 @@
   "supporting": {
     "hard_negatives_silent": {
       "numerator": 24,
-      "denominator": 24
+      "denominator": 24,
+      "note": "guard count; not a seventh metric"
     },
     "holdout": {
       "numerator": 4,
@@ -136,10 +145,11 @@
       "imported": false,
       "note": "four-feature naming-shift fixture"
     },
-    "tests": 330,
+    "tests": 367,
     "freeze_hashes": {
-      "numerator": 21,
-      "denominator": 21
+      "numerator": 18,
+      "denominator": 18,
+      "note": "3 fixture trees + reference + annotation guide + annotation concordance + rule pack + pre-registration + claims ledger + 9 gold files"
     },
     "raw_secret_values": 0
   },
@@ -151,7 +161,8 @@
       "title": "Evidence before the estimate",
       "key_points": [
         "Offline, synthetic, independent",
-        "300 files, 8 features, 126 evidence, 24 findings, 12 dispositions, 9 audit events",
+        "300 files, 8 features, 126 evidence, 24 findings, 12 dispositions",
+        "9 seed audit events; 11 after Accept M-01 + Reject M-12",
         "Not affiliated with Guidewire; official Cloud Assurance not run"
       ],
       "sources": []
@@ -163,9 +174,10 @@
       "title": "A migration estimate is a promise. The inventory is the proof.",
       "key_points": [
         "Four questions: what exists, which feature, what is disposed, what is unknown/owner",
-        "APD 24-char truncation",
+        "APD limits type names to 24 characters; endpoint generation then fails to compile; nameOverride is the documented correction",
+        "Other APD short-name/label limits exist (for example 22/30 characters)",
         "JDBC/commits/servlets/hidden packages",
-        "SBT lines cannot convert",
+        "SBT lines cannot convert: readiness scope/estimate risk",
         "Incomplete handover (premise, not measured)"
       ],
       "sources": [
@@ -179,18 +191,22 @@
       "number": 3,
       "id": "slide-3",
       "section": "The gap",
-      "title": "Existing tools each own a slice. Nobody hands you the review packet.",
+      "title": "No public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet",
       "key_points": [
-        "Cloud Assurance = standards gate",
-        "CUE = official high-level estimate",
-        "SonarQube/GoQu = Gosu lint",
-        "CAST/ADDI/AWS = portfolio/infra",
-        "Gap = cross-artefact feature evidence + disposition ledger + assumption register + packet"
+        "Explicitly acknowledged: Guidewire CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI, Syntra ETL, SI assessments",
+        "Gap = cross-artefact feature evidence + disposition ledger + assumption register + packet",
+        "Positioning, not an independent product evaluation"
       ],
       "sources": [
         "S-05",
+        "S-06",
         "S-07",
-        "S-14"
+        "S-19",
+        "S-20",
+        "S-21",
+        "S-22",
+        "S-23",
+        "S-24"
       ]
     },
     {
@@ -230,9 +246,10 @@
       "title": "One feature, traced across six artefact families.",
       "key_points": [
         "31 evidence / 12 files / 4 artefact types / 2 tests / 11 references",
-        "37 vs 24 APD limit",
+        "37 vs 24 APD type-name limit",
         "3 estate-wide gaps",
-        "18-node spine; click node \u2192 EV-0001"
+        "18-node spine; click node \u2192 EV-0001",
+        "Fixture realism: 300 files include generated filler; PCF/product model/Gosu are synthetic sketches, not production Guidewire formats"
       ],
       "sources": [
         "S-01"
@@ -247,7 +264,8 @@
         "300 files hashed",
         "4 excluded: 2 binary, 1 corrupt, 1 unsupported",
         "Source hash unchanged 20b5a25451f3 before/after",
-        "Excluded files stay in the packet"
+        "Excluded files stay in the packet",
+        "Fixture realism: generated filler and synthetic parser-boundary examples; not a production Guidewire export"
       ],
       "sources": []
     },
@@ -257,14 +275,16 @@
       "section": "Demo \u00b7 Reconstruction",
       "title": "A decision queue, not a rename script.",
       "key_points": [
-        "12 dispositions / 5 target changes",
-        "4 exact documented examples + 1 synthetic long-type mechanism + 6 API + 1 typelist",
+        "12 dispositions / 5 target changes (C-01\u2026C-05)",
+        "Four exact documented examples + one documented 24-char mechanism applied to a synthetic long type + 6 API conventions + 1 typelist convention",
         "Accept M-01; reject M-12 (R-TYP-01) \u2192 A-DEC-04",
-        "_gen writes: 0; draft local/non-deployable"
+        "_gen writes: 0; draft local/non-deployable",
+        "Scope: Cloud Retrofit without APD App; field-level nameOverride only on that path; _ext is a local JSON contract, not official Guidewire schema/mapping/updater syntax"
       ],
       "sources": [
-        "S-15",
-        "S-16"
+        "S-04",
+        "S-16",
+        "S-17"
       ]
     },
     {
@@ -273,11 +293,11 @@
       "section": "Demo \u00b7 Findings",
       "title": "Precision is a feature. Restraint is the interface.",
       "key_points": [
-        "24 findings / 8 rules",
+        "24 findings / 8 rules; F-001 SBT readiness flag separate; F-002\u2026F-025 advisory findings",
         "Claim strength: 12 verified-id, 3 verified-policy, 3 verified-doc, 3 secondary, 3 heuristic",
-        "IS-TLS-1238 / SEC00-G / IS-TLS-1191 / ERR00-G",
-        "SBT readiness flag separate",
-        "24 hard negatives silent; Query.make supported"
+        "Two standard families: Cloud Standards IS-TLS-1238 / IS-TLS-1191; Gosu Secure Coding SEC00-G / ERR00-G",
+        "Precision guards: 8 rules \u00d7 3 hard negatives; Query.make supported; 24/24 silent",
+        "No Cloud Assurance pass/fail or violation claim"
       ],
       "sources": [
         "S-09",
@@ -305,8 +325,8 @@
       "section": "Demo \u00b7 Evaluation",
       "title": "Perfect scores measure the instrument. The estate is still unproven.",
       "key_points": [
-        "M1 8/8; M2 8/8; M3 101/101 + 30/30; M4 12/12; M5 6/6 with 6/8 allowance; M6 48/48",
-        "24/24 hard negatives silent",
+        "Six headline metrics: M1 8/8, M2 8/8, M3 101/101 + 30/30, M4 12/12, M5 6/6 with 6/8 allowance, M6 F1 1.00 (24 TP / 0 FP / 0 FN)",
+        "24/24 hard negatives silent = separate guard count, not a seventh metric",
         "Holdout 4/4, 51.0\u2013100.0, not imported",
         "In-sample; no human IAA; reference internally authored; support \u2260 entailment"
       ],
@@ -320,9 +340,9 @@
       "key_points": [
         "6 sections",
         "126 evidence items",
-        "1 separate readiness flag",
-        "9 audit events; audit verified",
-        "Packets/audit hashes; verify-audit R-DEMO-001",
+        "Post-decision: 11 audit events / 4 assumptions / A-DEC-04",
+        "Pre-decision: 9 events / 3 assumptions; label pre-decision captures",
+        "Packet/audit hashes are capture-time; verify-audit R-DEMO-001 on the live run",
         "Downloadable HTML; local, not certification"
       ],
       "sources": []
@@ -333,10 +353,11 @@
       "section": "Engineering rigor",
       "title": "The demo is the surface. The hardening is the work.",
       "key_points": [
-        "330 tests collected",
-        "Playwright golden path",
-        "21/21 freeze hashes",
-        "0 raw secret values",
+        "367 tests collected",
+        "1 Playwright golden path",
+        "18/18 recorded freeze hashes recompute",
+        "0 raw secret values in artifacts",
+        "9 seed audit events verified; 11 after the two runbook actions",
         "12/12 concurrent accepts persist; forged evidence 0/48; packet 126 items"
       ],
       "sources": []
@@ -361,12 +382,15 @@
       "title": "The wedge is real. The evidence is not yet sufficient to call it a product.",
       "key_points": [
         "Synthetic in-sample; internally authored target; no human IAA",
-        "No real estate; CUE official; Assistants encroachment; gated corpus",
-        "Defensible wedge: independent offline pre-CUE file-level evidence for one LOB",
+        "No real estate; CUE is an official, formal, high-level assessment; Cloud Assurance Services/Lighthouse own the official gate and migration lab",
+        "Vendor-independent wedge, not independently validated",
         "Roadmap: real estate, second LOB, blind annotation, line-level, performance, import/export, compile validation"
       ],
       "sources": [
-        "S-19"
+        "S-06",
+        "S-21",
+        "S-22",
+        "S-23"
       ]
     },
     {
@@ -375,8 +399,8 @@
       "section": "Close",
       "title": "Every claim has evidence. Every unknown has a name. Every change waits for a human.",
       "key_points": [
-        "Ask: pilot estate, SME annotation, feedback",
-        "Contact placeholders",
+        "Ask: one authorised estate, two blind SME annotators, hard feedback",
+        "Saundarya Singh \u00b7 independent research prototype \u00b7 github.com/SaundaryaSingh/Preflight-CloudMigration \u00b7 MIT",
         "Disclaimer: independent, synthetic, not affiliated, Cloud Assurance not run"
       ],
       "sources": []
@@ -389,7 +413,7 @@
       "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_correcting_compile_errors.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "APD 24-character type limit; nameOverride correction",
+      "used_for": "APD 24-character type-name limit; nameOverride correction",
       "gated": false
     },
     {
@@ -408,7 +432,7 @@
       "url": "https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "SBT lines cannot be converted to APD-managed lines at this time",
+      "used_for": "SBT lines cannot be converted to APD-managed lines at this time; readiness scope/estimate risk",
       "gated": false
     },
     {
@@ -417,7 +441,7 @@
       "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_generating_lob_specific_endpoints_for_non_apd_native_products.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "Cloud Retrofit scope boundary",
+      "used_for": "Cloud Retrofit scope boundary; not the recommended process",
       "gated": false
     },
     {
@@ -426,7 +450,7 @@
       "url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "standards gate process; NEEDS WORK; threshold not public",
+      "used_for": "standards gate process; threshold not public",
       "gated": false,
       "gated_detail": "numeric threshold and full corpus"
     },
@@ -436,7 +460,7 @@
       "url": "https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "JDBC, explicit commits, servlets, hidden packages in migration experience",
+      "used_for": "JDBC, explicit commits, servlets, hidden packages; CUE report and Lighthouse remediation",
       "gated": false,
       "claim_type": "secondary"
     },
@@ -494,21 +518,31 @@
       "url": "https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "verified standard IDs/titles; custom servlet policy",
+      "used_for": "Cloud Standard IDs/titles IS-TLS-1238 and IS-TLS-1191",
       "gated": true,
       "gated_detail": "rule bodies may require login"
     },
     {
       "id": "S-13",
+      "title": "Guidewire hardening guidance for InsuranceSuite \u2014 custom servlet policy",
+      "url": "https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "verified-policy label on PF-GW-SRV-001",
+      "gated": true,
+      "gated_detail": "rule bodies may require login"
+    },
+    {
+      "id": "S-14",
       "title": "Guidewire APD \u2014 labels / short-name limits",
       "url": "https://docs.guidewire.com/cloud/apd/niseko/create/topics/c_xmind-labels.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "APD short-name context",
+      "used_for": "APD short-name/label context (22/30 characters); 24-character limit is for type names",
       "gated": false
     },
     {
-      "id": "S-14",
+      "id": "S-15",
       "title": "Guidewire Cloud Platform releases",
       "url": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases",
       "status": "200 OK",
@@ -517,7 +551,7 @@
       "gated": false
     },
     {
-      "id": "S-15",
+      "id": "S-16",
       "title": "Guidewire Cloud API \u2014 files that define LOB-specific endpoints",
       "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_files_that_define_lob_specific_endpoints.html",
       "status": "200 OK",
@@ -526,40 +560,81 @@
       "gated": false
     },
     {
-      "id": "S-16",
+      "id": "S-17",
       "title": "Guidewire Cloud API \u2014 codegen config file syntax",
       "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "documented nameOverride examples",
-      "gated": false
-    },
-    {
-      "id": "S-17",
-      "title": "Guidewire Cloud API \u2014 generating endpoints for Personal Auto",
-      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
-      "status": "200 OK",
-      "accessed": "2026-11-09",
-      "used_for": "API naming normalization",
+      "used_for": "four exact documented nameOverride examples",
       "gated": false
     },
     {
       "id": "S-18",
-      "title": "Sonar blog \u2014 four new languages in SonarQube Cloud",
-      "url": "https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
+      "title": "Guidewire Cloud API \u2014 generating endpoints for Personal Auto",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
       "status": "200 OK",
       "accessed": "2026-11-09",
-      "used_for": "native Gosu analysis positioning",
+      "used_for": "API naming normalization context, not a PreFlight-generated endpoint claim",
       "gated": false
     },
     {
       "id": "S-19",
+      "title": "Sonar blog \u2014 four new languages in SonarQube Cloud",
+      "url": "https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
+      "status": "200 OK via search index; direct fetch rate-limited on 2026-11-09",
+      "accessed": "2026-11-09",
+      "used_for": "native Gosu analysis positioning",
+      "gated": false,
+      "rate_limited": true
+    },
+    {
+      "id": "S-20",
       "title": "Guidewire blog \u2014 Developer Assistants",
       "url": "https://www.guidewire.com/resources/blog/developers/accelerating-p-c-delivery-with-developer-assistants-from-guidewire",
       "status": "200 OK",
       "accessed": "2026-11-09",
       "used_for": "Developer Assistants GA; encroachment risk",
       "gated": false
+    },
+    {
+      "id": "S-21",
+      "title": "Guidewire \u2014 Migrate to Guidewire Cloud (Cloud Assurance Services)",
+      "url": "https://www.guidewire.com/products/technology/guidewire-cloud/migrate-to-guidewire-cloud",
+      "status": "200 OK via search index; direct fetch 429 on 2026-11-09",
+      "accessed": "2026-11-09",
+      "used_for": "Cloud Assurance Services and partner assessments in migration planning",
+      "gated": false,
+      "rate_limited": true
+    },
+    {
+      "id": "S-22",
+      "title": "Guidewire Marketplace \u2014 Professional Services Lighthouse",
+      "url": "https://marketplace.guidewire.com/product/professional-services-lighthouse/01tPW00000IE4xSYAT",
+      "status": "200 OK via search index; direct fetch returned no body on 2026-11-09",
+      "accessed": "2026-11-09",
+      "used_for": "Lighthouse migration lab; code/workflow remediation",
+      "gated": false,
+      "rate_limited": true
+    },
+    {
+      "id": "S-23",
+      "title": "Guidewire developer blog \u2014 A Developer\u2019s Journey to Guidewire Cloud (SurePath)",
+      "url": "https://www.guidewire.com/resources/blog/developers/a-developers-journey-to-guidewire-cloud",
+      "status": "200 OK via search index; direct fetch rate-limited on 2026-11-09",
+      "accessed": "2026-11-09",
+      "used_for": "SurePath delivery/assessment method; Cloud Assurance inspections",
+      "gated": false,
+      "rate_limited": true
+    },
+    {
+      "id": "S-24",
+      "title": "Syntra ETL \u2014 Guidewire data migration connector",
+      "url": "https://www.syntraetl.com/connectors/guidewire",
+      "status": "200 OK via search index; vendor claim",
+      "accessed": "2026-11-09",
+      "used_for": "adjacent third-party data extraction/migration tooling; not an independent evaluation",
+      "gated": false,
+      "claim_type": "vendor claim"
     }
   ],
   "prior_art": [
@@ -622,33 +697,283 @@
   "assets": [
     {
       "file": "assets/assistant-citation-1440x900.png",
-      "bytes": 124876,
-      "sha256": "f214ee8ae5eda81daa3c51f5001b9a1966627ddac916fb6046bc3905d5576772"
+      "bytes": 107745,
+      "sha256": "402d39585eba61ffcbc13d4296cf65a9a64d5838eeea806b8bc81039d43e40d2"
     },
     {
       "file": "assets/assistant-citation-panel.png",
-      "bytes": 32737,
-      "sha256": "a9a53c5325f6a9a569bd4bd8eaf06174150a17bf13b0078515a5ecb586fe36c5"
+      "bytes": 33446,
+      "sha256": "8b22912d34d5647a9d4e836deb949b303f808ef5a857cf588a360590b2fab8c1"
     },
     {
       "file": "assets/assistant-refusal-1440x900.png",
-      "bytes": 129423,
-      "sha256": "3f6547c924bbdb99e711749049077e8ffb6ce4c66e8a8957b265976abe5607b7"
+      "bytes": 110209,
+      "sha256": "8961b32366e2034c0d4ec6e2b491e189c47882803a6b2d40bff4c880c0b01405"
     },
     {
       "file": "assets/assistant-refusal-panel.png",
-      "bytes": 28889,
-      "sha256": "e4924cd3348219a5a4482009102c06ba3e7f5dad571257010e861f644db33e3f"
+      "bytes": 29461,
+      "sha256": "0f0b4e69a6cd0fffbfd0f79bceac0865fae1063fdda4c2ece53f8b40e4901c2c"
+    },
+    {
+      "file": "assets/deck-slide-01-1024x768.png",
+      "bytes": 88783,
+      "sha256": "ca4efc6b256d403835ebc49aaa0e44089cc2e0ad7cf3bfe73ed0145cd887de8e"
+    },
+    {
+      "file": "assets/deck-slide-01-1280x720.png",
+      "bytes": 92260,
+      "sha256": "37878af96d314b12144216e11f112ffa39b5affc6e3b181bc21e2b597524045f"
     },
     {
       "file": "assets/deck-slide-01-1440x900.png",
-      "bytes": 97336,
-      "sha256": "6d3ded85247f657c3e88f39a706ba5976c69c31a5b0c3272b43ba2f916cf7c5a"
+      "bytes": 99259,
+      "sha256": "4302b4bcdea7f02a533399b59659162a34bb7946de47cbf334a665b56ac320d5"
+    },
+    {
+      "file": "assets/deck-slide-01-390x844.png",
+      "bytes": 70592,
+      "sha256": "0f780a68f6ae73988d3abf7da282ade142a958565189412986fc45460a0ad2a6"
+    },
+    {
+      "file": "assets/deck-slide-02-1280x720.png",
+      "bytes": 161531,
+      "sha256": "48b7e59f7e409bffa3cc33f9a421bf5ca640b32e1a0a717d9b743f847c6254b6"
+    },
+    {
+      "file": "assets/deck-slide-02-1440x900.png",
+      "bytes": 170783,
+      "sha256": "df46d6ca93ef5112c41d42a6593a4edf0cab9fecb9828ca21a5440c0e6fa5c59"
+    },
+    {
+      "file": "assets/deck-slide-03-1024x768.png",
+      "bytes": 133453,
+      "sha256": "f259ca12779a324284c194ed24742750c1a462221fa490e000da4d0786a81d20"
+    },
+    {
+      "file": "assets/deck-slide-03-1280x720.png",
+      "bytes": 134430,
+      "sha256": "d3609d5e6f949b50875371716a0799794ae3981a3e207a11acbb1a2a2db4a825"
+    },
+    {
+      "file": "assets/deck-slide-03-1440x900.png",
+      "bytes": 161400,
+      "sha256": "7e2acdac6c498d549a9f2fdb07396d76a08ff470455e9ef91affd4a7e323009c"
+    },
+    {
+      "file": "assets/deck-slide-03-390x844.png",
+      "bytes": 128127,
+      "sha256": "23acf2594af88e88ac89c81a0b34355d7f5e168b0df6d06720e6a28a88dda945"
+    },
+    {
+      "file": "assets/deck-slide-04-1280x720.png",
+      "bytes": 122823,
+      "sha256": "fa509da9c81027a2fcafa2e69534b539ec23b7078b44b8d956e81f097f56747e"
+    },
+    {
+      "file": "assets/deck-slide-04-1440x900.png",
+      "bytes": 132682,
+      "sha256": "382c2ad1aca40ca720cedc75a5c1de5be5facbd9273ced7a03f6b94868cbb1e7"
+    },
+    {
+      "file": "assets/deck-slide-05-1024x768.png",
+      "bytes": 165616,
+      "sha256": "f5498640e6165b924ac6e9dc70c8cdb688d047eb039e36d3e886f7862521abd0"
+    },
+    {
+      "file": "assets/deck-slide-05-1280x720.png",
+      "bytes": 161947,
+      "sha256": "464e04384b6970f1196941fd3142f4625ae0b042b9395a71eaedee81f3b18180"
+    },
+    {
+      "file": "assets/deck-slide-05-1440x900.png",
+      "bytes": 198818,
+      "sha256": "4119438a571a8c8ccf809c6cbae273cc37517eed7dc654f518470bdf760d93b8"
+    },
+    {
+      "file": "assets/deck-slide-05-390x844.png",
+      "bytes": 171045,
+      "sha256": "2e68d4ee8e15b3d091f47224132dd334810505e37a9bf35f3e960e6450176784"
+    },
+    {
+      "file": "assets/deck-slide-06-1024x768.png",
+      "bytes": 166589,
+      "sha256": "15a31218a144532c8bcc0885ec6466a18043f93ae56387413de654da19fce751"
+    },
+    {
+      "file": "assets/deck-slide-06-1280x720.png",
+      "bytes": 193846,
+      "sha256": "9a3c1f71f002196799092e3eb1f5251008053c83f1facd894b55bc884a9b74d4"
+    },
+    {
+      "file": "assets/deck-slide-06-1440x900.png",
+      "bytes": 225313,
+      "sha256": "03606e9918c1df6185fe2bf50d2e9289e8af2d8f7a5db60d834aed241365a7bd"
+    },
+    {
+      "file": "assets/deck-slide-06-390x844.png",
+      "bytes": 132362,
+      "sha256": "8ba642cc4fe0084e617efdc00d9b6b386cd5e0494d3fa95d119a2df1e20ff3d2"
+    },
+    {
+      "file": "assets/deck-slide-07-1280x720.png",
+      "bytes": 173178,
+      "sha256": "422d2b61631a93e70b037b9c1efd27890a6be520be6b01812390323240e25f80"
+    },
+    {
+      "file": "assets/deck-slide-07-1440x900.png",
+      "bytes": 206055,
+      "sha256": "e379030e43d623c86d1f35ab00d3b00190059c3b5d04e5718ca59d8c5dce010e"
+    },
+    {
+      "file": "assets/deck-slide-08-1280x720.png",
+      "bytes": 200362,
+      "sha256": "63a74354648f03fa17af5630bb9d6d01c69031d3905fa36eace8e1e3c40623fb"
+    },
+    {
+      "file": "assets/deck-slide-08-1440x900.png",
+      "bytes": 245981,
+      "sha256": "f91d4158f9bb819fe5a23db2308f9966291894c97e0a3c5258274341684c9662"
+    },
+    {
+      "file": "assets/deck-slide-09-1024x768.png",
+      "bytes": 196154,
+      "sha256": "239a29ff85f65ea344c260a39511a4b43ba127987244be25729cf851e1e89376"
+    },
+    {
+      "file": "assets/deck-slide-09-1280x720.png",
+      "bytes": 225765,
+      "sha256": "28192879f6b8c30cb903ebac2720d0512c04bddcef200ce2877d27547ed27606"
+    },
+    {
+      "file": "assets/deck-slide-09-1440x900.png",
+      "bytes": 276195,
+      "sha256": "62189db793f6a43d67e3617ec5e04d9ecc7371c3d6160b07c372902dcf2c0255"
+    },
+    {
+      "file": "assets/deck-slide-09-390x844.png",
+      "bytes": 171383,
+      "sha256": "7eafb702a9613e2cd73fb3226f44ea487ad7d740c4c2a01d4cc9a1dd6abe79a2"
+    },
+    {
+      "file": "assets/deck-slide-10-1280x720.png",
+      "bytes": 213832,
+      "sha256": "aaed45020994a2d9090147cfab4558907616a7cdd2bde741b09b0bca9ab8a08a"
+    },
+    {
+      "file": "assets/deck-slide-10-1440x900.png",
+      "bytes": 251525,
+      "sha256": "ec3f205de5ae021c8fb7ab8620975e1156fb13f77174e6009c7d7e2c1580d403"
+    },
+    {
+      "file": "assets/deck-slide-11-1024x768.png",
+      "bytes": 130416,
+      "sha256": "d9f71f788580ee88f2a024c4216ab8824124b210cb7a6eefa1489404c0198ea7"
+    },
+    {
+      "file": "assets/deck-slide-11-1280x720.png",
+      "bytes": 130541,
+      "sha256": "7a6ab755cdfe79743fde5be06a3a17b6bdf67224fabc20168ce22d6adf29774f"
     },
     {
       "file": "assets/deck-slide-11-1440x900.png",
-      "bytes": 165326,
-      "sha256": "c5a8ad876c604d24848bad884a66345744496e9496d1718a98eb9c3f672709d0"
+      "bytes": 172174,
+      "sha256": "32ce58abb7910671be0e4fffa1a06986e0b67f541a78768ba29c89f949d6ad7c"
+    },
+    {
+      "file": "assets/deck-slide-11-390x844.png",
+      "bytes": 135826,
+      "sha256": "6ded881ba5b11e9a5f94db7ada9f86ab254893a2483e1fa900211c34989f021c"
+    },
+    {
+      "file": "assets/deck-slide-12-1024x768.png",
+      "bytes": 181182,
+      "sha256": "34d816854db7c78149b868c6350018e8a2e4ff8aae9425846d6096e3b9d3c0c4"
+    },
+    {
+      "file": "assets/deck-slide-12-1280x720.png",
+      "bytes": 216445,
+      "sha256": "5f408721d711849d94c26801764dc4e08b39f26979331dd330697b1c7f7e5559"
+    },
+    {
+      "file": "assets/deck-slide-12-1440x900.png",
+      "bytes": 269373,
+      "sha256": "c52a43c1e35b7d3d57d77bd272be5d6a0d9c3cec9c1ed628fc25b427a8d3a2b7"
+    },
+    {
+      "file": "assets/deck-slide-12-390x844.png",
+      "bytes": 148839,
+      "sha256": "165e89f9e53488a26f73601d84ff01bab24e5c7b8c8c3856a8d6b3742692fd8a"
+    },
+    {
+      "file": "assets/deck-slide-13-1024x768.png",
+      "bytes": 105412,
+      "sha256": "165b28d003f08cd5cf4f9cd023a3ac936a5a618c277fab710912be83d08dd891"
+    },
+    {
+      "file": "assets/deck-slide-13-1280x720.png",
+      "bytes": 106755,
+      "sha256": "5e7a93d6a4445f2aa3f134af2504e14ae06a9a6371c2755aaee98c551e45fb4d"
+    },
+    {
+      "file": "assets/deck-slide-13-1440x900.png",
+      "bytes": 126805,
+      "sha256": "ca85e0f825c40f4a5673828a0ac48ffd90649470b9b2d5193cb74c4d60175bc9"
+    },
+    {
+      "file": "assets/deck-slide-13-390x844.png",
+      "bytes": 112010,
+      "sha256": "c6c530e53cd9e2dd2b0bbd82e86e3f54768f3b07e1e852d1c321a0f2285c99e0"
+    },
+    {
+      "file": "assets/deck-slide-14-1024x768.png",
+      "bytes": 157754,
+      "sha256": "7c1bc6575bcfd3ca7f0ae271733f2964222fe8fcff8ca08cfb47db4ff8c905fa"
+    },
+    {
+      "file": "assets/deck-slide-14-1280x720.png",
+      "bytes": 157204,
+      "sha256": "6837f427c0ca181710597e3a0ab781047345684148eb064916e3b015c723ba95"
+    },
+    {
+      "file": "assets/deck-slide-14-1440x900.png",
+      "bytes": 168801,
+      "sha256": "ae905f729153333a88d1a0d158598bfeb1dcb5380514b65dcb53c0b51528d528"
+    },
+    {
+      "file": "assets/deck-slide-14-390x844.png",
+      "bytes": 142036,
+      "sha256": "90c38dd808aff5cfd17e39360feddd70ab53c7e10ad50c998fa81e79097c6626"
+    },
+    {
+      "file": "assets/deck-slide-15-1280x720.png",
+      "bytes": 144607,
+      "sha256": "0775e8bc654921b2834d0e737a987d2a3d128766c7e159d0501b917fa2106a22"
+    },
+    {
+      "file": "assets/deck-slide-15-1440x900.png",
+      "bytes": 169422,
+      "sha256": "a47f41a92137d5f8c7b9b2b4f38b23d10b6d177734320f95c69f91420a43f6c4"
+    },
+    {
+      "file": "assets/deck-slide-16-1024x768.png",
+      "bytes": 113832,
+      "sha256": "b4ec47fc72212a2ad7491b38a07677958bb3d50b1c4327fd98934a737b0d7ac9"
+    },
+    {
+      "file": "assets/deck-slide-16-1280x720.png",
+      "bytes": 119707,
+      "sha256": "67df6259b2dfc8ea4b790717139c3655cb749f5d4dcd30ca7b2199bdcf3b5b99"
+    },
+    {
+      "file": "assets/deck-slide-16-1440x900.png",
+      "bytes": 127965,
+      "sha256": "700f85088cc20f4b8c1d6755b2a5bd287d9d84d20080b72061ae271840ae12d7"
+    },
+    {
+      "file": "assets/deck-slide-16-390x844.png",
+      "bytes": 99537,
+      "sha256": "7f08b0e0ef2b4edbf3a596d5b9fa3a488640880252a750036aadb430b5adf0ea"
     },
     {
       "file": "assets/evaluation-1440x900.png",
@@ -657,8 +982,8 @@
     },
     {
       "file": "assets/evaluation-full-1440.png",
-      "bytes": 523024,
-      "sha256": "be889cc3d49e70ce7711b3a62387244b740672df8b5b2b12fc639884814499ab"
+      "bytes": 526649,
+      "sha256": "707b3d3c7dc59f2c88bd9a0f74a9b13def65970f18971fe9e5f908d7a01434cb"
     },
     {
       "file": "assets/evaluation-intervals.png",
@@ -666,64 +991,129 @@
       "sha256": "4643a49d1901dd83e5c76ae63936c74ba108a3f5a2183906e1c4dca13ba24023"
     },
     {
+      "file": "assets/findings-1280x720.png",
+      "bytes": 125996,
+      "sha256": "831db494553833e41716ccfbc0504272ab18027e6dd3ed3e2c7c7ef3520b8428"
+    },
+    {
       "file": "assets/findings-1440x900.png",
-      "bytes": 181788,
-      "sha256": "fe2e8cbb632121c80a9f6d4b184bb2ae1369626717cc95e340e2365cb4c1684b"
+      "bytes": 182415,
+      "sha256": "18b5e40e7a0659c9d4706d5c97d975ff84d614818e40affd879f3b470470582f"
+    },
+    {
+      "file": "assets/findings-focus-1440x900.png",
+      "bytes": 126044,
+      "sha256": "eace39d5a5d59ae9203591c1bf76523d9a14fb7593b1467321c6822d096cfaf0"
     },
     {
       "file": "assets/findings-full-1440.png",
-      "bytes": 601113,
-      "sha256": "34e2070a84f0c5152e6c84695497a3024e0ec61ea5a1a1dfa0bd4808710f9a1a"
+      "bytes": 602296,
+      "sha256": "00eba423a8830e19ca662e821e2cdc1d9b4d62ad700dc9f55ec111166185e11a"
+    },
+    {
+      "file": "assets/findings-guard-query-make.png",
+      "bytes": 21000,
+      "sha256": "57f8ec4fe69cfe9dae9a3efbcdaeb0a1c985355430d3d525945615a4b2ff5d33"
+    },
+    {
+      "file": "assets/findings-guards-1440.png",
+      "bytes": 155027,
+      "sha256": "10e0086618b231f2841af591765aafcc119bbe511aee4489969430bb7661b83f"
     },
     {
       "file": "assets/manifest-excluded-1280x900.png",
-      "bytes": 149979,
-      "sha256": "9dd6b0bee2d97247eda1fae04cf8ddc91912ac0a95eccaca372ee73ab68a8424"
+      "bytes": 149638,
+      "sha256": "35b394ad5cd596798053cc17f0586d5736caf05d6fd71773c78dacdb7fc02d99"
     },
     {
       "file": "assets/manifest-excluded-1440x900.png",
-      "bytes": 164302,
-      "sha256": "6cba0441d25c25326688e6640e3872ec693db532ed6861b7bd083a54ee18e7e5"
+      "bytes": 164321,
+      "sha256": "02b4c339fdb4ce821bebc2ebc6b39d441a6a39277b53b29e4893de92bb666aca"
+    },
+    {
+      "file": "assets/manifest-focus-1440x900.png",
+      "bytes": 107998,
+      "sha256": "8a611155db6bd85507d68f6a3f00be578dbc27d619d3c413891ca418e295a233"
     },
     {
       "file": "assets/packet-1440x900.png",
-      "bytes": 192160,
-      "sha256": "0c1f1049f1ac27d050faa2e19d558d5ac9d3a5900ace405fe47170958842f78a"
+      "bytes": 197779,
+      "sha256": "d86b64d1d362790da556af2c2ad6f56d09f7b7d3568df7bb7fb898c580087b2a"
+    },
+    {
+      "file": "assets/packet-focus-1440x900.png",
+      "bytes": 129382,
+      "sha256": "fa7405979813d332b9cdc89df5fce88bc8938356d12087dc7545694da355b0b9"
     },
     {
       "file": "assets/packet-full-1440.png",
-      "bytes": 593506,
-      "sha256": "dd567f437f87b37b0550089cbecf20816f274b98c98e059b3c6cbab210565a29"
+      "bytes": 604455,
+      "sha256": "833de6c0b7d893fc428ecc6271ac7c676eb4bdb6350b2117205ae2d92e652ff9"
+    },
+    {
+      "file": "assets/packet-predecision-1440x900.png",
+      "bytes": 197714,
+      "sha256": "810b6776e2cc733d7e21e2941f2aee2ae425b54c0fbd00e6b6713b977f53a3c7"
+    },
+    {
+      "file": "assets/packet-predecision-focus-1440x900.png",
+      "bytes": 129190,
+      "sha256": "6b70d3f1a56fa2291d0fb28326d63b72430c9ea1a300609432892a7d93829298"
+    },
+    {
+      "file": "assets/packet-predecision-full-1440.png",
+      "bytes": 586124,
+      "sha256": "fcf9f9f00cfd2241551953439404b076e919730e93bcaf024502f82ee7426fb7"
     },
     {
       "file": "assets/reconstruction-1440x900.png",
-      "bytes": 186166,
-      "sha256": "fa11d5b5f6c75eb4e545d7de1cb49beee6f45047528ff6bf2099ea01fc7401a5"
+      "bytes": 186707,
+      "sha256": "2cea2ed120baaa05a7c76087bb5fcf19eef7f4aaca62908fbb371ac214a55e4c"
     },
     {
       "file": "assets/reconstruction-after-decision-1440x900.png",
-      "bytes": 182025,
-      "sha256": "03babb5dd2f26c21d2cd1f31508820cea9dea430ffee353c22ba53b04fffd144"
+      "bytes": 182495,
+      "sha256": "01f7d77f1279897bb52b369559f2808effd7b31da741c3a990cf5c71d07164f9"
+    },
+    {
+      "file": "assets/reconstruction-after-decision-focus-1440x900.png",
+      "bytes": 143178,
+      "sha256": "c186b1558304828e05d6f8923cd94b3d7a5cd4945e9e0df4d5b7461db1e6e37c"
     },
     {
       "file": "assets/reconstruction-after-decision-full.png",
-      "bytes": 336809,
-      "sha256": "afd0ceb6dca8750755d791e859856ae114f8f7d8ab629e36190e09d4664a089d"
+      "bytes": 332924,
+      "sha256": "6f5ad45358c44892fce2093ea2586b93d326f451e60462a8cb6642a664f16f4f"
     },
     {
       "file": "assets/reconstruction-assumptions-1440x900.png",
-      "bytes": 189877,
-      "sha256": "c9c1ba73ca3bfff95c4e7f9ce441d5c20c8be01bd7c50f344bc8aa7e367b9ff7"
+      "bytes": 190421,
+      "sha256": "3643a6427c1b7f2390101665b2256f6c41f0e1e56d6a4b42cf8a632b41ef6610"
+    },
+    {
+      "file": "assets/reconstruction-focus-1440x900.png",
+      "bytes": 147835,
+      "sha256": "f072ffa2f55be11c6da182895047000d821248012851fa69fa67e30d4c5b2247"
     },
     {
       "file": "assets/reconstruction-full-1440.png",
-      "bytes": 318112,
-      "sha256": "a86a1787fc6f86a67ff7465ece62c8f143a6bb976ff3d44758e9793b861c880e"
+      "bytes": 318331,
+      "sha256": "00a81a38bccb1b0c22e4169fddb01bc08b90b8b78e9aee1fd891a17141f53930"
+    },
+    {
+      "file": "assets/reconstruction-m12-row.png",
+      "bytes": 15794,
+      "sha256": "5c43de28236b1e227d42beba30ad12b6bbd0813b5834bb870ae76170def0810c"
+    },
+    {
+      "file": "assets/workbench-1280x720.png",
+      "bytes": 143234,
+      "sha256": "ddbf4c08ec17b6bc4bb5050fff203f82f958f1c1263d5fe9e8ff91920ce8d579"
     },
     {
       "file": "assets/workbench-1280x900.png",
-      "bytes": 166363,
-      "sha256": "db3f13a17389142c92069c36549f362b9cb5baf745f11a2aa2a7b64ad67343ef"
+      "bytes": 166361,
+      "sha256": "a44d435033796bd9f0ee17d2ad2ded78f140caf7bd6ac519643f323f32f2c37c"
     },
     {
       "file": "assets/workbench-1440x900.png",
@@ -732,13 +1122,13 @@
     },
     {
       "file": "assets/workbench-390x844-full.png",
-      "bytes": 300845,
-      "sha256": "296ddf3e750b4b0b16e89cdea5430d9fcada9210bd948ede3373049d4fee868f"
+      "bytes": 301221,
+      "sha256": "14fd3fc2bef5e696923445b5cb786b545d673b6b1cca4a6cc42b3a6734101888"
     },
     {
       "file": "assets/workbench-390x844.png",
-      "bytes": 67952,
-      "sha256": "1edf0d4e3d9ff59ef9b32a35955b1222cec1c59962bdb738b13ca0e022d751ca"
+      "bytes": 64388,
+      "sha256": "e794d151293ab6e0b93bff42f8be7b7e9ac545a701f49a1ffbeefa15e8a12464"
     },
     {
       "file": "assets/workbench-evidence-1440x900.png",
@@ -756,9 +1146,47 @@
       "sha256": "49a63880db751b5a0fa07dd6def429a34c262124f45f1c125548ad0731eaffb3"
     },
     {
+      "file": "assets/workbench-focus-1440x900.png",
+      "bytes": 101244,
+      "sha256": "2fc60e85dadcb85fac3cbb6a698c0f7c40b09917e4aa0302b56f5435a27b245c"
+    },
+    {
       "file": "assets/workbench-full-1440.png",
-      "bytes": 336270,
-      "sha256": "68ec050d263b53130b93aa212ed634bfb0033c39aab8239e00e072e0eb392088"
+      "bytes": 335039,
+      "sha256": "2d07f9ac3bd42008425b54cd7817acff3971064c6609a52ab4051ebf7f939a4e"
     }
-  ]
+  ],
+  "validation": {
+    "viewports": {
+      "1920x1080": {
+        "slides": 16,
+        "failures": []
+      },
+      "1440x900": {
+        "slides": 16,
+        "failures": []
+      },
+      "1280x720": {
+        "slides": 16,
+        "failures": []
+      },
+      "1024x768": {
+        "slides": 16,
+        "failures": []
+      },
+      "390x844": {
+        "slides": 16,
+        "failures": []
+      }
+    },
+    "console_errors": [],
+    "external_requests": [],
+    "pdf": {
+      "pdf": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo-deck/docs/presentation/PreFlight-deck.pdf",
+      "bytes": 928803,
+      "sha256": "bfb47326fe2a5842769efaf2e802c87731fb332cbefaca4dc26ac9c7c66ecb38",
+      "pages": 16,
+      "page_size": "1200 x 675.12 pts"
+    }
+  }
 }

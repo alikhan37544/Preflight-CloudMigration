@@ -1,0 +1,92 @@
+{
+  "slide6.marker1": {
+    "left": 6.9,
+    "top": 7.3,
+    "selector": ".summary-stat"
+  },
+  "slide6.marker2": {
+    "left": 11.2,
+    "top": 34.0,
+    "selector": ".feature-row.selected .feature-id"
+  },
+  "slide6.marker3": {
+    "left": 31.6,
+    "top": 20.5,
+    "selector": ".spine-panel h2"
+  },
+  "slide6.marker4": {
+    "left": 78.2,
+    "top": 7.3,
+    "selector": ".summary-stat.summary-signal"
+  },
+  "slide7.marker1": {
+    "left": 23.9,
+    "top": 2.0,
+    "selector": ".banner-warning strong"
+  },
+  "slide7.marker2": {
+    "left": 15.2,
+    "top": 47.8,
+    "selector": ".manifest-table tbody td:first-child"
+  },
+  "slide7.marker3": {
+    "left": 8.9,
+    "top": 15.8,
+    "selector": ".panel .banner-info strong"
+  },
+  "slide9.marker1": {
+    "left": 5.4,
+    "top": 48.5,
+    "selector": ".rule-summary-item"
+  },
+  "slide9.marker2": {
+    "left": 34.5,
+    "top": 73.6,
+    "selector": ".findings-table tr.selected"
+  },
+  "slide9.marker3": {
+    "left": 77.7,
+    "top": 60.4,
+    "selector": ".detail-panel h2"
+  },
+  "slide9.marker4": {
+    "left": 13.1,
+    "top": 22.1,
+    "selector": ".readiness-row strong"
+  },
+  "slide8.marker1": {
+    "left": 6.5,
+    "top": 28.1,
+    "selector": "[data-assumption-notice] strong"
+  },
+  "slide8.marker2": {
+    "left": 49.7,
+    "top": 60.5,
+    "selector": "[data-mapping-row=\"M-01\"]"
+  },
+  "slide8.marker3": {
+    "left": 86.1,
+    "top": 3.9,
+    "selector": "[data-gen-writes]"
+  },
+  "slide12.marker1": {
+    "left": 91.0,
+    "top": 4.0,
+    "selector": "a.btn-primary"
+  },
+  "slide12.marker2": {
+    "left": 16.0,
+    "top": 32.3,
+    "selector": ".packet-card:first-child h2"
+  },
+  "slide12.marker3": {
+    "left": 83.3,
+    "top": 57.9,
+    "selector": ".packet-card:nth-child(6) h2"
+  },
+  "slide12.marker4": {
+    "left": 16.0,
+    "top": 44.7,
+    "selector": ".packet-card:first-child p:last-of-type"
+  }
+}
