@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import confidence, status, scroll_region %}
+{% from "_macros.html" import confidence, status, scroll_region, pluralize, locator %}
 
 {% block content %}
 {% set evidence_query = request.query_params.get('evidence', '') %}
@@ -86,6 +86,9 @@
         </span>
       </a>
       {% endfor %}
+      <div class="empty-inline feature-empty" data-feature-empty hidden>
+        <p>No features match.</p>
+      </div>
     </div>
     <div class="panel-foot muted">
       {% if view.selected_feature %}
@@ -102,7 +105,7 @@
   <section class="panel spine-panel" aria-label="Feature spine">
     <div class="panel-head">
       <h2>Feature spine</h2>
-      <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence
+      <span class="muted">{{ pluralize(view.spine_layout.nodes|length if view.spine_layout else 0, 'node') }} - click a node for evidence
         <span class="spine-selected-note" data-spine-selected>{% if evidence_selected %}Selected {{ evidence_query }}{% endif %}</span></span>
     </div>
     {% if view.spine_layout %}
@@ -117,7 +120,7 @@
           <code>{{ selected_evidence.evidence_id }}</code>
         </div>
         <div class="evidence-path">{{ selected_evidence.path }}</div>
-        <div class="evidence-locator">{{ selected_evidence.locator.kind }} {{ selected_evidence.locator.value }}{% if selected_evidence.locator.line %}:{{ selected_evidence.locator.line }}{% endif %}</div>
+        <div class="evidence-locator">{{ locator(selected_evidence.locator) }}</div>
         <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
         <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
         {% endif %}
@@ -191,7 +194,7 @@
     {% endif %}
   </section>
 
-  <aside class="panel evidence-panel" aria-label="Evidence drawer">
+  <aside class="panel evidence-panel" id="evidence-drawer" tabindex="-1" aria-label="Evidence drawer">
     <div class="panel-head">
       <h2>Evidence</h2>
       <span class="muted">file + line/pointer</span>
@@ -203,7 +206,7 @@
         <code>{{ selected_evidence.evidence_id }}</code>
       </div>
       <div class="evidence-path">{{ selected_evidence.path }}</div>
-      <div class="evidence-locator">{{ selected_evidence.locator.kind }} {{ selected_evidence.locator.value }}{% if selected_evidence.locator.line %}:{{ selected_evidence.locator.line }}{% endif %}</div>
+      <div class="evidence-locator">{{ locator(selected_evidence.locator) }}</div>
       <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
       <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
       {% else %}
@@ -222,15 +225,16 @@
       <form data-assistant-form data-feature-id="{{ view.selected_feature.feature_id if view.selected_feature else '' }}">
         <label class="visually-hidden" for="assistant-question">Ask about this snapshot</label>
         <input id="assistant-question" class="input" name="question" placeholder="Ask about evidence, gaps, findings..." required>
-        <button class="btn btn-primary btn-small" type="submit">Ask</button>
+        <button class="btn btn-primary btn-small" type="submit" data-assistant-submit>Ask</button>
       </form>
       <div class="prompt-chips">
         <button type="button" class="chip" data-assistant-prompt="Does this estate use territory rating?">Territory rating?</button>
         <button type="button" class="chip" data-assistant-prompt="Why is the long type name a problem?">Long type?</button>
         <button type="button" class="chip" data-assistant-prompt="Which files reference Motorcycle_Ext?">Motorcycle_Ext?</button>
       </div>
-      <div class="assistant-result" data-assistant-result aria-live="polite">
-        <p class="muted">Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
+      <div class="assistant-result" data-assistant-result>
+        <div class="assistant-transcript" data-assistant-transcript aria-live="polite" aria-relevant="additions"></div>
+        <p class="muted assistant-hint" data-assistant-hint>Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
       </div>
     </div>
   </aside>

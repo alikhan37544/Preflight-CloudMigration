@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% from "_macros.html" import claim, severity, scroll_region %}
+{% from "_macros.html" import claim, severity, scroll_region, state_pill, pluralize, effective_change_state %}
 
 {% block content %}
 {% set packet_section_count = view.packet.pages|length if view.packet else 0 %}
+{% set accepted_changes = view.changes|selectattr('approval_state', 'equalto', 'accepted')|list|length %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Review artifact</div>
     <h1>Review packet</h1>
-    <p class="lede">{% if packet_section_count %}A {{ packet_section_count }}-section packet you can review, challenge, and approve.{% else %}A review packet appears here once this run has a reconstruction draft.{% endif %} Local draft; not a quote,
+    <p class="lede">{% if packet_section_count %}A {{ packet_section_count }}-section packet you can review, challenge, and download.{% else %}A review packet appears here once this run has a reconstruction draft.{% endif %} Local draft; not a quote,
     not a certification, not a deployment.</p>
   </div>
   <div class="head-meta">
@@ -15,7 +16,7 @@
   </div>
 </div>
 
-{% if packet_refresh_error %}
+{% if packet_refresh_error and view.packet %}
 <div class="banner banner-error" role="alert">
   <strong>Packet refresh failed; this artifact may be stale.</strong>
   {{ packet_refresh_error }}. Export is blocked until the packet can be regenerated from a verified
@@ -42,19 +43,19 @@
     <p>Audit chain verified: <strong>{{ 'yes' if view.audit_verified else 'no' }}</strong>
     ({{ view.packet.audit_event_count|default(counts.get('audit_events', 0), true) }} events).</p>
     {% elif loop.index == 2 %}
-    <p>{{ view.features|length }} features, {{ view.findings|length }} advisory findings,
-    {{ view.readiness|length }} separate readiness flags, {{ view.mappings|length }} dispositions,
-    {{ view.changes|length }} approvals, {{ view.assumptions|length }} assumptions.</p>
+    <p>{{ pluralize(view.features|length, 'feature') }}, {{ pluralize(view.findings|length, 'advisory finding') }},
+    {{ pluralize(view.readiness|length, 'separate readiness flag') }}, {{ pluralize(view.mappings|length, 'disposition') }},
+    {{ view.changes|length }} target changes / {{ accepted_changes }} accepted, {{ pluralize(view.assumptions|length, 'assumption') }}.</p>
     {% elif loop.index == 3 %}
     <p>{{ view.manifest.file_count }} files read; {{ view.unsupported_count }} unsupported/corrupt files
     appear in the packet's excluded-files table with path, status, and reason. Confidence labels are shown
     on every feature and in the manifest.</p>
     {% elif loop.index == 4 %}
-    <p>{{ view.assumptions|length }} assumptions with impact ranges and questions to ask.
-    {{ view.mappings|length }} mappings list source, target, disposition, provenance, and reviewer state;
-    {{ view.changes|length }} target changes list their approval state and path.</p>
+    <p>{{ pluralize(view.assumptions|length, 'assumption') }} with impact ranges and questions to ask.
+    {{ pluralize(view.mappings|length, 'mapping') }} list source, target, disposition, provenance, and reviewer state;
+    {{ pluralize(view.changes|length, 'target change') }} list their approval state and path.</p>
     {% elif loop.index == 5 %}
-    <p>{{ view.findings|length }} findings from {{ view.findings|map(attribute='rule_id')|unique|list|length }} rules,
+    <p>{{ pluralize(view.findings|length, 'finding') }} from {{ pluralize(view.findings|map(attribute='rule_id')|unique|list|length, 'rule') }},
     grouped by rule with source path:line and redacted evidence excerpts. Readiness flags are reported
     separately, not mixed into advisory findings.</p>
     {% elif loop.index == 6 %}
@@ -93,7 +94,7 @@
         <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Claim</th><th scope="col">State</th></tr></thead>
         <tbody>
           {% for finding in view.findings %}
-          <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.decision }}</td></tr>
+          <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ state_pill(finding.decision) }}</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -106,7 +107,7 @@
         <thead><tr><th>Flag</th><th>Rule</th><th>Claim</th><th>Standard</th><th>State</th></tr></thead>
         <tbody>
           {% for finding in view.readiness %}
-          <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ finding.decision }}</td></tr>
+          <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ state_pill(finding.decision) }}</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -116,14 +117,14 @@
 </div>
 
 <section class="panel">
-  <div class="panel-head"><h2>Dispositions and approvals</h2><span class="muted">{{ view.mappings|length }} mappings / {{ view.changes|length }} changes</span></div>
+  <div class="panel-head"><h2>Dispositions and draft changes</h2><span class="muted">{{ pluralize(view.mappings|length, 'mapping') }} / {{ pluralize(view.changes|length, 'change') }}</span></div>
   {% if view.mappings %}
   {% call scroll_region("Packet dispositions table, horizontally scrollable if needed") %}
     <table class="data-table compact packet-mappings-table">
       <thead><tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr></thead>
       <tbody>
         {% for item in view.mappings %}
-        <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ item.reviewer_state }}</td></tr>
+        <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ state_pill(item.reviewer_state) }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -135,7 +136,8 @@
       <thead><tr><th>Change</th><th>Approval state</th><th>Target path</th></tr></thead>
       <tbody>
         {% for item in view.changes %}
-        <tr><td><code>{{ item.change_id }}</code></td><td>{{ item.approval_state }}</td><td>{{ item.target_path }}</td></tr>
+        {% set item_state = effective_change_state(view.decisions, item.change_id, item.approval_state) %}
+        <tr><td><code>{{ item.change_id }}</code></td><td>{{ state_pill(item_state) }}</td><td>{{ item.target_path }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -164,7 +166,8 @@
 {% else %}
 <section class="panel empty-inline">
   <h2>Packet not generated</h2>
-  <p>Complete a run with a reconstruction draft to generate the review packet.</p>
+  <p>No packet has been generated for this run yet.</p>
+  <p class="muted">Complete a run with a reconstruction draft to generate the review packet.</p>
 </section>
 {% endif %}
 {% endblock %}

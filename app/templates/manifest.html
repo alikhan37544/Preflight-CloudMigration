@@ -56,6 +56,7 @@
     <span class="muted">{{ total }} matching{% if excluded %} (excluded files){% endif %} - page {{ page }} of {{ pages }}</span>
   </form>
 
+  {% if artifacts %}
   {% call scroll_region("Manifest artifacts table, horizontally scrollable if needed", "Scroll horizontally to see path, size, and hash columns.") %}
     <table class="data-table manifest-table">
       <caption>Snapshot artifacts with parser, status, and exclusion reason.</caption>
@@ -87,5 +88,11 @@
     <span class="muted">Page {{ page }} of {{ pages }}</span>
     {% if page < pages %}<a class="btn btn-small" href="/manifest?run={{ run_id }}&page={{ page + 1 }}&q={{ q }}&status={{ status_filter }}&excluded={{ excluded }}">Next</a>{% endif %}
   </div>
+  {% else %}
+  <div class="empty-inline" role="status">
+    <p><strong>No files match these filters.</strong></p>
+    <p class="muted">Clear the path or status filter, or include excluded files, to see more of the manifest.</p>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

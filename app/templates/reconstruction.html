@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import class_pill, confidence, scroll_region %}
+{% from "_macros.html" import class_pill, confidence, scroll_region, state_pill, pluralize, effective_change_state %}
 
 {% block content %}
 <div class="page-head">
@@ -22,14 +22,23 @@
 
 <div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
 
-<div class="tabs" role="tablist">
-  <button class="tab {{ 'active' if tab == 'mappings' }}" type="button" data-tab="mappings" role="tab">Mappings <span class="counter">{{ view.mappings|length }}</span></button>
-  <button class="tab {{ 'active' if tab == 'draft' }}" type="button" data-tab="draft" role="tab">Draft &amp; diff</button>
-  <button class="tab {{ 'active' if tab == 'assumptions' }}" type="button" data-tab="assumptions" role="tab">Assumptions <span class="counter">{{ view.assumptions|length }}</span></button>
-  <button class="tab {{ 'active' if tab == 'comparison' }}" type="button" data-tab="comparison" role="tab">Comparison</button>
+<div class="tabs" role="tablist" aria-label="Reconstruction views">
+  <button class="tab {{ 'active' if tab == 'mappings' }}" type="button" id="tab-mappings" role="tab"
+          data-tab="mappings" aria-controls="tabpanel-mappings" aria-selected="{{ 'true' if tab == 'mappings' else 'false' }}"
+          tabindex="{{ '0' if tab == 'mappings' else '-1' }}">Mappings <span class="counter">{{ view.mappings|length }}</span></button>
+  <button class="tab {{ 'active' if tab == 'draft' }}" type="button" id="tab-draft" role="tab"
+          data-tab="draft" aria-controls="tabpanel-draft" aria-selected="{{ 'true' if tab == 'draft' else 'false' }}"
+          tabindex="{{ '0' if tab == 'draft' else '-1' }}">Draft &amp; diff</button>
+  <button class="tab {{ 'active' if tab == 'assumptions' }}" type="button" id="tab-assumptions" role="tab"
+          data-tab="assumptions" aria-controls="tabpanel-assumptions" aria-selected="{{ 'true' if tab == 'assumptions' else 'false' }}"
+          tabindex="{{ '0' if tab == 'assumptions' else '-1' }}">Assumptions <span class="counter">{{ view.assumptions|length }}</span></button>
+  <button class="tab {{ 'active' if tab == 'comparison' }}" type="button" id="tab-comparison" role="tab"
+          data-tab="comparison" aria-controls="tabpanel-comparison" aria-selected="{{ 'true' if tab == 'comparison' else 'false' }}"
+          tabindex="{{ '0' if tab == 'comparison' else '-1' }}">Comparison</button>
 </div>
 
-<section class="tab-panel {{ 'active' if tab == 'mappings' }}" data-tab-panel="mappings">
+<section class="tab-panel {{ 'active' if tab == 'mappings' }}" id="tabpanel-mappings" role="tabpanel"
+         aria-labelledby="tab-mappings" data-tab-panel="mappings" {{ 'hidden' if tab != 'mappings' }}>
   <div class="panel">
     <div class="panel-head">
       <h2>Mapping table</h2>
@@ -40,13 +49,14 @@
       <table class="data-table mapping-table" data-decision-table>
         <caption>Reconstruction mappings with disposition, rule, provenance, and reviewer state.</caption>
         <thead>
-          <tr><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Rule</th><th scope="col">Provenance</th><th scope="col">State</th><th scope="col" class="actions-col">Decision</th></tr>
+          <tr><th scope="col">ID</th><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Rule</th><th scope="col">Provenance</th><th scope="col">State</th><th scope="col" class="actions-col">Decision</th></tr>
         </thead>
         <tbody>
           {% for mapping in view.mappings %}
           <tr class="row-{{ mapping.reviewer_state }}" data-mapping-row="{{ mapping.mapping_id }}">
+            <td><code class="rule-code">{{ mapping.mapping_id }}</code></td>
             <td><code>{{ mapping.source_ref }}</code><div class="muted">{{ mapping.source_layer }}</div></td>
-            <td>{{ mapping.target_name }}<div class="muted"><code>{{ mapping.target_path }}</code></div></td>
+            <td><span data-mapping-target>{{ mapping.target_name }}</span><div class="muted"><code>{{ mapping.target_path }}</code></div></td>
             <td><span class="pill pill-disposition">{{ mapping.disposition }}</span></td>
             <td><code class="rule-code">{{ mapping.rule_id }}</code></td>
             <td>
@@ -54,11 +64,27 @@
               {% if mapping.rule_id == 'R-GW-24-01' %}<span class="pill pill-impact impact-medium">synthetic example</span>{% endif %}
               {% if mapping.source_url %}<div class="muted"><a href="{{ mapping.source_url }}" target="_blank" rel="noopener">source</a></div>{% endif %}
             </td>
-            <td><span class="pill pill-state" data-state>{{ mapping.reviewer_state }}</span></td>
+            <td>{{ state_pill(mapping.reviewer_state) }}</td>
             <td class="actions-col">
-              <button class="btn btn-small" type="button" data-decision="accept" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}">Accept</button>
-              <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}">Reject</button>
-              <button class="btn btn-small btn-ghost" type="button" data-decision="defer" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}">Defer</button>
+              {% if mapping.reviewer_state in ['accepted', 'rejected', 'deferred', 'edited'] %}
+              <p class="decision-recorded state-{{ mapping.reviewer_state }}" role="status">Decision recorded: <strong>{{ mapping.reviewer_state }}</strong></p>
+              {% else %}
+              <div class="decision-actions">
+                <button class="btn btn-small" type="button" data-decision="accept" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}"
+                        data-object-label="mapping {{ mapping.mapping_id }}" data-object-summary="{{ mapping.source_ref }} &rarr; {{ mapping.target_name }}"
+                        aria-label="Accept mapping {{ mapping.mapping_id }} {{ mapping.source_ref }} to {{ mapping.target_name }}">Accept</button>
+                <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}"
+                        data-object-label="mapping {{ mapping.mapping_id }}" data-object-summary="{{ mapping.source_ref }} &rarr; {{ mapping.target_name }}"
+                        aria-label="Reject mapping {{ mapping.mapping_id }} {{ mapping.source_ref }} to {{ mapping.target_name }}">Reject</button>
+                <button class="btn btn-small btn-ghost" type="button" data-decision="defer" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}"
+                        data-object-label="mapping {{ mapping.mapping_id }}" data-object-summary="{{ mapping.source_ref }} &rarr; {{ mapping.target_name }}"
+                        aria-label="Defer mapping {{ mapping.mapping_id }} {{ mapping.source_ref }} to {{ mapping.target_name }}">Defer</button>
+                <button class="btn btn-small btn-ghost" type="button" data-decision="edit" data-object-type="mapping" data-object-id="{{ mapping.mapping_id }}"
+                        data-object-label="mapping {{ mapping.mapping_id }}" data-object-summary="{{ mapping.source_ref }} &rarr; {{ mapping.target_name }}"
+                        data-edit-value="{{ mapping.target_name }}" data-edit-label="Target name"
+                        aria-label="Edit mapping {{ mapping.mapping_id }} target {{ mapping.target_name }}">Edit</button>
+              </div>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -71,20 +97,33 @@
   </div>
 </section>
 
-<section class="tab-panel {{ 'active' if tab == 'draft' }}" data-tab-panel="draft">
+<section class="tab-panel {{ 'active' if tab == 'draft' }}" id="tabpanel-draft" role="tabpanel"
+         aria-labelledby="tab-draft" data-tab-panel="draft" {{ 'hidden' if tab != 'draft' }}>
   <div class="panel">
     <div class="panel-head">
       <h2>Draft files</h2>
-      <span class="muted">{{ view.changes|length }} changes - every change starts pending</span>
+      {% if view.changes %}<span class="muted">{{ pluralize(view.changes|length, 'change') }} - every change starts pending</span>{% endif %}
     </div>
     {% if view.changes %}
     {% for change in view.changes %}
+    {% set change_state = effective_change_state(view.decisions, change.change_id, change.approval_state) %}
     <details class="diff-block" data-change-block="{{ change.change_id }}" {{ 'open' if loop.first }}>
-      <summary><code>{{ change.target_path }}</code> <span class="pill pill-state" data-state>{{ change.approval_state }}</span></summary>
+      <summary><code class="change-id">{{ change.change_id }}</code> <code>{{ change.target_path }}</code> {{ state_pill(change_state) }}</summary>
       <div class="change-actions">
-        <button class="btn btn-small" type="button" data-decision="accept" data-object-type="change" data-object-id="{{ change.change_id }}">Accept change</button>
-        <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="change" data-object-id="{{ change.change_id }}">Reject change</button>
-        <span class="muted">State: <span data-state>{{ change.approval_state }}</span></span>
+        {% if change_state in ['accepted', 'rejected', 'deferred', 'edited'] %}
+        <p class="decision-recorded state-{{ change_state }}" role="status">Decision recorded: <strong>{{ change_state }}</strong></p>
+        {% else %}
+        <button class="btn btn-small" type="button" data-decision="accept" data-object-type="change" data-object-id="{{ change.change_id }}"
+                data-object-label="change {{ change.change_id }}" data-object-summary="{{ change.target_path }}"
+                aria-label="Accept change {{ change.change_id }} {{ change.target_path }}">Accept change</button>
+        <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="change" data-object-id="{{ change.change_id }}"
+                data-object-label="change {{ change.change_id }}" data-object-summary="{{ change.target_path }}"
+                aria-label="Reject change {{ change.change_id }} {{ change.target_path }}">Reject change</button>
+        <button class="btn btn-small btn-ghost" type="button" data-decision="defer" data-object-type="change" data-object-id="{{ change.change_id }}"
+                data-object-label="change {{ change.change_id }}" data-object-summary="{{ change.target_path }}"
+                aria-label="Defer change {{ change.change_id }} {{ change.target_path }}">Defer change</button>
+        {% endif %}
+        <span class="muted">State: <span data-state>{{ change_state }}</span></span>
       </div>
       <pre class="diff">{{ change.diff }}</pre>
     </details>
@@ -95,7 +134,8 @@
   </div>
 </section>
 
-<section class="tab-panel {{ 'active' if tab == 'assumptions' }}" data-tab-panel="assumptions">
+<section class="tab-panel {{ 'active' if tab == 'assumptions' }}" id="tabpanel-assumptions" role="tabpanel"
+         aria-labelledby="tab-assumptions" data-tab-panel="assumptions" {{ 'hidden' if tab != 'assumptions' }}>
   <div class="panel">
     <div class="panel-head">
       <h2>Assumption register</h2>
@@ -127,7 +167,8 @@
   </div>
 </section>
 
-<section class="tab-panel {{ 'active' if tab == 'comparison' }}" data-tab-panel="comparison">
+<section class="tab-panel {{ 'active' if tab == 'comparison' }}" id="tabpanel-comparison" role="tabpanel"
+         aria-labelledby="tab-comparison" data-tab-panel="comparison" {{ 'hidden' if tab != 'comparison' }}>
   <div class="panel">
     <div class="panel-head">
       <h2>Source vs reference target</h2>

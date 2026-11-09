@@ -91,28 +91,65 @@
     });
   }
 
-  /* Tabs */
-  document.querySelectorAll(".tab[data-tab]").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const name = tab.dataset.tab;
-      document.querySelectorAll(".tab[data-tab]").forEach((item) => {
-        item.classList.toggle("active", item === tab);
-        item.setAttribute("aria-selected", item === tab ? "true" : "false");
-      });
-      document.querySelectorAll(".tab-panel[data-tab-panel]").forEach((panel) => {
-        panel.classList.toggle("active", panel.dataset.tabPanel === name);
-      });
-      window.requestAnimationFrame(syncScrollRegions);
+  /* Tabs: ARIA tablist with roving tabindex, arrow keys, and URL sync. */
+  const tablist = document.querySelector('[role="tablist"]');
+  const tabs = Array.from(document.querySelectorAll(".tab[data-tab]"));
+
+  function activateTab(tab, options = {}) {
+    if (!tab) return;
+    const name = tab.dataset.tab;
+    tabs.forEach((item) => {
+      const selected = item === tab;
+      item.classList.toggle("active", selected);
+      item.setAttribute("aria-selected", selected ? "true" : "false");
+      item.tabIndex = selected ? 0 : -1;
+      const controlled = item.getAttribute("aria-controls");
+      const panel = controlled ? document.getElementById(controlled) : null;
+      if (panel) {
+        panel.classList.toggle("active", selected);
+        panel.hidden = !selected;
+      }
     });
+    if (options.focus) tab.focus();
+    if (options.updateUrl !== false) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", name);
+      window.history.replaceState({}, "", url);
+    }
+    window.requestAnimationFrame(syncScrollRegions);
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => activateTab(tab));
   });
+  if (tablist && tabs.length) {
+    tablist.addEventListener("keydown", (event) => {
+      const current = tabs.indexOf(document.activeElement);
+      if (current < 0) return;
+      let next = null;
+      if (event.key === "ArrowRight") next = tabs[(current + 1) % tabs.length];
+      else if (event.key === "ArrowLeft") next = tabs[(current - 1 + tabs.length) % tabs.length];
+      else if (event.key === "Home") next = tabs[0];
+      else if (event.key === "End") next = tabs[tabs.length - 1];
+      if (next) {
+        event.preventDefault();
+        activateTab(next, { focus: true });
+      }
+    });
+  }
 
   /* Client-side feature filter */
+  const featureEmpty = document.querySelector("[data-feature-empty]");
   document.querySelectorAll("[data-filter-target]").forEach((input) => {
     input.addEventListener("input", () => {
       const term = input.value.trim().toLowerCase();
+      let visible = 0;
       document.querySelectorAll("[data-feature-row]").forEach((row) => {
-        row.hidden = term.length > 0 && !row.textContent.toLowerCase().includes(term);
+        const hide = term.length > 0 && !row.textContent.toLowerCase().includes(term);
+        row.hidden = hide;
+        if (!hide) visible += 1;
       });
+      if (featureEmpty) featureEmpty.hidden = visible > 0;
     });
   });
 
@@ -132,7 +169,13 @@
 
   function evidenceLocator(evidence) {
     const loc = evidence.locator || {};
-    return `${loc.kind || "line"} ${loc.value || ""}${loc.line ? ":" + loc.line : ""}`.trim();
+    const kind = (loc.kind || "").toLowerCase();
+    const text = loc.value || "";
+    const line = loc.line;
+    if (text && kind && text.toLowerCase().startsWith(`${kind} `)) return text;
+    if (text && kind) return `${kind} ${text}${line ? `:${line}` : ""}`;
+    if (kind) return `${kind}${line ? ` ${line}` : ""}`;
+    return text || "unknown";
   }
 
   function buildEvidenceParts(evidence) {
@@ -270,64 +313,160 @@
     }
   }
 
-  /* Assistant */
+  /* Assistant: short transcript, newest at bottom, retryable errors. */
   const assistantForm = document.querySelector("[data-assistant-form]");
   const assistantResult = document.querySelector("[data-assistant-result]");
-  if (assistantForm && assistantResult && runId) {
-    assistantForm.addEventListener("submit", async (event) => {
+  const assistantTranscript = document.querySelector("[data-assistant-transcript]");
+  const assistantHint = document.querySelector("[data-assistant-hint]");
+  const assistantSubmit = document.querySelector("[data-assistant-submit]");
+  const assistantMaxTurns = 5;
+  let assistantPending = false;
+
+  function citationHref(evidenceId) {
+    const url = new URL("/", window.location.origin);
+    url.searchParams.set("run", runId);
+    const featureId = assistantForm ? assistantForm.dataset.featureId || "" : "";
+    if (featureId) url.searchParams.set("feature", featureId);
+    url.searchParams.set("evidence", evidenceId);
+    url.hash = "evidence-drawer";
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
+  function buildCitationCard(citationId) {
+    const evidence = evidenceById[citationId];
+    const card = document.createElement("a");
+    card.className = "citation-card";
+    card.href = citationHref(citationId);
+    card.setAttribute(
+      "aria-label",
+      `Open evidence ${citationId}${evidence && evidence.path ? ` ${evidence.path}` : ""}`
+    );
+    if (!evidence) {
+      const top = document.createElement("div");
+      top.className = "citation-top";
+      const code = document.createElement("code");
+      code.textContent = citationId;
+      const missing = document.createElement("span");
+      missing.className = "citation-missing";
+      missing.textContent = "Open evidence";
+      top.append(code, missing);
+      card.append(top);
+      return card;
+    }
+    const parts = buildEvidenceParts(evidence);
+    const top = document.createElement("div");
+    top.className = "citation-top";
+    const open = document.createElement("span");
+    open.className = "citation-open";
+    open.textContent = "Open evidence \u2192";
+    top.append(parts.head, open);
+    card.append(top, parts.path, parts.locator, parts.excerpt);
+    return card;
+  }
+
+  function buildAnswer(data) {
+    const block = document.createElement("div");
+    block.className = "answer-block" + (data.grounded ? "" : " refusal");
+    const answer = document.createElement("p");
+    answer.textContent = data.answer;
+    block.append(answer);
+    if (data.citations && data.citations.length) {
+      const cite = document.createElement("div");
+      cite.className = "citation-list";
+      const heading = document.createElement("div");
+      heading.className = "muted";
+      heading.textContent = "Citations (open the evidence panel)";
+      cite.append(heading);
+      data.citations.forEach((citationId) => cite.append(buildCitationCard(citationId)));
+      block.append(cite);
+    }
+    if (data.missing_evidence && data.missing_evidence.length) {
+      const missing = document.createElement("div");
+      missing.className = "muted";
+      missing.textContent = "Would need: " + data.missing_evidence.join("; ");
+      block.append(missing);
+    }
+    return block;
+  }
+
+  function trimTranscript() {
+    while (assistantTranscript.children.length > assistantMaxTurns) {
+      assistantTranscript.firstElementChild.remove();
+    }
+  }
+
+  function createTurn(question) {
+    const turn = document.createElement("div");
+    turn.className = "assistant-turn";
+    const asked = document.createElement("p");
+    asked.className = "assistant-question";
+    asked.textContent = question;
+    const body = document.createElement("div");
+    body.className = "assistant-answer";
+    turn.append(asked, body);
+    assistantTranscript.append(turn);
+    trimTranscript();
+    if (assistantHint) assistantHint.hidden = true;
+    return { turn, body };
+  }
+
+  function buildErrorBlock(message, retry) {
+    const box = document.createElement("div");
+    box.className = "assistant-error";
+    box.setAttribute("role", "alert");
+    const text = document.createElement("p");
+    text.textContent = message;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-small";
+    button.textContent = "Retry";
+    button.addEventListener("click", retry);
+    box.append(text, button);
+    return box;
+  }
+
+  async function askAssistant(question, existingTurn) {
+    if (assistantPending) return;
+    assistantPending = true;
+    const turn = existingTurn || createTurn(question);
+    turn.body.textContent = "";
+    const pending = document.createElement("p");
+    pending.className = "assistant-pending";
+    pending.textContent = "Searching evidence...";
+    turn.body.append(pending);
+    if (assistantSubmit) assistantSubmit.disabled = true;
+    if (assistantForm) assistantForm.setAttribute("aria-busy", "true");
+    try {
+      const featureId = assistantForm ? assistantForm.dataset.featureId || "" : "";
+      const payload = featureId ? { question, feature_id: featureId } : { question };
+      const data = await postJson(`/api/runs/${runId}/assistant`, payload);
+      turn.body.textContent = "";
+      turn.body.append(buildAnswer(data));
+    } catch (error) {
+      turn.body.textContent = "";
+      const detail = error && error.message && error.message !== "Request failed"
+        ? ` (${error.message})`
+        : "";
+      turn.body.append(buildErrorBlock(
+        `Could not get an answer${detail}. Check that the run is still available, then retry.`,
+        () => askAssistant(question, turn)
+      ));
+    } finally {
+      assistantPending = false;
+      if (assistantSubmit) assistantSubmit.disabled = false;
+      if (assistantForm) assistantForm.removeAttribute("aria-busy");
+      if (assistantTranscript) assistantTranscript.scrollTop = assistantTranscript.scrollHeight;
+    }
+  }
+
+  if (assistantForm && assistantResult && assistantTranscript && runId) {
+    assistantForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const input = assistantForm.querySelector('input[name="question"]');
-      const question = (input || {}).value || "";
-      if (!question.trim()) return;
-      assistantResult.textContent = "Searching evidence...";
-      try {
-        const featureId = assistantForm.dataset.featureId || "";
-        const payload = featureId ? { question, feature_id: featureId } : { question };
-        const data = await postJson(`/api/runs/${runId}/assistant`, payload);
-        assistantResult.textContent = "";
-        const block = document.createElement("div");
-        block.className = "answer-block" + (data.grounded ? "" : " refusal");
-        const answer = document.createElement("p");
-        answer.textContent = data.answer;
-        block.append(answer);
-        if (data.citations && data.citations.length) {
-          const cite = document.createElement("div");
-          cite.className = "citation-list";
-          const heading = document.createElement("div");
-          heading.className = "muted";
-          heading.textContent = "Citations";
-          cite.append(heading);
-          data.citations.forEach((citationId) => {
-            const card = document.createElement("div");
-            card.className = "citation-card";
-            const evidence = evidenceById[citationId];
-            if (!evidence) {
-              const missing = document.createElement("span");
-              missing.className = "citation-missing";
-              missing.textContent = `${citationId} - no embedded source record`;
-              card.append(missing);
-              cite.append(card);
-              return;
-            }
-            const parts = buildEvidenceParts(evidence);
-            const top = document.createElement("div");
-            top.className = "citation-top";
-            top.append(parts.head, parts.locator);
-            card.append(top, parts.path, parts.excerpt);
-            cite.append(card);
-          });
-          block.append(cite);
-        }
-        if (data.missing_evidence && data.missing_evidence.length) {
-          const missing = document.createElement("div");
-          missing.className = "muted";
-          missing.textContent = "Would need: " + data.missing_evidence.join("; ");
-          block.append(missing);
-        }
-        assistantResult.append(block);
-      } catch (error) {
-        assistantResult.textContent = error.message;
-      }
+      const question = ((input || {}).value || "").trim();
+      if (!question) return;
+      if (input) input.value = "";
+      askAssistant(question);
     });
   }
 
@@ -341,11 +480,40 @@
   });
 
   /* Decisions */
+  const STATE_CLASSES = [
+    "state-pending", "state-open", "state-accepted",
+    "state-rejected", "state-deferred", "state-edited",
+  ];
+
   function updateState(container, stateText) {
     if (!container) return;
     container.querySelectorAll("[data-state]").forEach((state) => {
       state.textContent = stateText;
+      state.classList.remove(...STATE_CLASSES);
+      state.classList.add(`state-${stateText}`);
     });
+  }
+
+  function replaceDecisionButtons(container, stateText) {
+    if (!container) return;
+    const actions = container.querySelector(".detail-actions")
+      || container.querySelector(".change-actions")
+      || container.querySelector(".actions-col")
+      || container.querySelector(".decision-actions");
+    if (!actions) return;
+    actions.querySelectorAll("[data-decision]").forEach((button) => button.remove());
+    let recorded = actions.querySelector(".decision-recorded");
+    if (!recorded) {
+      recorded = document.createElement("p");
+      recorded.className = "decision-recorded";
+      recorded.setAttribute("role", "status");
+      actions.append(recorded);
+    }
+    recorded.classList.remove(...STATE_CLASSES);
+    recorded.classList.add(`state-${stateText}`);
+    recorded.textContent = `Decision recorded: ${stateText}`;
+    recorded.setAttribute("tabindex", "-1");
+    recorded.focus({ preventScroll: true });
   }
 
   async function latestAssumptionFor(mappingId) {
@@ -434,59 +602,186 @@
     }
   }
 
+  const decisionDialog = document.querySelector("[data-decision-dialog]");
+  const decisionForm = document.querySelector("[data-decision-form]");
+  const decisionObject = document.querySelector("[data-decision-object]");
+  const decisionReason = document.querySelector("[data-decision-reason]");
+  const decisionEdit = document.querySelector("[data-decision-edit]");
+  const decisionValue = document.querySelector("[data-decision-value]");
+  const decisionValueLabel = document.querySelector("[data-decision-value-label]");
+  const decisionError = document.querySelector("[data-decision-error]");
+  const decisionConfirm = document.querySelector("[data-decision-confirm]");
+  let pendingDecision = null;
+  const ACTION_STATES = { accept: "accepted", reject: "rejected", defer: "deferred", edit: "edited" };
+
+  function defaultReason(action, label) {
+    if (action === "accept") return `Reviewed the cited evidence; ${label} preserves the intended behavior.`;
+    if (action === "reject") return `${label} does not preserve the intended behavior; a replacement decision is required.`;
+    if (action === "defer") return `${label} needs more evidence before a decision can be made.`;
+    if (action === "edit") return `Corrected ${label} after reviewing the source evidence.`;
+    return "Reviewer decision.";
+  }
+
+  function showDecisionError(message) {
+    if (!decisionError) return;
+    decisionError.textContent = message;
+    decisionError.hidden = false;
+  }
+
+  function clearDecisionError() {
+    if (!decisionError) return;
+    decisionError.textContent = "";
+    decisionError.hidden = true;
+  }
+
+  function openDecisionDialog(button) {
+    if (!decisionDialog || !decisionForm) return;
+    const action = button.dataset.decision;
+    const objectType = button.dataset.objectType;
+    const objectId = button.dataset.objectId;
+    const label = button.dataset.objectLabel || `${objectType} ${objectId}`;
+    const summary = button.dataset.objectSummary || "";
+    pendingDecision = { action, objectType, objectId, label };
+    if (decisionObject) {
+      decisionObject.textContent = summary ? `${label}: ${summary}` : label;
+    }
+    const isEdit = action === "edit";
+    if (decisionReason) {
+      decisionReason.value = button.dataset.suggestedReason || defaultReason(action, label);
+    }
+    if (decisionEdit) decisionEdit.hidden = !isEdit;
+    if (decisionValue) {
+      decisionValue.required = isEdit;
+      decisionValue.value = isEdit ? button.dataset.editValue || "" : "";
+    }
+    if (decisionValueLabel) {
+      decisionValueLabel.textContent = `${button.dataset.editLabel || "Edited value"} (required)`;
+    }
+    if (decisionConfirm) {
+      decisionConfirm.textContent = isEdit ? "Record edit" : "Record decision";
+    }
+    clearDecisionError();
+    decisionDialog.showModal();
+    if (decisionReason) {
+      decisionReason.focus();
+      const end = decisionReason.value.length;
+      decisionReason.setSelectionRange(end, end);
+    }
+  }
+
+  function closeDecisionDialog() {
+    pendingDecision = null;
+    if (decisionDialog && decisionDialog.open) decisionDialog.close();
+  }
+
   document.querySelectorAll("[data-decision]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       if (!runId) return;
-      const action = button.dataset.decision;
-      const objectType = button.dataset.objectType;
-      const objectId = button.dataset.objectId;
-      const reasons = {
-        accept: "Reviewer accepted after checking the cited evidence.",
-        reject: "Reviewer rejected; a replacement decision is required.",
-        defer: "Reviewer deferred pending more evidence.",
-        edit: "Reviewer edited the value after reviewing the evidence.",
-      };
-      button.disabled = true;
-      try {
-        const data = await postJson(`/api/runs/${runId}/decisions`, {
-          object_type: objectType,
-          object_id: objectId,
-          action,
-          reason: reasons[action] || "Reviewer decision.",
-        });
-        const stateText = action === "accept" ? "accepted" : action === "reject" ? "rejected" : action === "defer" ? "deferred" : "edited";
-        const localContainer = button.closest("tr") || button.closest(".diff-block");
-        updateState(localContainer, stateText);
-        if (localContainer) {
-          localContainer.classList.remove("row-accepted", "row-rejected", "row-deferred");
-          localContainer.classList.add(`row-${stateText}`);
-        }
-        if (objectType === "finding") {
-          const row = document.querySelector(`[data-finding-row="${objectId}"]`);
-          updateState(row, stateText);
-          updateState(document.querySelector(".detail-panel"), stateText);
-          const url = new URL(window.location.href);
-          url.searchParams.set("selected", objectId);
-          window.history.replaceState({}, "", url);
-        }
-        if (objectType === "change") {
-          const block = button.closest(".diff-block");
-          updateState(block, stateText);
-        }
-        notify(`Recorded ${action} for ${objectId}.`);
-        if (objectType === "mapping" && action === "reject") {
-          let assumption = data.assumption || null;
-          if (!assumption) assumption = await latestAssumptionFor(objectId);
-          appendAssumptionRow(assumption);
-          showAssumptionNotice(assumption, objectId);
-        }
-      } catch (error) {
-        notify(error.message, true);
-      } finally {
-        button.disabled = false;
-      }
+      openDecisionDialog(button);
     });
   });
+  document.querySelectorAll("[data-decision-cancel]").forEach((button) => {
+    button.addEventListener("click", closeDecisionDialog);
+  });
+  if (decisionDialog) {
+    decisionDialog.addEventListener("click", (event) => {
+      if (event.target === decisionDialog) closeDecisionDialog();
+    });
+    decisionDialog.addEventListener("close", () => {
+      pendingDecision = null;
+    });
+  }
+
+  if (decisionForm) {
+    decisionForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!pendingDecision) return;
+      const decision = pendingDecision;
+      const reason = (decisionReason && decisionReason.value || "").trim();
+      const editedValue = (decisionValue && decisionValue.value || "").trim();
+      if (!reason) {
+        showDecisionError("Enter a reason before recording the decision.");
+        if (decisionReason) decisionReason.focus();
+        return;
+      }
+      if (decision.action === "edit" && !editedValue) {
+        showDecisionError("Enter the edited value before recording the decision.");
+        if (decisionValue) decisionValue.focus();
+        return;
+      }
+      clearDecisionError();
+      const confirmText = decisionConfirm ? decisionConfirm.textContent : "";
+      const cancelButtons = decisionDialog
+        ? Array.from(decisionDialog.querySelectorAll("[data-decision-cancel]"))
+        : [];
+      if (decisionConfirm) {
+        decisionConfirm.disabled = true;
+        decisionConfirm.textContent = "Recording...";
+      }
+      cancelButtons.forEach((button) => { button.disabled = true; });
+      try {
+        const payload = {
+          object_type: decision.objectType,
+          object_id: decision.objectId,
+          action: decision.action,
+          reason,
+        };
+        if (decision.action === "edit") payload.edited_value = editedValue;
+        const data = await postJson(`/api/runs/${runId}/decisions`, payload);
+        const stateText = (decision.objectType === "finding" && decision.action === "edit")
+          ? "accepted"
+          : ACTION_STATES[decision.action] || decision.action;
+        closeDecisionDialog();
+
+        const localContainer = decision.objectType === "finding"
+          ? document.querySelector(".detail-panel")
+          : null;
+        const row = decision.objectType === "mapping"
+          ? document.querySelector(`[data-mapping-row="${decision.objectId}"]`)
+          : decision.objectType === "finding"
+            ? document.querySelector(`[data-finding-row="${decision.objectId}"]`)
+            : document.querySelector(`[data-change-block="${decision.objectId}"]`);
+        updateState(localContainer, stateText);
+        updateState(row, stateText);
+        if (row && row.matches("tr")) {
+          row.classList.remove(
+            "row-pending", "row-open", "row-accepted", "row-rejected", "row-deferred", "row-edited"
+          );
+          row.classList.add(`row-${stateText}`);
+        }
+        if (decision.objectType === "mapping" && decision.action === "edit" && row) {
+          const target = row.querySelector("[data-mapping-target]");
+          if (target) target.textContent = (data.object && data.object.target_name) || editedValue;
+        }
+        replaceDecisionButtons(row, stateText);
+        replaceDecisionButtons(localContainer, stateText);
+        if (decision.objectType === "finding") {
+          const url = new URL(window.location.href);
+          url.searchParams.set("selected", decision.objectId);
+          window.history.replaceState({}, "", url);
+        }
+        notify(`Recorded ${decision.action} for ${decision.objectId}.`);
+        if (decision.objectType === "mapping" && decision.action === "reject") {
+          let assumption = data.assumption || null;
+          if (!assumption) assumption = await latestAssumptionFor(decision.objectId);
+          appendAssumptionRow(assumption);
+          showAssumptionNotice(assumption, decision.objectId);
+        }
+      } catch (error) {
+        const message = error && error.message ? error.message : "Request failed";
+        const hint = /already/i.test(message)
+          ? " Refresh the page to see the current state, or cancel and choose another item."
+          : " Try again, or cancel to keep the current state.";
+        showDecisionError(message + hint);
+      } finally {
+        if (decisionConfirm) {
+          decisionConfirm.disabled = false;
+          decisionConfirm.textContent = confirmText;
+        }
+        cancelButtons.forEach((button) => { button.disabled = false; });
+      }
+    });
+  }
 
   document.querySelectorAll("[data-delete-run]").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -520,11 +815,26 @@
     return response.json();
   }
 
+  function runDestination(id) {
+    const waitPanel = document.querySelector("[data-run-wait]");
+    const returnTo = waitPanel && waitPanel.dataset.returnTo;
+    if (returnTo) {
+      try {
+        const url = new URL(returnTo, window.location.origin);
+        url.searchParams.set("run", id);
+        return `${url.pathname}${url.search}${url.hash}`;
+      } catch (error) {
+        /* fall back to the workbench below */
+      }
+    }
+    return `/?run=${encodeURIComponent(id)}`;
+  }
+
   async function watchRun(id) {
     const waitPanel = document.querySelector("[data-run-wait]");
     if (importProgress) importProgress.hidden = false;
     if (!importProgress && !waitPanel) {
-      window.location.href = `/?run=${encodeURIComponent(id)}`;
+      window.location.href = runDestination(id);
       return true;
     }
     const bar = importBar || document.querySelector("[data-run-bar]");
@@ -542,7 +852,7 @@
       if (bar) bar.value = Math.max(2, percent);
       if (label) label.textContent = `${status.stage} - ${Math.round(percent)}%`;
       if (status.status === "succeeded") {
-        window.location.href = `/?run=${encodeURIComponent(id)}`;
+        window.location.href = runDestination(id);
         return true;
       }
       if (status.status === "failed" || status.status === "cancelled") {
@@ -566,7 +876,7 @@
         });
         notify(`Started ${data.run_id}.`);
         if (data.status === "succeeded") {
-          window.location.href = `/?run=${encodeURIComponent(data.run_id)}`;
+          window.location.href = runDestination(data.run_id);
           return;
         }
         await watchRun(data.run_id);
@@ -598,7 +908,7 @@
         if (!response.ok) throw new Error(data.detail || "Import failed");
         notify(`Started ${data.run_id}.`);
         if (data.status === "succeeded") {
-          window.location.href = `/?run=${encodeURIComponent(data.run_id)}`;
+          window.location.href = runDestination(data.run_id);
           return;
         }
         await watchRun(data.run_id);
@@ -618,8 +928,13 @@
   /* Copy buttons */
   document.querySelectorAll("[data-copy]").forEach((button) => {
     button.addEventListener("click", async () => {
-      const value = button.dataset.copy || "";
+      const value = (button.dataset.copy || "").trim();
+      if (!value) {
+        notify("No snapshot hash is available to copy.", true);
+        return;
+      }
       try {
+        if (!navigator.clipboard) throw new Error("Clipboard unavailable");
         await navigator.clipboard.writeText(value);
         notify("Snapshot hash copied.");
       } catch (error) {
@@ -631,6 +946,25 @@
         area.remove();
         notify("Snapshot hash copied.");
       }
+    });
+  });
+
+  /* Findings: after Inspect, bring the detail heading into view and focus it. */
+  const detailHeading = document.getElementById("finding-detail-heading");
+  function focusFindingDetail() {
+    if (!detailHeading) return;
+    detailHeading.focus({ preventScroll: true });
+    detailHeading.scrollIntoView({ behavior: "auto", block: "start" });
+  }
+  if (detailHeading && new URLSearchParams(window.location.search).has("selected")) {
+    window.requestAnimationFrame(focusFindingDetail);
+  }
+  document.querySelectorAll("[data-detail-jump]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      if (!detailHeading) return;
+      event.preventDefault();
+      focusFindingDetail();
+      window.history.replaceState({}, "", "#finding-detail-heading");
     });
   });
 })();
