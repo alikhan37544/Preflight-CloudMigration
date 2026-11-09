@@ -1,4 +1,33 @@
-"""JSON run store with atomic writes and a hash-chained audit log."""
+"""JSON run store with atomic writes and a hash-chained audit log.
+
+Concurrency model
+-----------------
+Every run has two locks: a process-local :class:`threading.RLock` and an
+inter-process ``fcntl.flock`` on ``<base>/.locks/<run_id>.lock``.  Use
+:meth:`RunStore.locked` for any read-modify-write sequence.  It combines both
+locks and is re-entrant within a thread, so store helpers such as
+:meth:`RunStore.record_decision` and :meth:`RunStore.append_audit` can
+re-acquire it without deadlocking.  Mutating helpers take the lock themselves;
+a caller that needs several of them to commit together (artifact write +
+audit + decision) must wrap the whole sequence in ``with store.locked(run_id)``.
+
+The flock serialises independent processes sharing one data directory.  It is
+still advisory: callers outside this store (or filesystem copies that bypass
+the lock file) are not protected.  Lock files live outside ``runs/`` so that
+deleting a run cannot split a lock into two inodes.  Deleted run ids also leave
+a tombstone under ``.deleted/``; late writers fail with ``StoreError`` instead
+of resurrecting the directory.
+
+Decision state machine
+----------------------
+Per object the review state is one of ``pending`` (findings: ``open``),
+``accepted``, ``rejected``, ``deferred`` or ``edited``.  The API only applies a
+mutation from the pending state.  Repeating the action that produced the
+current terminal state is idempotent: it returns the existing object without
+writing another decision or audit event.  A different action against a terminal
+state is a conflict (HTTP 409).  Mapping rejection also creates exactly one
+assumption (deduplicated by ``related_mapping_id``) in the same transaction.
+"""
 
 from __future__ import annotations
 
@@ -10,17 +39,29 @@ import shutil
 import tempfile
 import threading
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
+
+import fcntl
 
 _SAFE_RUN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _SAFE_ARTIFACT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 _CHECKPOINT_NAME = "audit.checkpoint.json"
+_MAX_RUN_ID = 128
 
 
 class StoreError(ValueError):
-    """Raised for unsafe, missing, or corrupt store operations."""
+    """Raised for unsafe, missing, or corrupt store operations.
+
+    ``code`` is stable enough for the HTTP layer to map corruption to
+    ``CORRUPT_ARTIFACT`` (500) and invalid ids to a 400/404 response.
+    """
+
+    def __init__(self, message: str, *, code: str = "STORE_ERROR") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def _utc_now() -> str:
@@ -40,15 +81,22 @@ class RunStore:
     # so that two callers in one process cannot interleave a read-modify-write.
     _locks_guard = threading.Lock()
     _locks: dict[tuple[str, str], threading.RLock] = {}
+    # Per-thread nesting depth for locked(). Re-entering the same run must not
+    # open a second flock descriptor: a second flock in the same process would
+    # block on the lock it already owns.
+    _lock_depth = threading.local()
 
     def __init__(self, base_dir: Path | str) -> None:
         self.base_dir = Path(base_dir)
         self.runs_dir = self.base_dir / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
+    def _lock_key(self, run_id: str) -> tuple[str, str]:
+        return (str(self.runs_dir.resolve()), run_id)
+
     def _lock(self, run_id: str) -> threading.RLock:
         self.run_dir(run_id)  # validate before using the id as a lock key
-        key = (str(self.runs_dir.resolve()), run_id)
+        key = self._lock_key(run_id)
         with RunStore._locks_guard:
             lock = RunStore._locks.get(key)
             if lock is None:
@@ -56,29 +104,104 @@ class RunStore:
                 RunStore._locks[key] = lock
             return lock
 
+    def _lock_path(self, run_id: str) -> Path:
+        # Keep lock files outside runs/ so delete_run() cannot unlink the inode
+        # that another process is currently blocking on.
+        return self.base_dir / ".locks" / f"{run_id}.lock"
+
+    def _tombstone_path(self, run_id: str) -> Path:
+        return self.base_dir / ".deleted" / f"{run_id}.json"
+
+    def _acquire_file_lock(self, run_id: str):
+        handle = None
+        try:
+            path = self._lock_path(run_id)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            handle = path.open("a+", encoding="utf-8")
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            return handle
+        except OSError as exc:
+            if handle is not None:
+                handle.close()
+            raise StoreError(
+                f"cannot lock run {run_id!r}: {exc}", code="LOCK_ERROR"
+            ) from exc
+
+    @staticmethod
+    def _release_file_lock(handle) -> None:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
+
+    @contextmanager
+    def locked(self, run_id: str) -> Iterator[None]:
+        """Serialise a run-level transaction within and across processes.
+
+        The context manager is re-entrant per thread.  Nested use (for example
+        ``locked()`` -> ``record_decision()`` -> ``append_audit()``) increments
+        a thread-local depth and never attempts a second flock.  Use it around
+        the complete read -> validate -> mutate -> write -> audit -> decision
+        sequence; do not hold it while doing slow work such as packet rendering.
+        """
+        self.run_dir(run_id)  # validate the id before creating lock paths
+        lock = self._lock(run_id)
+        key = self._lock_key(run_id)
+        with lock:
+            depth = getattr(RunStore._lock_depth, "depths", None)
+            if depth is None:
+                depth = {}
+                RunStore._lock_depth.depths = depth
+            current = depth.get(key, 0)
+            file_lock = self._acquire_file_lock(run_id) if current == 0 else None
+            depth[key] = current + 1
+            try:
+                yield
+            finally:
+                depth[key] = current
+                if current == 0:
+                    del depth[key]
+                    if file_lock is not None:
+                        self._release_file_lock(file_lock)
+
+    def _ensure_not_deleted_locked(self, run_id: str) -> None:
+        if self._tombstone_path(run_id).exists():
+            raise StoreError(
+                f"run {run_id!r} was deleted; refusing to recreate it",
+                code="RUN_DELETED",
+            )
+
     # -- paths ---------------------------------------------------------
     def run_dir(self, run_id: str) -> Path:
-        if not _SAFE_RUN.match(run_id) or ".." in run_id:
-            raise StoreError(f"unsafe run id: {run_id!r}")
+        if (
+            not isinstance(run_id, str)
+            or len(run_id) > _MAX_RUN_ID
+            or not _SAFE_RUN.match(run_id)
+            or ".." in run_id
+        ):
+            raise StoreError(f"unsafe run id: {run_id!r}", code="INVALID_RUN_ID")
         return self.runs_dir / run_id
 
     def _artifact_path(self, run_id: str, name: str, allowlist: Iterable[str] | None = None) -> Path:
         if allowlist is not None and name not in set(allowlist):
-            raise StoreError(f"artifact {name!r} is not in the allowlist")
+            raise StoreError(f"artifact {name!r} is not in the allowlist", code="INVALID_ARTIFACT")
         normalised = name.replace("\\", "/")
         if normalised.startswith("/") or ".." in normalised.split("/") or not _SAFE_ARTIFACT.match(normalised):
-            raise StoreError(f"unsafe artifact name: {name!r}")
+            raise StoreError(f"unsafe artifact name: {name!r}", code="INVALID_ARTIFACT")
         root = self.run_dir(run_id).resolve()
         target = (root / normalised).resolve()
         if not str(target).startswith(str(root) + os.sep):
-            raise StoreError(f"artifact escapes the run directory: {name!r}")
+            raise StoreError(f"artifact escapes the run directory: {name!r}", code="INVALID_ARTIFACT")
         return target
 
     # -- lifecycle -----------------------------------------------------
     def create_run(self, run_id: str, *, project_id: str = "demo", snapshot_id: str = "demo",
                    fixture_id: str = "demo-slice-300") -> Path:
         directory = self.run_dir(run_id)
-        with self._lock(run_id):
+        with self.locked(run_id):
+            # An explicit create with a reused id starts a new generation and
+            # clears the tombstone left by a previous delete.
+            self._tombstone_path(run_id).unlink(missing_ok=True)
             directory.mkdir(parents=True, exist_ok=True)
             status_path = directory / "status.json"
             if not status_path.exists():
@@ -96,12 +219,24 @@ class RunStore:
 
     def delete_run(self, run_id: str) -> None:
         directory = self.run_dir(run_id)
-        with self._lock(run_id):
+        with self.locked(run_id):
+            # Tombstone first: a worker that is still unwinding must fail its
+            # next write rather than recreate the directory after rmtree.
+            marker = self._tombstone_path(run_id)
+            self._atomic_write(marker, {"run_id": run_id, "deleted_at": _utc_now()})
             if directory.exists():
-                shutil.rmtree(directory)
+                try:
+                    shutil.rmtree(directory)
+                except OSError as exc:
+                    raise StoreError(
+                        f"cannot delete run {run_id!r}: {exc}", code="STORE_ERROR"
+                    ) from exc
 
     def list_runs(self) -> list[str]:
-        return sorted(p.name for p in self.runs_dir.iterdir() if p.is_dir())
+        try:
+            return sorted(p.name for p in self.runs_dir.iterdir() if p.is_dir())
+        except OSError as exc:
+            raise StoreError(f"cannot list runs: {exc}", code="STORE_ERROR") from exc
 
     # -- generic artifacts --------------------------------------------
     def _atomic_write(self, path: Path, data: Any) -> None:
@@ -139,33 +274,37 @@ class RunStore:
         try:
             return path.read_text(encoding="utf-8")
         except FileNotFoundError as exc:
-            raise StoreError(f"{label} not found") from exc
+            raise StoreError(f"{label} not found", code="NOT_FOUND") from exc
         except UnicodeDecodeError as exc:
-            raise StoreError(f"{label} is not valid UTF-8") from exc
+            raise StoreError(f"{label} is not valid UTF-8", code="UNREADABLE") from exc
         except OSError as exc:
-            raise StoreError(f"cannot read {label}: {exc}") from exc
+            raise StoreError(f"cannot read {label}: {exc}", code="UNREADABLE") from exc
 
     @staticmethod
     def _parse_json(text: str, label: str) -> Any:
         try:
             return json.loads(text)
         except json.JSONDecodeError as exc:
-            raise StoreError(f"{label} is corrupt or incomplete: {exc.msg}") from exc
+            raise StoreError(
+                f"{label} is corrupt or incomplete: {exc.msg}",
+                code="CORRUPT_ARTIFACT",
+            ) from exc
 
     def _read_json_file(self, path: Path, label: str) -> Any:
         return self._parse_json(self._read_text(path, label), label)
 
     def write_artifact(self, run_id: str, name: str, data: Any) -> Path:
         target = self._artifact_path(run_id, name)
-        with self._lock(run_id):
+        with self.locked(run_id):
+            self._ensure_not_deleted_locked(run_id)
             self._atomic_write(target, data)
         return target
 
     def read_artifact(self, run_id: str, name: str, *, allowlist: Iterable[str] | None = None) -> Any:
         target = self._artifact_path(run_id, name, allowlist=allowlist)
-        with self._lock(run_id):
+        with self.locked(run_id):
             if not target.is_file():
-                raise StoreError(f"artifact not found: {name!r}")
+                raise StoreError(f"artifact not found: {name!r}", code="NOT_FOUND")
             text = self._read_text(target, f"artifact {name!r}")
         suffix = target.suffix.lower()
         if suffix == ".json":
@@ -179,7 +318,8 @@ class RunStore:
                     items.append(json.loads(line))
                 except json.JSONDecodeError as exc:
                     raise StoreError(
-                        f"artifact {name!r} is corrupt at line {line_number}: {exc.msg}"
+                        f"artifact {name!r} is corrupt at line {line_number}: {exc.msg}",
+                        code="CORRUPT_ARTIFACT",
                     ) from exc
             return items
         return text
@@ -196,11 +336,15 @@ class RunStore:
                       error: dict[str, Any] | None = None,
                       metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         path = self.run_dir(run_id) / "status.json"
-        with self._lock(run_id):
+        with self.locked(run_id):
+            self._ensure_not_deleted_locked(run_id)
             if path.exists():
                 payload = self._read_json_file(path, f"status for run {run_id!r}")
                 if not isinstance(payload, dict):
-                    raise StoreError(f"status for run {run_id!r} is corrupt")
+                    raise StoreError(
+                        f"status for run {run_id!r} is corrupt",
+                        code="CORRUPT_ARTIFACT",
+                    )
             else:
                 payload = {"run_id": run_id}
             payload["status"] = status
@@ -223,17 +367,19 @@ class RunStore:
 
     def read_status(self, run_id: str) -> dict[str, Any]:
         path = self.run_dir(run_id) / "status.json"
-        with self._lock(run_id):
+        with self.locked(run_id):
             if not path.exists():
-                raise StoreError(f"run not found: {run_id!r}")
+                raise StoreError(f"run not found: {run_id!r}", code="NOT_FOUND")
             payload = self._read_json_file(path, f"status for run {run_id!r}")
         if not isinstance(payload, dict):
-            raise StoreError(f"status for run {run_id!r} is corrupt")
+            raise StoreError(
+                f"status for run {run_id!r} is corrupt", code="CORRUPT_ARTIFACT"
+            )
         return payload
 
     # -- audit ---------------------------------------------------------
     def read_audit(self, run_id: str) -> list[dict[str, Any]]:
-        with self._lock(run_id):
+        with self.locked(run_id):
             return self._read_audit_locked(run_id)
 
     def _read_audit_locked(self, run_id: str) -> list[dict[str, Any]]:
@@ -250,7 +396,8 @@ class RunStore:
             )
             if not isinstance(event, dict):
                 raise StoreError(
-                    f"audit log for run {run_id!r} is corrupt at line {line_number}"
+                    f"audit log for run {run_id!r} is corrupt at line {line_number}",
+                    code="CORRUPT_ARTIFACT",
                 )
             events.append(event)
         return events
@@ -306,13 +453,17 @@ class RunStore:
     def _append_audit_locked(
         self, run_id: str, *, action: str, object_type: str, object_id: str,
         actor: str = "system", before_hash: str | None = None,
-        after_hash: str | None = None,
+        after_hash: str | None = None, reason: str | None = None,
     ) -> dict[str, Any]:
+        self._ensure_not_deleted_locked(run_id)
         events = self._read_audit_locked(run_id)
         if events:
             prev_hash = events[-1].get("hash")
             if not isinstance(prev_hash, str):
-                raise StoreError(f"audit log for run {run_id!r} is corrupt: missing hash")
+                raise StoreError(
+                    f"audit log for run {run_id!r} is corrupt: missing hash",
+                    code="CORRUPT_ARTIFACT",
+                )
         else:
             prev_hash = "GENESIS"
         event = {
@@ -329,6 +480,8 @@ class RunStore:
             "after_hash": after_hash,
             "prev_hash": prev_hash,
         }
+        if reason is not None:
+            event["reason"] = reason
         event["hash"] = _hash_payload(event)
         path = self.run_dir(run_id) / "audit.jsonl"
         checkpoint_path = self._checkpoint_path(run_id)
@@ -353,8 +506,9 @@ class RunStore:
 
     def append_audit(self, run_id: str, *, action: str, object_type: str, object_id: str,
                      actor: str = "system", before_hash: str | None = None,
-                     after_hash: str | None = None) -> dict[str, Any]:
-        with self._lock(run_id):
+                     after_hash: str | None = None,
+                     reason: str | None = None) -> dict[str, Any]:
+        with self.locked(run_id):
             return self._append_audit_locked(
                 run_id,
                 action=action,
@@ -363,10 +517,11 @@ class RunStore:
                 actor=actor,
                 before_hash=before_hash,
                 after_hash=after_hash,
+                reason=reason,
             )
 
     def verify_audit(self, run_id: str) -> bool:
-        with self._lock(run_id):
+        with self.locked(run_id):
             try:
                 events = self._read_audit_locked(run_id)
             except StoreError:
@@ -407,7 +562,16 @@ class RunStore:
     def record_decision(self, run_id: str, *, object_type: str, object_id: str,
                         action: str, actor: str, reason: str,
                         before_hash: str | None = None, after_hash: str | None = None) -> dict[str, Any]:
-        with self._lock(run_id):
+        """Append a decision and its audit event as one locked unit.
+
+        The caller is responsible for enforcing the state machine before
+        calling this method.  Expected transitions are ``pending`` ->
+        ``accepted``/``rejected``/``deferred``/``edited``; retrying the action
+        that produced the current terminal state must not call this method
+        again.  Calling it re-entrantly from :meth:`locked` is safe.
+        """
+        with self.locked(run_id):
+            self._ensure_not_deleted_locked(run_id)
             decisions_path = self.run_dir(run_id) / "decisions.json"
             payload = {"decisions": []}
             if decisions_path.exists():
@@ -415,7 +579,10 @@ class RunStore:
                     decisions_path, f"decisions for run {run_id!r}"
                 )
                 if not isinstance(payload, dict) or not isinstance(payload.get("decisions"), list):
-                    raise StoreError(f"decisions for run {run_id!r} is corrupt")
+                    raise StoreError(
+                        f"decisions for run {run_id!r} is corrupt",
+                        code="CORRUPT_ARTIFACT",
+                    )
             decision = {
                 "schema_version": "1.0",
                 "decision_id": f"D-{uuid.uuid4().hex[:12]}",
@@ -438,6 +605,7 @@ class RunStore:
                 actor=actor,
                 before_hash=before_hash,
                 after_hash=after_hash,
+                reason=reason,
             )
             payload["decisions"].append(decision)
             try:
