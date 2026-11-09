@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import zipfile
 from pathlib import Path
@@ -32,6 +33,9 @@ YAML_SUFFIXES = {".yaml", ".yml"}
 JSON_SUFFIXES = {".json"}
 
 _ZIP_DRIVE = re.compile(r"^[A-Za-z]:")
+
+MAX_ARCHIVE_PATH_CHARS = 1024
+MAX_ARCHIVE_PATH_PARTS = 64
 
 
 class UnsafeArchiveError(ValueError):
@@ -121,9 +125,80 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _marker_sha256(*parts: str) -> str:
+    """Deterministic digest for entries whose content cannot or must not be read."""
+    return _sha256_bytes("\x00".join(parts).encode("utf-8"))
+
+
+def _display_text(value: str) -> str:
+    """Return a JSON-safe display string for a filesystem path or target.
+
+    Linux paths are bytes. Python decodes undecodable bytes with surrogate
+    escapes, which cannot be serialized as UTF-8 JSON. Escaping only those
+    bytes keeps normal paths unchanged while making the display path stable.
+    """
+    return os.fsencode(value).decode("utf-8", "backslashreplace")
+
+
 def _safe_warning(text: str) -> str:
     """Remove secret-looking values from parser error text before persisting it."""
     return redact_excerpt(text)[0]
+
+
+def _special_kind(path: Path) -> str:
+    try:
+        mode = path.lstat().st_mode
+    except OSError:
+        return "special"
+    if stat.S_ISFIFO(mode):
+        return "fifo"
+    if stat.S_ISSOCK(mode):
+        return "socket"
+    if stat.S_ISCHR(mode):
+        return "char_device"
+    if stat.S_ISBLK(mode):
+        return "block_device"
+    return "special"
+
+
+def _scan_entries(root: Path) -> list[tuple[Path, str, str, str | None]]:
+    """Walk without following links and without hiding unreadable entries.
+
+    Returns ``(real_path, relative_path, category, detail)`` tuples. Categories
+    are ``file``, ``symlink``, ``special``, ``unreadable`` (entry metadata
+    could not be read), and ``unreadable_dir`` (directory could not be listed).
+    Normal directories are traversal nodes, not entries.
+    """
+    results: list[tuple[Path, str, str, str | None]] = []
+    pending: list[tuple[Path, str]] = [(Path(root), "")]
+    while pending:
+        directory, prefix = pending.pop()
+        try:
+            with os.scandir(directory) as scan:
+                entries = sorted(scan, key=lambda entry: os.fsencode(entry.name))
+        except OSError as exc:
+            results.append((Path(directory), prefix or ".", "unreadable_dir",
+                            type(exc).__name__))
+            continue
+        child_dirs: list[tuple[Path, str]] = []
+        for entry in entries:
+            rel = f"{prefix}/{entry.name}" if prefix else entry.name
+            path = Path(entry.path)
+            try:
+                if entry.is_symlink():
+                    results.append((path, rel, "symlink", None))
+                elif entry.is_dir(follow_symlinks=False):
+                    child_dirs.append((path, rel))
+                elif entry.is_file(follow_symlinks=False):
+                    results.append((path, rel, "file", None))
+                else:
+                    results.append((path, rel, "special", _special_kind(path)))
+            except OSError as exc:
+                results.append((path, rel, "unreadable", type(exc).__name__))
+        # Reverse for LIFO traversal; the final sort makes ordering explicit.
+        pending.extend(reversed(child_dirs))
+    results.sort(key=lambda item: item[1])
+    return results
 
 
 def snapshot_hash(root: Path) -> str:
@@ -131,13 +206,15 @@ def snapshot_hash(root: Path) -> str:
 
     Regular files contribute ``(relative_path, file_sha256)``. Symlinks
     contribute ``(relative_path, "symlink", target, mode)`` so retargeting a
-    link changes the hash without reading the target. Modification times are
-    deliberately excluded so repeated runs are reproducible across copies.
+    link changes the hash without reading the target. Unreadable and special
+    entries contribute an explicit marker instead of being dropped. Modification
+    times are deliberately excluded so repeated runs are reproducible across
+    copies.
     """
     entries: list[list] = []
-    for path in sorted(root.rglob("*")):
-        rel = path.relative_to(root).as_posix()
-        if path.is_symlink():
+    for path, rel, category, detail in _scan_entries(root):
+        display = _display_text(rel)
+        if category == "symlink":
             # Symlinks are listed as unsupported artifacts. Hash the link
             # itself (path, target, mode) so retargeting changes the snapshot
             # hash without following the target.
@@ -145,10 +222,24 @@ def snapshot_hash(root: Path) -> str:
                 target = os.readlink(path)
             except OSError:
                 target = ""
-            mode = path.lstat().st_mode & 0o7777
-            entries.append([rel, "symlink", target, mode])
-        elif path.is_file():
-            entries.append([rel, _sha256_bytes(path.read_bytes())])
+            try:
+                mode = path.lstat().st_mode & 0o7777
+            except OSError:
+                mode = 0
+            entries.append([display, "symlink", _display_text(target), mode])
+        elif category == "file":
+            try:
+                data = path.read_bytes()
+            except OSError as exc:
+                entries.append([display, "unreadable", type(exc).__name__])
+            else:
+                entries.append([display, _sha256_bytes(data)])
+        elif category == "unreadable_dir":
+            entries.append([display, "unreadable_directory", detail or "OSError"])
+        elif category == "special":
+            entries.append([display, "special", detail or "special"])
+        else:
+            entries.append([display, "unreadable", detail or "OSError"])
     payload = json.dumps(entries, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
@@ -162,9 +253,9 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
     total_size = 0
     warnings: list[str] = []
 
-    for path in sorted(root.rglob("*")):
-        rel = path.relative_to(root).as_posix()
-        if path.is_symlink():
+    for path, rel, category, detail in _scan_entries(root):
+        display = _display_text(rel)
+        if category == "symlink":
             # Never follow links, but never hide them either: they are listed
             # as explicit unsupported artifacts with a warning.
             try:
@@ -174,7 +265,7 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
             target_bytes = target.encode("utf-8", "surrogateescape")
             artifacts.append(
                 Artifact(
-                    path=rel,
+                    path=display,
                     sha256=_sha256_bytes(target_bytes),
                     size=len(target_bytes),
                     kind="symlink",
@@ -185,14 +276,87 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 )
             )
             total_size += len(target_bytes)
-            unsupported.append(rel)
-            warnings.append(_safe_warning(f"{rel}: symlink not followed"))
+            unsupported.append(display)
+            warnings.append(_safe_warning(f"{display}: symlink not followed"))
             continue
-        if not path.is_file():
+        if category == "unreadable_dir":
+            reason = f"unreadable: {detail or 'OSError'}"
+            artifacts.append(
+                Artifact(
+                    path=display,
+                    sha256=_marker_sha256(display, "unreadable_directory", reason),
+                    size=0,
+                    kind="directory",
+                    parser="none",
+                    status=ArtifactStatus.UNSUPPORTED,
+                    warnings=[_safe_warning(
+                        f"{reason}; directory contents cannot be listed"
+                    )],
+                    line_count=0,
+                )
+            )
+            unsupported.append(display)
+            warnings.append(_safe_warning(
+                f"{display}: {reason}; directory contents cannot be listed"
+            ))
             continue
-        data = path.read_bytes()
+        if category == "special":
+            kind = detail or "special"
+            reason = f"special file type: {kind}; not read"
+            artifacts.append(
+                Artifact(
+                    path=display,
+                    sha256=_marker_sha256(display, "special", kind),
+                    size=0,
+                    kind=kind,
+                    parser="none",
+                    status=ArtifactStatus.UNSUPPORTED,
+                    warnings=[_safe_warning(reason)],
+                    line_count=0,
+                )
+            )
+            unsupported.append(display)
+            warnings.append(_safe_warning(f"{display}: {reason}"))
+            continue
+        if category == "unreadable":
+            reason = f"unreadable: {detail or 'OSError'}"
+            artifacts.append(
+                Artifact(
+                    path=display,
+                    sha256=_marker_sha256(display, "unreadable", reason),
+                    size=0,
+                    kind="unreadable",
+                    parser="none",
+                    status=ArtifactStatus.UNSUPPORTED,
+                    warnings=[_safe_warning(reason)],
+                    line_count=0,
+                )
+            )
+            unsupported.append(display)
+            warnings.append(_safe_warning(f"{display}: {reason}"))
+            continue
+
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            reason = f"unreadable: {type(exc).__name__}"
+            artifacts.append(
+                Artifact(
+                    path=display,
+                    sha256=_marker_sha256(display, "unreadable", reason),
+                    size=0,
+                    kind="unreadable",
+                    parser="none",
+                    status=ArtifactStatus.UNSUPPORTED,
+                    warnings=[_safe_warning(reason)],
+                    line_count=0,
+                )
+            )
+            unsupported.append(display)
+            warnings.append(_safe_warning(f"{display}: {reason}"))
+            continue
         total_size += len(data)
-        kind, parser = _kind_for(rel)
+        kind, parser = _kind_for(display)
         status = ArtifactStatus.PARSED
         item_warnings: list[str] = []
         corrupt_label: str | None = None
@@ -202,25 +366,25 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
             status = ArtifactStatus.BINARY
             if kind is None:
                 kind = "binary"
-            unsupported.append(rel)
+            unsupported.append(display)
         elif kind is None:
             status = ArtifactStatus.UNSUPPORTED
             kind = "unknown"
             parser = None
-            unsupported.append(rel)
-        elif parser in {"xml", "pcf", "entity", "typelist"} or rel.lower().endswith(tuple(XML_SUFFIXES)):
+            unsupported.append(display)
+        elif parser in {"xml", "pcf", "entity", "typelist"} or display.lower().endswith(tuple(XML_SUFFIXES)):
             try:
                 etree.fromstring(data, _safe_xml_parser())
             except etree.XMLSyntaxError as exc:
                 status = ArtifactStatus.CORRUPT
                 item_warnings.append(_safe_warning(f"XML parse error: {exc}"))
                 corrupt_label = "XML"
-                unsupported.append(rel)
+                unsupported.append(display)
             except ValueError as exc:  # e.g. encoding declaration problems
                 status = ArtifactStatus.CORRUPT
                 item_warnings.append(_safe_warning(f"XML parse error: {exc}"))
                 corrupt_label = "XML"
-                unsupported.append(rel)
+                unsupported.append(display)
         elif parser == "json":
             try:
                 json.loads(data.decode("utf-8"))
@@ -228,7 +392,7 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 status = ArtifactStatus.CORRUPT
                 item_warnings.append(_safe_warning(f"JSON parse error: {exc}"))
                 corrupt_label = "JSON"
-                unsupported.append(rel)
+                unsupported.append(display)
         elif parser == "config":
             try:
                 parse_config_yaml(path)
@@ -236,14 +400,14 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 status = ArtifactStatus.CORRUPT
                 item_warnings.append(_safe_warning(f"YAML parse error: {exc}"))
                 corrupt_label = "YAML"
-                unsupported.append(rel)
+                unsupported.append(display)
 
         if status is ArtifactStatus.CORRUPT:
-            warnings.append(_safe_warning(f"{rel}: corrupt {corrupt_label or 'file'}"))
+            warnings.append(_safe_warning(f"{display}: corrupt {corrupt_label or 'file'}"))
 
         artifacts.append(
             Artifact(
-                path=rel,
+                path=display,
                 sha256=_sha256_bytes(data),
                 size=len(data),
                 kind=kind or "unknown",
@@ -282,10 +446,18 @@ def _reject_unsafe_name(name: str) -> None:
         raise UnsafeArchiveError(f"absolute archive entry: {name!r}")
     if _ZIP_DRIVE.match(normalised):
         raise UnsafeArchiveError(f"drive-letter archive entry: {name!r}")
+    if len(normalised) > MAX_ARCHIVE_PATH_CHARS:
+        raise UnsafeArchiveError(
+            f"archive entry path exceeds {MAX_ARCHIVE_PATH_CHARS} characters: {name!r}"
+        )
     trimmed = normalised.rstrip("/")
     parts = trimmed.split("/") if trimmed else []
     if not parts:
         raise UnsafeArchiveError(f"empty archive entry: {name!r}")
+    if len(parts) > MAX_ARCHIVE_PATH_PARTS:
+        raise UnsafeArchiveError(
+            f"archive entry exceeds {MAX_ARCHIVE_PATH_PARTS} path components: {name!r}"
+        )
     if any(part in {"", "."} for part in parts):
         raise UnsafeArchiveError(f"empty or dot path segment in archive entry: {name!r}")
     if any(part == ".." for part in parts):
@@ -342,78 +514,88 @@ def safe_extract_zip(
     entry_limit = max_entry_uncompressed if max_entry_uncompressed is not None else max_uncompressed
 
     try:
-        zf = zipfile.ZipFile(archive)
-    except zipfile.BadZipFile as exc:
-        raise UnsafeArchiveError("not a valid zip archive") from exc
+        try:
+            zf = zipfile.ZipFile(archive)
+        except zipfile.BadZipFile as exc:
+            raise UnsafeArchiveError("not a valid zip archive") from exc
 
-    with zf:
-        infos = zf.infolist()
-        if len(infos) > max_files:
-            raise UnsafeArchiveError("archive contains too many entries")
+        with zf:
+            infos = zf.infolist()
+            if len(infos) > max_files:
+                raise UnsafeArchiveError("archive contains too many entries")
 
-        total_uncompressed = 0
-        seen_offsets: dict[int, str] = {}
-        seen_names: set[str] = set()
-        for info in infos:
-            _reject_unsafe_name(info.filename)
-            if info.flag_bits & 0x1:
-                raise UnsafeArchiveError(f"encrypted archive entry: {info.filename!r}")
-            normalised = info.filename.rstrip("/")
-            if normalised in seen_names:
-                raise UnsafeArchiveError(
-                    f"duplicate archive entry name: {info.filename!r}"
-                )
-            seen_names.add(normalised)
-            if info.header_offset in seen_offsets:
-                raise UnsafeArchiveError(
-                    f"hardlink or duplicate archive entry: {info.filename!r}"
-                )
-            seen_offsets[info.header_offset] = info.filename
-            mode = info.external_attr >> 16
-            if mode and stat.S_ISLNK(mode):
-                raise UnsafeArchiveError(f"symlink archive entry: {info.filename!r}")
-            if stat.S_ISCHR(mode) or stat.S_ISBLK(mode) or stat.S_ISFIFO(mode) or stat.S_ISSOCK(mode):
-                raise UnsafeArchiveError(f"special-file archive entry: {info.filename!r}")
-            _reject_link_metadata(info)
-            if info.file_size < 0 or info.compress_size < 0:
-                raise UnsafeArchiveError(f"invalid size metadata in {info.filename!r}")
-            if info.file_size > entry_limit:
-                raise UnsafeArchiveError(f"archive entry exceeds the size limit: {info.filename!r}")
-            total_uncompressed += info.file_size
-            if total_uncompressed > max_uncompressed:
-                raise UnsafeArchiveError("uncompressed archive exceeds the size limit")
-            if info.file_size > 0:
-                if info.compress_size == 0:
-                    raise UnsafeArchiveError(f"suspicious compression metadata in {info.filename!r}")
-                if info.file_size / info.compress_size > max_ratio:
-                    raise UnsafeArchiveError(f"suspicious compression ratio in {info.filename!r}")
+            total_uncompressed = 0
+            seen_offsets: dict[int, str] = {}
+            seen_names: set[str] = set()
+            for info in infos:
+                _reject_unsafe_name(info.filename)
+                if info.flag_bits & 0x1:
+                    raise UnsafeArchiveError(f"encrypted archive entry: {info.filename!r}")
+                normalised = info.filename.rstrip("/")
+                if normalised in seen_names:
+                    raise UnsafeArchiveError(
+                        f"duplicate archive entry name: {info.filename!r}"
+                    )
+                seen_names.add(normalised)
+                if info.header_offset in seen_offsets:
+                    raise UnsafeArchiveError(
+                        f"hardlink or duplicate archive entry: {info.filename!r}"
+                    )
+                seen_offsets[info.header_offset] = info.filename
+                mode = info.external_attr >> 16
+                if mode and stat.S_ISLNK(mode):
+                    raise UnsafeArchiveError(f"symlink archive entry: {info.filename!r}")
+                if stat.S_ISCHR(mode) or stat.S_ISBLK(mode) or stat.S_ISFIFO(mode) or stat.S_ISSOCK(mode):
+                    raise UnsafeArchiveError(f"special-file archive entry: {info.filename!r}")
+                _reject_link_metadata(info)
+                if info.file_size < 0 or info.compress_size < 0:
+                    raise UnsafeArchiveError(f"invalid size metadata in {info.filename!r}")
+                if info.file_size > entry_limit:
+                    raise UnsafeArchiveError(f"archive entry exceeds the size limit: {info.filename!r}")
+                total_uncompressed += info.file_size
+                if total_uncompressed > max_uncompressed:
+                    raise UnsafeArchiveError("uncompressed archive exceeds the size limit")
+                if info.file_size > 0:
+                    if info.compress_size == 0:
+                        raise UnsafeArchiveError(f"suspicious compression metadata in {info.filename!r}")
+                    if info.file_size / info.compress_size > max_ratio:
+                        raise UnsafeArchiveError(f"suspicious compression ratio in {info.filename!r}")
 
-        total_written = 0
-        for info in infos:
-            if info.is_dir():
-                continue
-            target = (out_dir / info.filename).resolve()
-            if not str(target).startswith(str(root) + "/") and target != root:
-                raise UnsafeArchiveError(f"archive entry escapes the output directory: {info.filename!r}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            entry_written = 0
-            try:
-                with zf.open(info) as src, target.open("wb") as dst:
-                    while True:
-                        chunk = src.read(65536)
-                        if not chunk:
-                            break
-                        entry_written += len(chunk)
-                        total_written += len(chunk)
-                        if entry_written > entry_limit:
-                            raise UnsafeArchiveError(
-                                f"archive entry exceeds the size limit: {info.filename!r}"
-                            )
-                        if total_written > max_uncompressed:
-                            raise UnsafeArchiveError("uncompressed archive exceeds the size limit")
-                        dst.write(chunk)
-            except BaseException:
-                target.unlink(missing_ok=True)
-                raise
+            total_written = 0
+            for info in infos:
+                if info.is_dir():
+                    continue
+                try:
+                    target = (out_dir / info.filename).resolve()
+                    if not str(target).startswith(str(root) + "/") and target != root:
+                        raise UnsafeArchiveError(
+                            f"archive entry escapes the output directory: {info.filename!r}"
+                        )
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    entry_written = 0
+                    with zf.open(info) as src, target.open("wb") as dst:
+                        while True:
+                            chunk = src.read(65536)
+                            if not chunk:
+                                break
+                            entry_written += len(chunk)
+                            total_written += len(chunk)
+                            if entry_written > entry_limit:
+                                raise UnsafeArchiveError(
+                                    f"archive entry exceeds the size limit: {info.filename!r}"
+                                )
+                            if total_written > max_uncompressed:
+                                raise UnsafeArchiveError("uncompressed archive exceeds the size limit")
+                            dst.write(chunk)
+                except OSError as exc:
+                    raise UnsafeArchiveError(
+                        f"archive entry could not be extracted: {info.filename!r}: "
+                        f"{type(exc).__name__}"
+                    ) from exc
+    except BaseException:
+        # Never leave a partially extracted snapshot behind, even when the
+        # filesystem (not our validators) raises the error.
+        shutil.rmtree(out_dir, ignore_errors=True)
+        raise
 
     return out_dir
