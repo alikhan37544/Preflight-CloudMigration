@@ -4,7 +4,12 @@
   const runId = document.body.dataset.runId || "";
   const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
   const toast = document.querySelector("[data-toast]");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let toastTimer = null;
+
+  function motionBehavior() {
+    return reducedMotion.matches ? "auto" : "smooth";
+  }
 
   function notify(message, isError = false) {
     if (!toast) return;
@@ -145,10 +150,37 @@
     drawer.append(parts.head, parts.path, parts.locator, parts.excerpt, parts.meta);
   }
 
+  const spineSelectedNote = document.querySelector("[data-spine-selected]");
+
+  function addSelectedOutline(node) {
+    if (node.querySelector(".node-selected-outline")) return;
+    const box = node.querySelector("rect");
+    if (!box) return;
+    const outline = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    outline.setAttribute("class", "node-selected-outline");
+    outline.setAttribute("x", String(Number(box.getAttribute("x")) - 3));
+    outline.setAttribute("y", String(Number(box.getAttribute("y")) - 3));
+    outline.setAttribute("width", String(Number(box.getAttribute("width")) + 6));
+    outline.setAttribute("height", String(Number(box.getAttribute("height")) + 6));
+    outline.setAttribute("rx", "6");
+    node.insertBefore(outline, box);
+  }
+
   document.querySelectorAll("[data-evidence-id]").forEach((node) => {
     const activate = () => {
-      document.querySelectorAll(".spine-node.selected").forEach((item) => item.classList.remove("selected"));
+      document.querySelectorAll(".spine-node.selected").forEach((item) => {
+        item.classList.remove("selected");
+        item.setAttribute("aria-pressed", "false");
+        const outline = item.querySelector(".node-selected-outline");
+        if (outline) outline.remove();
+      });
       node.classList.add("selected");
+      node.setAttribute("aria-pressed", "true");
+      addSelectedOutline(node);
+      if (spineSelectedNote) {
+        const evidenceId = node.dataset.evidenceId || "";
+        spineSelectedNote.textContent = evidenceId ? `Selected ${evidenceId}` : "Selected structural node";
+      }
       showEvidence(node.dataset.evidenceId, node.dataset.path);
     };
     node.addEventListener("click", activate);
@@ -159,6 +191,31 @@
       }
     });
   });
+
+  /* Spine overflow hint and direct-link selected node */
+  const spineScroll = document.querySelector("[data-spine-scroll]");
+  const spineHint = document.querySelector("[data-spine-scroll-hint]");
+  function syncSpineHint() {
+    if (!spineScroll || !spineHint) return;
+    const scrollable = spineScroll.scrollWidth > spineScroll.clientWidth + 1;
+    spineHint.hidden = !scrollable;
+    spineScroll.classList.toggle("is-scrollable", scrollable);
+  }
+  if (spineScroll) {
+    syncSpineHint();
+    window.addEventListener("resize", syncSpineHint, { passive: true });
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(syncSpineHint).observe(spineScroll);
+    }
+    const selectedNode = spineScroll.querySelector(".spine-node.selected");
+    if (selectedNode) {
+      const nodeBox = selectedNode.getBoundingClientRect();
+      const scrollBox = spineScroll.getBoundingClientRect();
+      const target = spineScroll.scrollLeft + (nodeBox.left - scrollBox.left)
+        - (scrollBox.width - nodeBox.width) / 2;
+      spineScroll.scrollTo({ left: Math.max(0, target), behavior: motionBehavior() });
+    }
+  }
 
   /* Assistant */
   const assistantForm = document.querySelector("[data-assistant-form]");
@@ -320,7 +377,7 @@
     notice.hidden = false;
     const box = notice.getBoundingClientRect();
     if (box.top < 0 || box.bottom > window.innerHeight) {
-      notice.scrollIntoView({ behavior: "smooth", block: "center" });
+      notice.scrollIntoView({ behavior: motionBehavior(), block: "center" });
     }
   }
 

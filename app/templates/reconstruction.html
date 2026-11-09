@@ -36,8 +36,9 @@
     </div>
     {% if view.mappings %}
     <table class="data-table" data-decision-table>
+      <caption>Reconstruction mappings with disposition, rule, provenance, and reviewer state.</caption>
       <thead>
-        <tr><th>Source</th><th>Target</th><th>Disposition</th><th>Rule</th><th>Provenance</th><th>State</th><th class="actions-col">Decision</th></tr>
+        <tr><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Rule</th><th scope="col">Provenance</th><th scope="col">State</th><th scope="col" class="actions-col">Decision</th></tr>
       </thead>
       <tbody>
         {% for mapping in view.mappings %}
@@ -99,7 +100,8 @@
     </div>
     {% if view.assumptions %}
     <table class="data-table">
-      <thead><tr><th>ID</th><th>Statement</th><th>Impact</th><th>Range</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr></thead>
+      <caption>Assumption register with impact, range, owner, and status.</caption>
+      <thead><tr><th scope="col">ID</th><th scope="col">Statement</th><th scope="col">Impact</th><th scope="col">Range</th><th scope="col">Question to ask</th><th scope="col">Owner</th><th scope="col">Status</th></tr></thead>
       <tbody data-assumptions-body>
         {% for item in view.assumptions %}
         <tr data-assumption-id="{{ item.assumption_id }}">
@@ -128,7 +130,8 @@
     </div>
     {% if view.comparison.rows %}
     <table class="data-table">
-      <thead><tr><th>Source</th><th>Target</th><th>Class</th><th>Confidence</th><th>Rationale</th></tr></thead>
+      <caption>Source versus reference-target comparison rows.</caption>
+      <thead><tr><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Class</th><th scope="col">Confidence</th><th scope="col">Rationale</th></tr></thead>
       <tbody>
         {% for row in view.comparison.rows %}
         <tr>

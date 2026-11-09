@@ -2,6 +2,8 @@
 {% from "_macros.html" import confidence, status %}
 
 {% block content %}
+{% set evidence_query = request.query_params.get('evidence', '') %}
+{% set evidence_selected = evidence_query and selected_evidence and selected_evidence.evidence_id == evidence_query %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Evidence graph</div>
@@ -95,20 +97,38 @@
     <div class="panel-head">
       <h2>Feature spine</h2>
       <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence
-        <span class="spine-cue">- scroll for Tests</span></span>
+        <span class="spine-selected-note" data-spine-selected>{% if evidence_selected %}Selected {{ evidence_query }}{% endif %}</span></span>
     </div>
     {% if view.spine_layout %}
-    <div class="evidence-inline" data-evidence-inline aria-live="polite" hidden>
+    <p class="spine-caption">Six columns read left to right: PCF, entity, typelist, template / Gosu, API draft, tests.
+      Edges are directed. Labels wrap so test nodes stay inside the graph at 1280px.</p>
+    <div class="evidence-inline" data-evidence-inline aria-live="polite"{% if not evidence_selected %} hidden{% endif %}>
       <div class="evidence-inline-label">Selected node evidence</div>
-      <div data-evidence-inline-body></div>
+      <div data-evidence-inline-body>
+        {% if evidence_selected %}
+        <div class="evidence-head">
+          <span class="pill pill-confidence">{{ selected_evidence.confidence }}</span>
+          <code>{{ selected_evidence.evidence_id }}</code>
+        </div>
+        <div class="evidence-path">{{ selected_evidence.path }}</div>
+        <div class="evidence-locator">{{ selected_evidence.locator.kind }} {{ selected_evidence.locator.value }}{% if selected_evidence.locator.line %}:{{ selected_evidence.locator.line }}{% endif %}</div>
+        <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
+        <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
+        {% endif %}
+      </div>
     </div>
-    <div class="spine-scroll">
+    <div class="spine-scroll" data-spine-scroll>
       <svg class="spine-svg" viewBox="0 0 {{ view.spine_layout.width }} {{ view.spine_layout.height }}"
-           role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}">
+           width="{{ view.spine_layout.width }}" height="{{ view.spine_layout.height }}"
+           role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}: six columns from PCF to tests">
         {% for column in view.spine_layout.columns %}
-        <text class="column-label" x="{{ column.x }}" y="30">{{ column.label }}</text>
+        <g class="spine-column-header" data-column-label="{{ column.label }}">
+          <text class="column-label" x="{{ column.x }}" y="20">
+            {%- for line in column.header_lines %}<tspan x="{{ column.x }}" y="{{ 20 + loop.index0 * 12 }}">{{ line }}</tspan>{% endfor -%}
+          </text>
+        </g>
         {% endfor %}
-        <g class="spine-edges">
+        <g class="spine-edges" aria-hidden="true">
           {% for edge in view.spine_layout.edges %}
           <path d="M {{ edge.x1 }} {{ edge.y1 }} C {{ edge.x1 + 18 }} {{ edge.y1 }}, {{ edge.x2 - 18 }} {{ edge.y2 }}, {{ edge.x2 }} {{ edge.y2 }}"
                 class="edge edge-{{ edge.kind }}"/>
@@ -116,21 +136,39 @@
         </g>
         <g class="spine-nodes">
           {% for node in view.spine_layout.nodes %}
-          <g class="spine-node node-{{ node.kind }}" tabindex="0" role="button"
+          {% set is_selected = evidence_selected and node.evidence_id and node.evidence_id == evidence_query %}
+          <g class="spine-node node-{{ node.kind }}{{ ' selected' if is_selected }}"
+             tabindex="0" role="button" aria-pressed="{{ 'true' if is_selected else 'false' }}"
              data-evidence-id="{{ node.evidence_id or '' }}" data-path="{{ node.artifact_path or '' }}"
-             aria-label="{{ node.label }} {{ node.kind }}">
+             aria-label="{{ node.label }} {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}">
+            <title>{{ node.label }} - {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}</title>
+            {% if is_selected %}<rect class="node-selected-outline" x="{{ node.x - 3 }}" y="{{ node.y - 3 }}"
+                  width="{{ node.w + 6 }}" height="{{ node.h + 6 }}" rx="6"/>{% endif %}
             <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="4"/>
-            <text class="node-label" x="{{ node.x + 9 }}" y="{{ node.y + 16 }}">{{ node.label }}</text>
-            <text class="node-kind" x="{{ node.x + 9 }}" y="{{ node.y + 30 }}">{{ node.kind }}</text>
+            {% for line in node.label_lines %}
+            <text class="node-label" x="{{ node.x + 8 }}" y="{{ node.y + 15 + loop.index0 * 12 }}">{{ line }}</text>
+            {% endfor %}
+            <text class="node-kind" x="{{ node.x + 8 }}" y="{{ node.y + node.kind_y }}">{{ node.kind }}</text>
           </g>
           {% endfor %}
         </g>
       </svg>
     </div>
+    <div class="spine-legend" aria-label="Edge kinds and node marker">
+      <span class="legend-title">Edges:</span>
+      <span class="legend-item"><span class="legend-line legend-contains" aria-hidden="true"></span>contains</span>
+      <span class="legend-item"><span class="legend-line legend-declares" aria-hidden="true"></span>declares</span>
+      <span class="legend-item"><span class="legend-line legend-references" aria-hidden="true"></span>references</span>
+      <span class="legend-item"><span class="legend-line legend-configures" aria-hidden="true"></span>configures</span>
+      <span class="legend-item"><span class="legend-line legend-tested_by" aria-hidden="true"></span>tested_by</span>
+      <span class="legend-item legend-selected"><span class="legend-outline" aria-hidden="true"></span>selected node</span>
+    </div>
+    <p class="spine-scroll-hint" data-spine-scroll-hint hidden>This graph is wider than the window. Scroll horizontally to see all six columns, including Tests.</p>
     <details class="table-fallback">
       <summary>Spine table fallback</summary>
       <table class="data-table compact">
-        <thead><tr><th>Node</th><th>Kind</th><th>File</th><th>Confidence</th></tr></thead>
+        <caption>Spine nodes with kind, file, and confidence.</caption>
+        <thead><tr><th scope="col">Node</th><th scope="col">Kind</th><th scope="col">File</th><th scope="col">Confidence</th></tr></thead>
         <tbody>
           {% for node in view.spine_layout.nodes %}
           <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
