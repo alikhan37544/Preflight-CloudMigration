@@ -48,6 +48,7 @@
       <span class="muted">pending by default</span>
     </div>
     {% if view.mappings %}
+    <div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
     {% call scroll_region("Reconstruction mapping table, horizontally scrollable if needed", "Scroll horizontally to see source, target, provenance, and decisions.") %}
       <table class="data-table mapping-table" data-decision-table>
         <caption>Reconstruction mappings with disposition, rule, provenance, and reviewer state.</caption>
@@ -94,7 +95,6 @@
         </tbody>
       </table>
     {% endcall %}
-    <div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
     {% else %}
     <div class="empty-inline"><p>No mappings were generated for this run.</p></div>
     {% endif %}

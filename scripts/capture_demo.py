@@ -69,7 +69,7 @@ FOCUS_CLIPS = {
     # Excluded banner through pagination; the app footer is outside the crop.
     "manifest": {"x": 218, "y": 200, "width": 1212, "height": 620},
     # Page heading, decision notice, tabs, and M-01..M-04 (post-decision).
-    "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 770},
+    "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 740},
     # Banner, SBT flag, finding table, and the complete detail panel.
     "findings": {"x": 218, "y": 220, "width": 1212, "height": 1000},
     # Page heading, six section cards, and the first assumption row (A-01).
@@ -105,7 +105,7 @@ CROP_SPECS = {
             ".banner-info",
             ".tabs",
             '[data-mapping-row="M-01"]',
-            '[data-mapping-row="M-04"]',
+            '[data-mapping-row="M-03"]',
         ],
         "partial": [".mapping-table"],
         "text": {

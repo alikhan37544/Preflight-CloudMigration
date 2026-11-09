@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-09T15:07:16Z",
-  "commit": "67e54d13ddf5601ffcf753096741a6d77ce71beb",
+  "frozen_at": "2026-11-09T18:40:57Z",
+  "commit": "9976c14cf6d1fbf92049781d670797766a7ad06e",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
@@ -21,7 +21,7 @@
   "reference_target_sha256": "7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541",
   "annotation_guide_sha256": "5aa49b80a242acd203994498a26886c42c32df0a834ff9d77b065e236ae4db4a",
   "annotation_concordance_sha256": "5aba02843e4780d9857857036e6a0eb64a56c2e7ee6f369cba38af3d9c885182",
-  "rulepack_sha256": "9accdec2e9f4fc0ae67557286b4380ff2fb0f795aab4704b991bcf2fc7dd5fb9",
+  "rulepack_sha256": "cb26756f81df7ba674b57c9694b3784435708dbafdcacaf2e45cc161f32fcd4a",
   "pre_registration_sha256": "6cca8f43a56f7e3f5c7c146503038cad60e874e950cd3d3cd17cb491b73309cc",
   "claims_ledger_sha256": "f2662d3731ad68d0c2240067c70a865553c6652192d599b3875d318a0374345e",
   "gold": {

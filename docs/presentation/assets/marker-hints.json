@@ -56,17 +56,17 @@
   },
   "slide8.marker1": {
     "left": 1.7,
-    "top": 29.6,
+    "top": 52.6,
     "selector": "[data-assumption-notice] strong"
   },
   "slide8.marker2": {
     "left": 1.7,
-    "top": 63.1,
+    "top": 72.7,
     "selector": "[data-mapping-row=\"M-01\"]"
   },
   "slide8.marker3": {
     "left": 1.7,
-    "top": 3.5,
+    "top": 3.7,
     "selector": "[data-gen-writes]"
   },
   "slide12.marker1": {
