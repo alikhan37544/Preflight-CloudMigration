@@ -48,13 +48,13 @@
     },
     {
       "id": "C-004",
-      "claim": "Vendor estimate: most monoline products of average complexity convert in 6\u20138 weeks, including testing.",
+      "claim": "Vendor estimate: APD product conversion for most monoline products of average complexity takes 6\u20138 weeks, including testing; this is not a full migration estimate.",
       "status": "VERIFIED-VENDOR-CLAIM",
       "access": "public",
       "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "quote": "Blog: \u201cMost monoline products of average complexity can be converted in just 6-8 weeks, including testing.\u201d",
       "falsifier": "Guidewire changes the estimate; independent data contradicts it.",
-      "consequence": "Cite as vendor estimate only, never as a benchmark.",
+      "consequence": "Cite as a vendor APD-conversion estimate, never as a full migration estimate or benchmark.",
       "rule_ids": []
     },
     {

@@ -319,7 +319,8 @@
 
   <h3>Audit trail ({{ audit_event_count }} events)</h3>
   <p><strong>Audit chain verified: {{ 'yes' if audit_verified else 'no' }}</strong>. The local log is
-  tamper-evident, not non-repudiation. Verify with <code>preflight verify-audit {{ run_id }}</code>.</p>
+  tamper-evident, not non-repudiation. Verify the audit chain with
+  <code>preflight verify-audit {{ run_id }}</code>; that command checks the audit chain only, not the packet.</p>
   <table>
     <tr><th>Seq</th><th>Timestamp</th><th>Action</th><th>Object</th><th>Actor</th><th>Hash</th><th>Prev hash</th></tr>
     {% for item in audit_events %}
@@ -345,7 +346,11 @@
   <p class="muted"><strong>Packet hash scope.</strong> {{ hash_scope }}</p>
 
   <footer>
-    {{ disclaimer }}
+    <p>{{ disclaimer }}</p>
+    <p><strong>Two-step verification.</strong> Verify this packet with
+    <code>preflight verify-packet {{ run_id }}</code> (rendered HTML, canonical JSON, content digests, and packet audit head),
+    then verify the audit chain with <code>preflight verify-audit {{ run_id }}</code>.
+    <code>verify-audit</code> checks the audit chain only; it does not check the packet.</p>
   </footer>
 </main>
 </body>

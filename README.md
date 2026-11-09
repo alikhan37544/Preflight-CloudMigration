@@ -10,7 +10,7 @@ PreFlight is an offline, evidence-first review workstation for legacy Guidewire-
 
 [![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-410%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-412%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-demo--ready-informational)
 
@@ -63,7 +63,7 @@ Generic linters answer none of those questions. PreFlight is built around the in
 | Advisory findings | 24 from 8 rules |
 | Mappings | 12 explicit dispositions |
 | Assumptions | 3 |
-| Tests | 410 passing |
+| Tests | 412 passing |
 | Frozen evaluation hashes | `ground_truth/FROZEN.json` |
 | Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
 | Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
@@ -221,7 +221,7 @@ Every finding carries a claim-strength label. No finding is presented as a Cloud
 ## Testing
 
 ```bash
-make test       # full suite: 410 tests
+make test       # full suite: 412 tests
 make e2e        # Playwright golden path
 make claims     # claims-ledger and rule-coverage gate
 make verify     # hash-chained audit verification

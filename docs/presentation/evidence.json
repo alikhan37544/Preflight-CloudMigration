@@ -11,10 +11,10 @@
     "validation": "Playwright at 1920x1080, 1440x900, 1280x720, 1024x768, 390x844: 16 slides; 0 viewport overflow failures; 0 console errors; 0 external requests; crop validation enforced by the capture script; PDF 16 pages at 1200 x 675.12 pts",
     "pdf_pages": 16,
     "pdf_page_size": "1200 x 675.12 pts",
-    "pdf_sha256": "0cbcd8e21cf9e8ec983ee31e70b5efc8039f269c0c8d677ab1398aeb0efbea71",
-    "pdf_bytes": 961813
+    "pdf_sha256": "bd2df7fef947757a8e97669a80cea9154624e4280a6abddf9caf34f8c596492f",
+    "pdf_bytes": 962305
   },
-  "generated_at": "2026-11-09T20:10:03Z",
+  "generated_at": "2026-11-09T21:17:27Z",
   "run": {
     "run_id": "R-DEMO-001",
     "fixture": "demo-slice-300",
@@ -35,17 +35,17 @@
       "unsupported": 1
     },
     "audit_verified": true,
-    "snapshot_hash": "668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21",
+    "snapshot_hash": "bd4a8a4b338af3698c5fa2c6f4232456e3810a337b79e19e1bd07e36a9c46c6f",
     "official_cloud_assurance": "not run",
-    "note": "packet/packet_json/audit-head values are capture-time; reviewer decisions or a packet refresh change them. Seed: 9 events / 3 assumptions. After Accept M-01 + Reject M-12: 11 events / 4 assumptions / A-DEC-04. The stable fixture snapshot hash is 668872420dfb.",
+    "note": "packet/packet_json/audit-head values are capture-time; reviewer decisions or a packet refresh change them. Seed: 9 events / 3 assumptions. After Accept M-01 + Reject M-12: 11 events / 4 assumptions / A-DEC-04. The stable fixture snapshot hash is bd4a8a4b338a.",
     "assumptions_after_actions": 4,
     "mappings_pending_seed": 12,
     "audit_events_seed": 9,
     "audit_events_after_actions": 11,
-    "packet_hash_predecision": "f46de41a818d1d3d232c3389f174a4aed13e6a652e4651bab4a763bc35f1a696",
-    "audit_head_predecision": "0144dc29a1ab4de60c16aa57b02ebcfcbdf8b47a71a38d1a85c9dfe41e9996cc",
-    "packet_hash_after_actions": "81a07abad5e6401134311bf04d521e1eed7b81e745f84aa77118e7b521b73543",
-    "audit_head_after_actions": "d411fa4bf877e7542446e09be502d1614ee851ecf6f88a467261980e7d67f86d",
+    "packet_hash_predecision": "2a89f910127500307f328177976f7a1cc10c43a5f83da467e16d8d170ccfa964",
+    "audit_head_predecision": "b9e3c56873b628f5df6520aff9dee6f692a206632d966715c62a1d1f1c6ee177",
+    "packet_hash_after_actions": "6dbc1d383b8c3b4d0c465648537c2c637fd2146381666e7b7118a102bae5c98c",
+    "audit_head_after_actions": "fe1c32f6789df3cbc1e8f536b05e1d8fd0fdada831f35b8ec78e477c0aa08feb",
     "packet_hash_scope": "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet."
   },
   "metrics": [
@@ -146,7 +146,7 @@
       "imported": false,
       "note": "four-feature naming-shift fixture"
     },
-    "tests": 410,
+    "tests": 412,
     "freeze_hashes": {
       "numerator": 18,
       "denominator": 18,
@@ -178,7 +178,8 @@
         "Softened scope wording: files that were never classified",
         "APD limits type names to 24 characters; endpoint generation then fails to compile; nameOverride is the documented correction",
         "Other APD short-name/label limits exist (for example 22/30 characters)",
-        "JDBC/commits/servlets/hidden packages",
+        "JDBC/commits/servlets/hidden packages often surface in CUE or a build gate; earlier discovery limits estimate movement",
+        "6–8 weeks is a vendor APD-conversion estimate, not a full migration estimate",
         "SBT lines cannot convert: readiness scope/estimate risk",
         "Incomplete handover (premise, not measured)"
       ],
@@ -248,8 +249,8 @@
       "section": "Demo · Workbench",
       "title": "One feature, traced across six artefact families.",
       "key_points": [
-        "31 evidence / 12 files / 4 artefact types / 2 tests / 11 references",
-        "37 vs 24 APD type-name limit",
+        "31 evidence / 12 files / 4 artefact types / 2 tests / 11 PA-VEH-01 references",
+        "37 vs 24 APD type-name limit; long type is in 2 files and is a PA-VEH-02 dependency, not one of the 11 references",
         "3 estate-wide gaps",
         "18-node spine; click node → EV-0001",
         "Fixture realism: 300 files include generated filler; PCF/product model/Gosu are synthetic sketches, not production Guidewire formats"
@@ -266,7 +267,7 @@
       "key_points": [
         "300 files hashed",
         "4 excluded: 2 binary, 1 corrupt, 1 unsupported",
-        "Source hash unchanged 668872420dfb before/after; visible value matches the live immutability banner",
+        "Source hash unchanged bd4a8a4b338a before/after; visible value matches the live immutability banner",
         "Excluded files stay in the packet",
         "Fixture realism: generated filler and synthetic parser-boundary examples; not a production Guidewire export"
       ],
@@ -347,6 +348,7 @@
         "Pre-decision: 9 events / 3 assumptions; label pre-decision captures",
         "Packet, packet_json, and audit-head values are read live; they change with reviewer actions and packet refresh",
         "Packet hash covers rendered HTML; packet_json covers canonical JSON; content digests bind findings/mappings/evidence; audit head covers the chain",
+        "Two-step verification: verify-packet checks the packet and content digests; verify-audit checks the audit chain only, not the packet",
         "Crop shows the assumption-register summary (A-01); live register has four rows including A-DEC-04",
         "Downloadable HTML; local, not certification"
       ],
@@ -358,7 +360,7 @@
       "section": "Engineering rigor",
       "title": "The demo is the surface. The hardening is the work.",
       "key_points": [
-        "410 tests collected",
+        "412 tests collected",
         "1 Playwright golden path",
         "18/18 recorded freeze hashes recompute",
         "0 raw secret values in artifacts",
@@ -387,7 +389,7 @@
       "title": "The wedge is real. The evidence is not yet sufficient to call it a product.",
       "key_points": [
         "Synthetic in-sample; internally authored target; no human IAA",
-        "No real estate; CUE is an official, formal, high-level assessment; Cloud Assurance Services/Lighthouse own the official gate and migration lab",
+        "No real estate; CUE is the official Cloud Upgrade Estimate; Cloud Assurance Services/Lighthouse own the official gate and migration lab",
         "Vendor-independent wedge, not independently validated",
         "Roadmap: real estate, second LOB, blind annotation, line-level, performance, import/export, compile validation"
       ],
@@ -742,13 +744,13 @@
     },
     {
       "file": "assets/deck-slide-02-1280x720.png",
-      "bytes": 132768,
-      "sha256": "ac16bcd218a45d3638d3aeaa72a9530fdf9fb256075fa1de483fa41472951a4b"
+      "bytes": 134912,
+      "sha256": "339103162727c9a6e44315517d245877dfa3b8ac49efe148c33d08b94138a02f"
     },
     {
       "file": "assets/deck-slide-02-1440x900.png",
-      "bytes": 172136,
-      "sha256": "47cc0f04c82ea2c18460e6a6970da3b4377bc9394c3025306219b28048749526"
+      "bytes": 174140,
+      "sha256": "7c7e5541ca79e843a46a5d0511738d03ac47e2699e8dfd2cc7cda31ff16dc6c4"
     },
     {
       "file": "assets/deck-slide-03-1024x768.png",
@@ -762,13 +764,13 @@
     },
     {
       "file": "assets/deck-slide-03-1440x900.png",
-      "bytes": 168241,
-      "sha256": "12fdace43718346af910020f57bc71b998ccfc7cfa284e688686072caff0baff"
+      "bytes": 168672,
+      "sha256": "bec331a94b679dba63d469ad36fda7a08c53e5735cbf4d37a4d58cb8076980cf"
     },
     {
       "file": "assets/deck-slide-03-390x844.png",
-      "bytes": 124233,
-      "sha256": "6643b6184ce87465b0faa7c40b888a1d8913a426676e5ce0ebc48e584e278607"
+      "bytes": 124691,
+      "sha256": "560d4864fba4cbeec199b421db9d0a21e5098b79e7e106a946c46b58a99f239d"
     },
     {
       "file": "assets/deck-slide-04-1280x720.png",
@@ -802,63 +804,63 @@
     },
     {
       "file": "assets/deck-slide-06-1024x768.png",
-      "bytes": 169453,
-      "sha256": "b41e3a1eddd4eb50a56da4ccd8620abd7db607777a0ccc2f0430747e152c6ca1"
+      "bytes": 178886,
+      "sha256": "c9b21be88acea973dff6d08f394bed51e41bf5edfdf89f11ec01bd2dc532def7"
     },
     {
       "file": "assets/deck-slide-06-1280x720.png",
-      "bytes": 188221,
-      "sha256": "5686b49f5bdb825c147b6e26e4ea92e3fc6a732eb591eae0d8c0567b89ac82ef"
+      "bytes": 195324,
+      "sha256": "555b1878a7a02ea569381c921be6c879bd8e90a3c368e8cb0080dc04d1087d20"
     },
     {
       "file": "assets/deck-slide-06-1440x900.png",
-      "bytes": 237237,
-      "sha256": "b88c8fa3d80948d19b8f2e8e8cc46bd642abf28c90314709f015b267f4350552"
+      "bytes": 247509,
+      "sha256": "6c3a36b52130eed5b9f9391a42ba712088dbd511882d6fa8fdd25328e52db5bd"
     },
     {
       "file": "assets/deck-slide-06-390x844.png",
-      "bytes": 142456,
-      "sha256": "4cf6bedb43b4d8b2881ddfbba844506c2d9e49d4d65396dfcb4743856d3a1e33"
+      "bytes": 151795,
+      "sha256": "585e90846779791697b8e1a8c48abd174d467cc492c9420b3b6448408d72d1b8"
     },
     {
       "file": "assets/deck-slide-07-1280x720.png",
-      "bytes": 146657,
-      "sha256": "3a111aef5336d335448cd7191f1c0e0dc20538d372621ee603789e47cd1a42d0"
+      "bytes": 146526,
+      "sha256": "3b7d1ca4c838019b42310b8ec046b97359835332a6f18bcecf098de0b3c007d3"
     },
     {
       "file": "assets/deck-slide-07-1440x900.png",
-      "bytes": 189205,
-      "sha256": "ad8f314e084fefe7174a74e281b5f35d12d0080afda5e42501ebf8f61ff18561"
+      "bytes": 188995,
+      "sha256": "b4757dc912dcd475c9c78ae42807cfdc1aa928fd7a75ec487f36d748763abdd8"
     },
     {
       "file": "assets/deck-slide-08-1280x720.png",
-      "bytes": 168308,
-      "sha256": "d8ff77bcfa48ee014e9794b0dd21cf3e82abb8f8396fba74645c416aaaaced9e"
+      "bytes": 168575,
+      "sha256": "7afadf4816ed5ac66d1717be389a84bc8a29b8c98e370f5e671543ae3ff36f44"
     },
     {
       "file": "assets/deck-slide-08-1440x900.png",
-      "bytes": 228757,
-      "sha256": "aa0b4988d28295d3836880a332bd9a5a766d21c8c40236a4dcf6adfc63216ca5"
+      "bytes": 228411,
+      "sha256": "da76ab9667110b60a1ae9bd82cfae6c726e69fde5fd15e5518605e2478ef0089"
     },
     {
       "file": "assets/deck-slide-09-1024x768.png",
-      "bytes": 186848,
-      "sha256": "9b1a9182e7ae52abb09a9be997324671260c29b6116151068b8d11f08785c933"
+      "bytes": 186583,
+      "sha256": "ff02200b271ef5d24d7b3deb43666cff6f167a2e985bbc774884be12ba1ea9c4"
     },
     {
       "file": "assets/deck-slide-09-1280x720.png",
-      "bytes": 225635,
-      "sha256": "4a9c0f44439264c7478f790bce99b02813caef62429a20946d4cb79df33aedba"
+      "bytes": 225502,
+      "sha256": "ea28a1f0e92664bc5128916f2eebb7ba9149d87a6339a5c0deca1215de353093"
     },
     {
       "file": "assets/deck-slide-09-1440x900.png",
-      "bytes": 295437,
-      "sha256": "d3e31ef0b78ec69d29743420ac3ccf5820afe74c7bebf37088c9ef0a9d81c524"
+      "bytes": 296707,
+      "sha256": "03348b47604277be50bfa7f8ced6b8a6b1f26cb1c16bccf1fe8dc441b2a7ff7b"
     },
     {
       "file": "assets/deck-slide-09-390x844.png",
-      "bytes": 181720,
-      "sha256": "700e79f11e95cbd7437b4f5f2d304054cbaf43ce71b82e6f8114fd3ebb16da96"
+      "bytes": 182006,
+      "sha256": "df686badac5c4b5bde4ef2125d9f80418abcda37329fbd61841c7dbd0ae9ff86"
     },
     {
       "file": "assets/deck-slide-10-1280x720.png",
@@ -892,43 +894,43 @@
     },
     {
       "file": "assets/deck-slide-12-1024x768.png",
-      "bytes": 191041,
-      "sha256": "333df895c61a0e55743a6a3f67112e2dd9c93e048ae75520bd639cf56c0b3efe"
+      "bytes": 197181,
+      "sha256": "354bb270419e71f256de34b380475ca21d82a99d57d81da94b45e2c21ec3e429"
     },
     {
       "file": "assets/deck-slide-12-1280x720.png",
-      "bytes": 208011,
-      "sha256": "9b157e53a78c328fc9eab31fd5949ad18c4129af21f844593e6b303a7fe3e748"
+      "bytes": 212042,
+      "sha256": "e7dbda126852c1868fa9dffcaefc407dce6ea6049003868008dfa38b1349fae5"
     },
     {
       "file": "assets/deck-slide-12-1440x900.png",
-      "bytes": 278004,
-      "sha256": "f159476c2e64f039752065ab2d061fbd539f4dfc10d5baf10f2a1a26bf358e3a"
+      "bytes": 290840,
+      "sha256": "38de91cff5aeb5911822a3a11157c3f68af965a565195e2c94d6361bf2e628b1"
     },
     {
       "file": "assets/deck-slide-12-390x844.png",
-      "bytes": 153334,
-      "sha256": "f3a871591763ba04711b3be6350e46af5b7b4c8d5982942842fce2fd1567a192"
+      "bytes": 164521,
+      "sha256": "197d00228f079b0b0d3c583b44064bfa958f3fd10c55df9f4a16447d8a8a0fb9"
     },
     {
       "file": "assets/deck-slide-13-1024x768.png",
-      "bytes": 88634,
-      "sha256": "d1a71d2d852c14ffdcaa21d317914e6de96e8adaa0febb14d8880d9886dc97e8"
+      "bytes": 88644,
+      "sha256": "0d8ccbb0e5eb04092d2a37b71b3ceb79d86f729cdc8018aa723f7420fcb55fbb"
     },
     {
       "file": "assets/deck-slide-13-1280x720.png",
-      "bytes": 87926,
-      "sha256": "3106b142c282aa796263b0dbada80af7ea990eb44ea54356579fa771b10b98d5"
+      "bytes": 88007,
+      "sha256": "ecfb634125bdc394b24ec71ab2b64948e2cab45f121ed9056b30421250b678f9"
     },
     {
       "file": "assets/deck-slide-13-1440x900.png",
-      "bytes": 126904,
-      "sha256": "fdf0cf21ad428ff0bbd74ae3b541c6d2d2a11603aae1dd1c8de06618055ab311"
+      "bytes": 126889,
+      "sha256": "ef80803b610b5997bb80cb68bc7840e388d3150629a3a629b9af6d1713295072"
     },
     {
       "file": "assets/deck-slide-13-390x844.png",
-      "bytes": 112038,
-      "sha256": "3f6d4b5a7c720d4a9467106ccbcf9175004d7b78ac434f60bdfdc71139ac22c4"
+      "bytes": 112027,
+      "sha256": "bd54659769f4440b5d92f2a640b40d35f222c46d32927a34445464341e611a58"
     },
     {
       "file": "assets/deck-slide-14-1024x768.png",
@@ -952,13 +954,13 @@
     },
     {
       "file": "assets/deck-slide-15-1280x720.png",
-      "bytes": 122578,
-      "sha256": "25dca31f8a95ae68bb85716e2c616ce6c618425e222b3d433307eb4e971fc05c"
+      "bytes": 122985,
+      "sha256": "cb7fb3664b1e614e3b51b1262ea00b54c546c7ce3592881c3376effea21590af"
     },
     {
       "file": "assets/deck-slide-15-1440x900.png",
-      "bytes": 172146,
-      "sha256": "4afc4b87248455f754c5c712bd9e6af87ad52b3c9852e81cd0b10e43088f3d49"
+      "bytes": 172618,
+      "sha256": "32292e7653bbe3daf239233a92a81780c6a33bd4b8f81e0d0149d1168044689b"
     },
     {
       "file": "assets/deck-slide-16-1024x768.png",
@@ -982,13 +984,13 @@
     },
     {
       "file": "assets/evaluation-1440x900.png",
-      "bytes": 189805,
-      "sha256": "046a7999d073739d5a40d8b55ae5541eba9454938641ab24deaf81867b908be6"
+      "bytes": 189687,
+      "sha256": "2650e1c6616e70892742ec2022c3dc632df6d7d0998a3e15e12c8d659ef3f102"
     },
     {
       "file": "assets/evaluation-full-1440.png",
-      "bytes": 526633,
-      "sha256": "4918b76dc2a33aab202235c19da5d62314f22ec991f0a7e67f2702c4068c99be"
+      "bytes": 526662,
+      "sha256": "7d880203f413f802af0de964a4990e49ed7584816e148255dc143131ef9975e0"
     },
     {
       "file": "assets/evaluation-intervals.png",
@@ -997,23 +999,23 @@
     },
     {
       "file": "assets/findings-1280x720.png",
-      "bytes": 129256,
-      "sha256": "dfb62d9c879b9e9842d3f2de0524fdd92bca0e154117e629628e5fa37fce35e0"
+      "bytes": 129143,
+      "sha256": "646ee5cc000c49ee57a83ba99a99353d27459e7a45ba3c074187e3504477decd"
     },
     {
       "file": "assets/findings-1440x900.png",
-      "bytes": 186370,
-      "sha256": "195fd4b3c9a261c226c28ee46f7c243929a4b185b93c30ee0c7fd515bb37364d"
+      "bytes": 188401,
+      "sha256": "dd4dc0f72cd903cb3493fb44ac4c9b8a093ae9ad27456c4aa9c8ac26f248216c"
     },
     {
       "file": "assets/findings-focus-1440x900.png",
-      "bytes": 212785,
-      "sha256": "526596d59979e0e3df58aa549557d30f7f838e27f15cfc2e8aafa773d495fe6f"
+      "bytes": 215293,
+      "sha256": "6b45268162c3f0c0e52e61e1f4c4ecffe4699fbd74c5c50a5c0ef773df9d05ea"
     },
     {
       "file": "assets/findings-full-1440.png",
-      "bytes": 645404,
-      "sha256": "5b8b92773d2e8be4adedb9aeb0c8059b44776774ea75ae04fed2c682b2127740"
+      "bytes": 652005,
+      "sha256": "aa26f44e3b0295e2c853d9c5e99a843d090e2afd274578098d7eeb5c44b93307"
     },
     {
       "file": "assets/findings-guard-query-make.png",
@@ -1022,88 +1024,88 @@
     },
     {
       "file": "assets/findings-guards-1440.png",
-      "bytes": 152164,
-      "sha256": "66d3e79e22a9c66b1c7df10d0e8a334116260275dcb0303853ae0e4c96bed9ad"
+      "bytes": 155744,
+      "sha256": "b56e59bf8dda288b2138d9a96a9beafe475ee07b50c997bc8558fa6d6f7a9160"
     },
     {
       "file": "assets/manifest-excluded-1280x900.png",
-      "bytes": 151880,
-      "sha256": "7c5f9e9a9da7db9f329aaa8d187a6d2c9819e51eef9d7b405efdeeb0df0df2c2"
+      "bytes": 151634,
+      "sha256": "6bcc506fe4f10bf4917d2da5ecbe1056f8eca9a157b8e6f20c0e997436ed3184"
     },
     {
       "file": "assets/manifest-excluded-1440x900.png",
-      "bytes": 166144,
-      "sha256": "b9d478ff0426fb86e56fbc7b2c5ab79ad66fc7ad1344d78195ce24a8227de657"
+      "bytes": 165908,
+      "sha256": "85a3e7679a5d862937974e39df919f8a02776b6c6afcd50984bef6387af2a0be"
     },
     {
       "file": "assets/manifest-focus-1440x900.png",
-      "bytes": 96759,
-      "sha256": "c3ff81313b9ae56449f4ed6b3d9d6fd681bc91597a5dcec68318cae27408fb81"
+      "bytes": 96566,
+      "sha256": "d65f8b0d20e0580b83f706762663ab4f75251798046ae157e6b3c534830f103e"
     },
     {
       "file": "assets/packet-1440x900.png",
-      "bytes": 184916,
-      "sha256": "6ee82369cd927373d861ec8c3213a4fc279b50bea9238775121d2925cc7e380b"
+      "bytes": 190454,
+      "sha256": "56d84b72ac864627f05e4c1bd8110ca36a7962c606bdaf6f00d2b31170147294"
     },
     {
       "file": "assets/packet-focus-1440x900.png",
-      "bytes": 138248,
-      "sha256": "17b4680e8726fede0a0f537c92e0a4cd718ec6e1c6ca97c98e8dfc46acb912d6"
+      "bytes": 137873,
+      "sha256": "813fb8a6972b79722011dcf568c414294522f5c7e2650156c272a1df265bf74e"
     },
     {
       "file": "assets/packet-full-1440.png",
-      "bytes": 698502,
-      "sha256": "f4108df1650f0f58c751db755cb80f6933760a877b5e044c38bc6656e912ca29"
+      "bytes": 720985,
+      "sha256": "28f5bb4095dc3e70f6d948c25e63495dad2d9a01fb3cd22bc2b95c1423cd8644"
     },
     {
       "file": "assets/packet-predecision-1440x900.png",
-      "bytes": 189362,
-      "sha256": "d30d0c5210b5fe5786c90c50a3a1b71ec5ca832de90acd98a64004c76a0b000d"
+      "bytes": 190338,
+      "sha256": "4bdac2d1b4f2c9ebac6d30918a7a074f0937ce119de70aac447416bcac1376ae"
     },
     {
       "file": "assets/packet-predecision-focus-1440x900.png",
-      "bytes": 143744,
-      "sha256": "90bbd66422c177a91dab2846c0e2c2e1ee6225c1330d86748c2582f2fd2f7c64"
+      "bytes": 138133,
+      "sha256": "dc3e6d2bff1aa8b24d9b09ae6db043fa528dd7a641e8e64506d39fb187ce1865"
     },
     {
       "file": "assets/packet-predecision-full-1440.png",
-      "bytes": 680268,
-      "sha256": "4501f12b97d31617d84ec70cfae12c53aa42c79a51f450dc97e30666515fe9ad"
+      "bytes": 706542,
+      "sha256": "dcacfcb0acc27fddd25e8aa11755af6d3817e2ff31ffa24b328a1ab9d19b67b7"
     },
     {
       "file": "assets/reconstruction-1440x900.png",
-      "bytes": 183131,
-      "sha256": "47a24610dfbca6544ab45957466a86aff391ab4cb430cff8d2e737156e85626f"
+      "bytes": 183063,
+      "sha256": "8b4a84449c6e3e672500c48bced12805b5d5ac115e8889d710804b28411debf8"
     },
     {
       "file": "assets/reconstruction-after-decision-1440x900.png",
-      "bytes": 172770,
-      "sha256": "d8f57e991cb54f6b305b7c4be8daccaf46bc86d4f8daa56e05bffc64ad58736b"
+      "bytes": 172701,
+      "sha256": "b8e7b41d27625d040764f35f2ca30d6ded3233be89cf2fb35cc40d5212271b90"
     },
     {
       "file": "assets/reconstruction-after-decision-focus-1440x900.png",
-      "bytes": 120716,
-      "sha256": "3a362a918dc722e9a871295763e086d55319d8c3fa0f5d82c08f6838e7cc98de"
+      "bytes": 120905,
+      "sha256": "40085e56e6bd835cdc3e5c638968813ada88fac0fdb69cdd7c822412d79d9c07"
     },
     {
       "file": "assets/reconstruction-after-decision-full.png",
-      "bytes": 341477,
-      "sha256": "c53ff1a126815789daf81b5e7b51b1b34e54ee1560e1508d51aecf3c9334fe6e"
+      "bytes": 341407,
+      "sha256": "355a0127d35db97c832e0a9ab678e5ea972bebc619d7c4baca4407af555e5373"
     },
     {
       "file": "assets/reconstruction-assumptions-1440x900.png",
-      "bytes": 184453,
-      "sha256": "f18a2b8a5466dc15d29e6845f3662bc0ba55d535f564afd34df38c4f60bfd0cf"
+      "bytes": 161897,
+      "sha256": "e71764ffbe160a8997598f174cfa374841c5e4a7c780af3817821db0ac91600b"
     },
     {
       "file": "assets/reconstruction-focus-1440x900.png",
-      "bytes": 125287,
-      "sha256": "18077e10bd89c8ec0720083b58979103c0dbcb17f3592654a1de322272674b56"
+      "bytes": 134302,
+      "sha256": "ee8f14f7c5cb92559cdf1d452ee7cf01c615dd18947ed5ca66565073822d3263"
     },
     {
       "file": "assets/reconstruction-full-1440.png",
-      "bytes": 328219,
-      "sha256": "e7cc4391bf442c2eba8c10bdbdc83d2d11325474184f03a25388df9b9788b216"
+      "bytes": 328148,
+      "sha256": "dda78b3467c8dde2021ff92e2daa108c8a440d28987bd30404b782efcafb9ce6"
     },
     {
       "file": "assets/reconstruction-m12-row.png",
@@ -1112,33 +1114,33 @@
     },
     {
       "file": "assets/workbench-1280x720.png",
-      "bytes": 149537,
-      "sha256": "554ded85e9bbe89b50ebc4b0e188c858c06e38fcb8b6b23d47217621352cba42"
+      "bytes": 149570,
+      "sha256": "ef44414aef60a663cd5a66d4175938211f397422c1d8eb07f0e30d20dc81f077"
     },
     {
       "file": "assets/workbench-1280x900.png",
-      "bytes": 174577,
-      "sha256": "a875dfc7ca77c2eba8af57bee4b2162c1b0bf32e3ea31d507f0e63479346ea7a"
+      "bytes": 174535,
+      "sha256": "ebd4449f72f31faa06670c071a17df26b463fb39bc1e1ffd9b0f1eb10f1868c6"
     },
     {
       "file": "assets/workbench-1440x900.png",
-      "bytes": 172061,
-      "sha256": "b2d68607c4553ec04a51740de90d4880aef7d3ffc570465355339df3a1bf2967"
+      "bytes": 172055,
+      "sha256": "998597246d28fb4028c6969e6f051dab00f9eab9d8ed17e6a163f204dbbd788b"
     },
     {
       "file": "assets/workbench-390x844-full.png",
-      "bytes": 307363,
-      "sha256": "18b5d31468e87f4f9b9c43b48b41ebcf6dcc676c873c013301805affbcc509b3"
+      "bytes": 307427,
+      "sha256": "f0611c9f4e9d96b7514cb4b8883970c91e1df5800b3fffbc6309697217f8b2da"
     },
     {
       "file": "assets/workbench-390x844.png",
-      "bytes": 67107,
-      "sha256": "392e631f9ff3043fb38153123759078765b3f35bd7f317850b4b29ae48f432ed"
+      "bytes": 66917,
+      "sha256": "d406cbce4c86043d01edc08ef6e935c9bcd6304e23c217387e848d99d5c7397a"
     },
     {
       "file": "assets/workbench-evidence-1440x900.png",
-      "bytes": 185845,
-      "sha256": "d439da5964cc936fb9efd936cbe06eaf23c9ea2a3a50c0845c4313cdf75f7a33"
+      "bytes": 185839,
+      "sha256": "1b2ae04ee29855a96a260d7b722d5a2fe2f2f4d8682ee710f5bbcb5d64ddd830"
     },
     {
       "file": "assets/workbench-evidence-drawer.png",
@@ -1157,8 +1159,8 @@
     },
     {
       "file": "assets/workbench-full-1440.png",
-      "bytes": 340781,
-      "sha256": "a15b608272c9135ea5e8c7f34f3a7a4bc0dd9fecbf163182dd798c2e835d1252"
+      "bytes": 340715,
+      "sha256": "368ff42f5e25036d4ee0baee48f5978b0da9291fd0dfa6c76969dc551c21829a"
     }
   ],
   "validation": {
@@ -1204,7 +1206,7 @@
     "content_validation": {
       "ok": true,
       "failures": [],
-      "snapshot_short": "668872420dfb",
+      "snapshot_short": "bd4a8a4b338a",
       "source": "docs/presentation/index.html"
     },
     "crop_validation": {

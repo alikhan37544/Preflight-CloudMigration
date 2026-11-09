@@ -787,7 +787,7 @@
       </div>
       <div class="cols cols-2 grow">
         <div class="stack">
-          <p class="quote-bar"><b>Six to eight weeks</b> is a vendor estimate for “most monoline products of average complexity.” It is a useful anchor. It is not an inventory of <em>your</em> estate.</p>
+          <p class="quote-bar"><b>Six to eight weeks</b> is a vendor estimate for APD product conversion — not a full migration estimate. It is a useful anchor. It is not an inventory of <em>your</em> estate.</p>
           <div class="question-grid">
             <div class="qcard"><div class="qnum">01</div><h3>What exists?</h3><p>Every file, hash, parser status, and the four that cannot be parsed — listed, not dropped.</p></div>
             <div class="qcard"><div class="qnum">02</div><h3>Which feature?</h3><p>Cross-artefact links from PCF to entity, typelist, template, Gosu, and tests.</p></div>
@@ -802,7 +802,7 @@
           </article>
           <article class="pain">
             <div class="pain-tag">Patterns</div>
-            <div><h3>JDBC, explicit commits, servlets, hidden packages</h3><p>These recur in migration lessons. They are often found in a CUE report or a build gate — after the plan and the estimate exist.</p><p class="source"><b>Guidewire developer blog</b> · migration lessons guest post · accessed 2026-11-09</p></div>
+            <div><h3>JDBC, explicit commits, servlets, hidden packages</h3><p>These recur in migration lessons. They often surface in the CUE (the official Cloud Upgrade Estimate) or a build gate; the earlier they are found, the less the estimate moves.</p><p class="source"><b>Guidewire developer blog</b> · migration lessons guest post · accessed 2026-11-09</p></div>
           </article>
           <article class="pain">
             <div class="pain-tag">SBT</div>
@@ -822,7 +822,7 @@
       <p class="source" style="margin:10px 0 0">Source discipline: vendor claims are labelled as vendor claims; gated bodies are marked gated; “incomplete handover” is a design premise, not a measured result. Full list in <span class="mono">docs/presentation/sources.md</span>.</p>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>The hook.</strong> “The 6–8 week number is a vendor estimate for a typical monoline. The number is not the problem. The problem is that nobody can show you the inventory behind it.”</p>
+      <p><strong>The hook.</strong> “The 6–8 week number is a vendor estimate for APD product conversion — not a full migration estimate. The number is not the problem. The problem is that nobody can show you the inventory behind it.”</p>
       <p>Walk the four questions, not the tool list. “What exists? Which feature does it belong to? What is the explicit disposition? What is unknown, and who owns the question?”</p>
       <p>Use the 24-character APD limit as the concrete example: the limit applies to <strong>type names</strong>, not every name in the model. A type can be correct in the source and still fail later when endpoint generation compiles it. The documented fix is a codegen <code>nameOverride</code>, but only if you find the name before the compile. APD documents other short-name/label limits (for example 22/30 characters); do not generalise the 24-character figure. Cite the docs page. Be explicit that “incomplete handover” is a premise from practice, not a measured finding in the fixture, and that SBT is a readiness scope/estimate risk rather than a claim that it is absent from the estimate.</p>
     </div>
@@ -847,7 +847,7 @@
         <thead><tr><th scope="col">Tool / service</th><th scope="col">Inventory</th><th scope="col">Feature evidence</th><th scope="col">Disposition ledger</th><th scope="col">Assumption register</th><th scope="col">Review packet</th></tr></thead>
         <tbody>
           <tr><td><span class="tool-name">Cloud Assurance Services</span><span class="tool-sub">official standards gate</span></td><td><span class="dot half"></span><span class="dot-label">code scan</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">findings</span></td></tr>
-          <tr><td><span class="tool-name">Guidewire CUE</span><span class="tool-sub">official high-level estimate</span></td><td><span class="dot half"></span><span class="dot-label">scope</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">estimate risks</span></td><td><span class="dot half"></span><span class="dot-label">estimate</span></td></tr>
+          <tr><td><span class="tool-name">Guidewire CUE</span><span class="tool-sub">official Cloud Upgrade Estimate</span></td><td><span class="dot half"></span><span class="dot-label">scope</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">estimate risks</span></td><td><span class="dot half"></span><span class="dot-label">estimate</span></td></tr>
           <tr><td><span class="tool-name">Lighthouse / SurePath / Assistants</span><span class="tool-sub">migration lab, delivery method, codegen help</span></td><td><span class="dot half"></span><span class="dot-label">lab</span></td><td><span class="dot half"></span><span class="dot-label">validated flows</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">handover</span></td></tr>
           <tr><td><span class="tool-name">SonarQube / GoQu</span><span class="tool-sub">Gosu lint and quality</span></td><td><span class="dot none"></span><span class="dot-label">code only</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">issues</span></td></tr>
           <tr><td><span class="tool-name">CAST / ADDI</span><span class="tool-sub">portfolio and code discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio / code</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
@@ -872,7 +872,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official high-level estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST/ADDI cover portfolio and code discovery; Syntra ETL covers data migration and extraction. SIs bring expertise. All of that is real and useful.”</p>
+      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official Cloud Upgrade Estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST/ADDI cover portfolio and code discovery; Syntra ETL covers data migration and extraction. SIs bring expertise. All of that is real and useful.”</p>
       <p>Then point at the matrix. “The exact sentence is: no public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet. That is a literature and public-documentation search result, not a product benchmark. A SI could assemble this manually; the claim is repeatability and evidence discipline, not that no human has ever done it.”</p>
       <p>This is positioning, not an independent product evaluation. Keep the footnote visible if someone challenges the comparison.</p>
     </div>
@@ -1077,10 +1077,10 @@
         </figure>
         <div class="demo-side">
           <div class="callout-list">
-            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>31 evidence / 12 files / 4 artefact types / 2 tests / 11 references.</b> Every number is a count of linked records, not a narrative claim.</div></div>
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>31 evidence / 12 files / 4 artefact types / 2 tests / 11 references — all PA-VEH-01 counts.</b> Every number is a count of linked records. The 37-character long type is separate: it appears in two files (template and product model) and is a PA-VEH-02 dependency, not one of the 11 references.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Eight features, each with evidence count and confidence.</b> The selected feature is PA-VEH-01; the list is the inventory entry point.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>18-node spine, six columns.</b> PCF → entity → typelist → template/Gosu → API draft → tests. Directed edges; click any highlighted evidence-bearing node for evidence.</div></div>
-            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>37 vs 24, and 3 estate-wide gaps.</b> A long type against the APD limit; the gaps are labelled estate-wide, not three missing links in this feature.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>37 vs 24, and 3 estate-wide gaps.</b> The long type is carried by two files and is a PA-VEH-02 dependency; the gaps are labelled estate-wide, not three missing links in this feature.</div></div>
           </div>
           <div class="demo-stats">
             <div class="demo-stat"><b>31</b><span>evidence</span></div>
@@ -1098,7 +1098,7 @@
     </div>
     <div class="speaker-note" hidden>
       <p><strong>Open on the Workbench, not the dashboard.</strong> “This is one feature, not the whole estate: PA-VEH-01 Vehicle Information. The summary strip says what the claim rests on — 31 evidence records across 12 files, four artefact types, two tests, and 11 references.”</p>
-      <p>Point at the 37 vs 24 signal. “This type is 37 characters. The APD limit is 24. Eleven references touch it. That is the kind of scope that surfaces at week five if the inventory is not done first.”</p>
+      <p>Point at the 37 vs 24 signal, then separate the counts. “PA-VEH-01 has 11 references, four artefact types, and two tests. The 37-character long type is not one of those references: it appears in two files, <span class="mono">product/template/LongTypeA.xml</span> and <span class="mono">config/resources/productmodel/PersonalAuto.xml</span>, and it is a PA-VEH-02 dependency. No tests cover it. That is the kind of cross-feature scope that surfaces at week five if the inventory is not done first.”</p>
       <p>Click a spine node. “Every node resolves to a file and a locator — here EV-0001, a PCF xpath at line 4, with an excerpt hash. The assistant below is retrieval-only and model off.”</p>
       <p>Say clearly: “The three gaps are estate-wide, not three missing links in PA-VEH-01.” Add the fixture-realism caveat: “The 300 files include generated filler. The PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats; codegen and entity names match the fixture. This is a test of the evidence discipline, not a claim of domain fidelity.”</p>
     </div>
@@ -1127,7 +1127,7 @@
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>300 files; 4 excluded: 2 binary / 1 corrupt / 1 unsupported.</b> The manifest is the denominator for every later claim.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Every excluded row has a reason and a SHA-256.</b> BrokenScreen.pcf fails XML parsing at line 1; <code>vehicle_rating_inputs.csv</code> has no supported parser. The filter is part of the UI, not a footnote.</div></div>
-            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Before = after.</b> <code>668872420dfb</code> is identical before and after analysis; the immutable snapshot hash is also visible in the live banner. The check is recorded in the audit trail.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Before = after.</b> <code>bd4a8a4b338a</code> is identical before and after analysis; the immutable snapshot hash is also visible in the live banner. The check is recorded in the audit trail.</div></div>
           </div>
           <table class="mini-table" aria-label="Excluded files and reasons">
             <thead><tr><th scope="col">Excluded file</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
@@ -1165,7 +1165,7 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="740" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
+          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="755" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
           <span class="marker middle" style="left:5%;top:57%" aria-hidden="true">1</span>
           <span class="marker middle" style="left:5%;top:70%" aria-hidden="true">2</span>
           <span class="marker middle" style="left:82%;top:4%" aria-hidden="true">3</span>
@@ -1431,7 +1431,7 @@
       </div>
       <div class="packet-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/packet-focus-1440x900.png" width="1212" height="772" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
+          <img src="assets/packet-focus-1440x900.png" width="1212" height="752" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
           <span class="marker middle" style="left:88%;top:4%" aria-hidden="true">1</span>
           <span class="marker middle" style="left:50%;top:23%" aria-hidden="true">2</span>
           <span class="marker middle" style="left:79%;top:46%" aria-hidden="true">3</span>
@@ -1443,7 +1443,7 @@
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Downloadable HTML.</b> A local, self-contained review artifact — not a dashboard link that expires.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Six sections:</b> cover · executive summary · coverage and confidence · assumption register · findings (24 + 1 separate readiness flag) · evidence and audit appendix.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>126 evidence items</b> = full discovery evidence plus review evidence linked to findings. Not a 20-row sample.</div></div>
-            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. The packet hash seals the rendered packet HTML; <span class="mono">packet_json</span> seals canonical JSON; content digests bind findings, mappings, and evidence; the audit head seals the event chain. Local tamper-evident, not non-repudiation.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. The packet hash seals the rendered packet HTML; <span class="mono">packet_json</span> seals canonical JSON; content digests bind findings, mappings, and evidence; the audit head seals the event chain. Two-step verification: <code>verify-packet</code> checks the packet and content digests; <code>verify-audit</code> checks the audit chain only, not the packet. Local tamper-evident, not non-repudiation.</div></div>
           </div>
           <div class="section-list" aria-label="Packet sections">
             <div class="section-item"><b>01</b><span>Cover + hashes</span></div>
@@ -1458,17 +1458,18 @@
             <div><span class="hk">packet</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="hv">read live</span> <span class="muted">rendered packet HTML</span></div>
             <div><span class="hk">packet_json</span> <span class="hv">read live</span> <span class="muted">canonical JSON</span></div>
             <div><span class="hk">audit head</span> <span class="hv">read live</span> <span class="muted">event-chain head</span></div>
-            <div><span class="hk">snapshot</span> &nbsp;&nbsp;&nbsp;<span class="hv">668872420dfb…</span> <span class="muted">fixture; stable</span></div>
+            <div><span class="hk">snapshot</span> &nbsp;&nbsp;&nbsp;<span class="hv">bd4a8a4b338a…</span> <span class="muted">fixture; stable</span></div>
           </div>
+          <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-packet R-DEMO-001</div>
           <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-audit R-DEMO-001</div>
-          <p class="source packet-source" style="margin:0">Content digests bind findings, mappings, and evidence. Packet, packet_json, and audit-head values change with reviewer actions and packet refreshes — read them from the live screen. The bundled packet is a capture-time example, not a live artifact.</p>
+          <p class="source packet-source" style="margin:0">Content digests bind findings, mappings, and evidence. Packet, packet_json, and audit-head values change with reviewer actions and packet refreshes — read them from the live screen. <code>verify-packet</code> checks the packet; <code>verify-audit</code> checks the audit chain only, not the packet. The bundled packet is a capture-time example, not a live artifact.</p>
         </div>
       </div>
     </div>
     <div class="speaker-note" hidden>
       <p><strong>End on the artifact.</strong> “This is not a dashboard. It is a six-section packet you can download, mark up, challenge, and approve.”</p>
       <p>Point at the cover. “This capture is post-decision: audit chain verified, 11 events. The seed state is 9 events; Accept M-01 and Reject M-12 add one each. The assumption register has 4 rows after the rejection. Section 06 carries 126 evidence items, not a sample. The excluded files are in the packet.”</p>
-      <p>Read the hashes from the live screen, not the deck. “The packet hash seals the rendered packet HTML; packet_json seals canonical packet JSON; findings, mappings, and evidence digests bind those payloads; the audit head covers the hash chain. Packet and audit values change with reviewer actions and packet refresh. It is local and tamper-evident, not non-repudiation. Verification command: preflight verify-audit R-DEMO-001.”</p>
+      <p>Read the hashes from the live screen, not the deck. “The packet hash seals the rendered packet HTML; packet_json seals canonical packet JSON; findings, mappings, and evidence digests bind those payloads; the audit head covers the hash chain. Packet and audit values change with reviewer actions and packet refresh. It is local and tamper-evident, not non-repudiation. Two-step verification: <code>preflight verify-packet R-DEMO-001</code> checks the packet and content digests; <code>preflight verify-audit R-DEMO-001</code> checks the audit chain only, not the packet.”</p>
       <p>Be explicit: “The bundled docs/demo packet is a historical snapshot. Do not verify the live run against it. If you show a pre-decision packet, label it as 9 events / 3 assumptions.”</p>
     </div>
   </section>
@@ -1480,12 +1481,12 @@
         <div class="slide-head-main">
           <p class="kicker">Engineering rigor</p>
           <h2>The demo is the surface. The hardening is the work.</h2>
-          <p class="slide-lede"><b>410 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+          <p class="slide-lede"><b>412 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
         </div>
         <span class="head-badge">Internal adversarial review</span>
       </div>
       <div class="rigor-top">
-        <span class="rigor-badge"><b>410</b> tests collected</span>
+        <span class="rigor-badge"><b>412</b> tests collected</span>
         <span class="rigor-badge"><b>1</b> Playwright golden path</span>
         <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
         <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
@@ -1509,7 +1510,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 410 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 412 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
       <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
       <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
     </div>
@@ -1589,7 +1590,7 @@
             <div class="risk"><span class="risk-dot"></span><div><b>Internally authored target</b><span>AI-assisted reference, not blind independent annotation.</span></div></div>
             <div class="risk"><span class="risk-dot"></span><div><b>No human IAA</b><span>AI-AI concordance would not be human inter-annotator agreement.</span></div></div>
             <div class="risk"><span class="risk-dot"></span><div><b>No real estate</b><span>Customer code, scale, and naming drift unproven.</span></div></div>
-            <div class="risk"><span class="risk-dot"></span><div><b>CUE is official</b><span>Formal, high-level assessment; PreFlight prepares file-level evidence before it.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>CUE is official</b><span>Official Cloud Upgrade Estimate; PreFlight prepares file-level evidence before it.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>4-feature holdout</b><span>Naming-shift only; never imported or tuned.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>Vendor services and assistants</b><span>Cloud Assurance Services, Lighthouse, and Developer Assistants already own parts of the workflow.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>Gated rule corpus</b><span>Public IDs/titles; bodies and threshold are gated.</span></div></div>
@@ -1643,7 +1644,7 @@
     </div>
     <div class="speaker-note" hidden>
       <p><strong>Say the quiet part.</strong> “On the current evidence, this is a research prototype, not a product. The metrics are in-sample synthetic. The target is internally authored and AI-assisted. There is no human IAA and no real estate.”</p>
-      <p>Then the wedge. “The defensible slice is vendor-independent, offline, pre-CUE, file-level evidence for one LOB, used by an SI to de-risk the estimate. CUE is an official, formal, high-level assessment; Cloud Assurance Services is the official standards service; Lighthouse is the migration lab. PreFlight prepares file-level evidence before them. It does not replace any of them.”</p>
+      <p>Then the wedge. “The defensible slice is vendor-independent, offline, pre-CUE, file-level evidence for one LOB, used by an SI to de-risk the estimate. CUE is the official Cloud Upgrade Estimate; Cloud Assurance Services is the official standards service; Lighthouse is the migration lab. PreFlight prepares file-level evidence before them. It does not replace any of them.”</p>
       <p>Say what independent means: “Vendor-independent, not independently validated. The evaluation is internal and in-sample.”</p>
       <p>Roadmap: real anonymised estate, second LOB, blind human annotation, line-level findings, performance, import/export, compile validation. “Those are the experiments that would turn this into a claim I can defend.”</p>
     </div>

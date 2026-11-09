@@ -125,12 +125,14 @@ class PlainCommit {
     assert paths_for(review, "PF-GW-TX-001") == set()
 
 
-def test_catch_with_logging_is_not_swallowed(tmp_path: Path) -> None:
+def test_catch_with_context_rethrow_is_not_swallowed(tmp_path: Path) -> None:
     review = review_files(tmp_path, {
-        "gsrc/acme/CatchLogs.gs": '''package acme
-class CatchLogs {
+        "gsrc/acme/CatchRethrow.gs": '''package acme
+class CatchRethrow {
   function run() {
-    try { risky() } catch (e : Exception) { log.error(e.Message) }
+    try { risky() } catch (e : Exception) {
+      throw new RuntimeException("vehicle lookup failed", e)
+    }
   }
 }
 ''',

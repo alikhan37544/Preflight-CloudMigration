@@ -62,9 +62,10 @@ make demo-fg
 | Live packet copy | `cp data/runs/R-DEMO-001/packet.html /tmp/opencode/R-DEMO-001-packet.html` |
 | Deck | `docs/presentation/index.html`; serve with `python -m http.server 8090 -d docs/presentation` |
 | Freeze verification | `make freeze` (do not run during the talk) |
+| Packet verification | `preflight verify-packet R-DEMO-001` or `python -m app.cli verify-packet R-DEMO-001` |
 | Audit verification | `preflight verify-audit R-DEMO-001` or `python -m app.cli verify-audit R-DEMO-001` |
 
-**Important:** the bundled `docs/demo/preflight-review-packet.html` is a **historical snapshot**, not the live run. Its packet hash and audit head will not match a freshly seeded run. Do not run `verify-audit` against it. If you show it as a fallback, say “this is a historical example from the same build, not today’s run.”
+**Important:** the bundled `docs/demo/preflight-review-packet.html` is a **historical snapshot**, not the live run. Its packet hash and audit head will not match a freshly seeded run. Do not run `verify-packet` or `verify-audit` against it. If you show it as a fallback, say “this is a historical example from the same build, not today’s run.”
 
 ### Exact URLs
 
@@ -98,11 +99,11 @@ Say:
 
 Point at the **summary strip**:
 
-> “31 evidence records, 12 distinct files, four artefact types, two tests, 11 references, a 37-character type in this reconstruction slice against the 24-character APD limit, and three estate-wide gaps.”
+> “31 evidence records, 12 distinct files, four artefact types, two tests, and 11 references for PA-VEH-01. Separately, a 37-character type is a PA-VEH-02 dependency: it appears in two files — the template and the product model — and is not one of those 11 references. Three gaps are estate-wide.”
 
 Point at the **feature spine**:
 
-> “One feature traced across PCF, installed entity, typelist, extracted template, Gosu, and tests. The 37 vs 24 signal is the kind of surprise that shows up at week five.”
+> “One feature traced across PCF, installed entity, typelist, extracted template, Gosu, and tests. The 37 vs 24 signal is separate from PA-VEH-01’s 11 references: the long type is carried by two files and is a PA-VEH-02 dependency.”
 
 **Click a spine node** (for example the leftmost `PAVehicleDV` node). The inline **Selected node evidence** panel appears above the graph; the full evidence drawer is below the fold.
 
@@ -253,7 +254,7 @@ If time is short, skip the optional packet download and end on the audit line.
 - Open the live `/packet` page first; it refreshes on view and carries the post-decision 11 events / 4 assumptions.
 - If the live packet is unavailable, open the historical snapshot: `docs/demo/preflight-review-packet.html`.
 - Say: “This is a historical snapshot from the packaged build, not the live run. Its packet hash and audit head will not verify against a fresh seed, and it predates today’s reviewer actions.”
-- Do not run `verify-audit` against the static snapshot. The live run is the only hash-verifiable artifact.
+- Do not run `verify-packet` or `verify-audit` against the static snapshot. The live run is the only hash-verifiable artifact.
 
 ### The browser or projector fails
 
@@ -279,7 +280,7 @@ If time is short, skip the optional packet download and end on the audit line.
 No. The product output is a cross-artefact feature inventory, a disposition ledger, an assumption register, and a review packet. The eight review rules are supporting evidence, not the product. Generic Gosu linting belongs to SonarQube/Cloud Assurance.
 
 **2. Does it replace CUE, Cloud Assurance, APD conversion, or Cloud Retrofit?**
-No. It stops before generation and deployment. The local `_ext` draft is non-deployable and targets Cloud Retrofit **without APD App**, which Guidewire labels not the recommended process. CUE owns the official, formal high-level assessment; Cloud Assurance Services owns the official standards gate; Lighthouse is the migration lab. PreFlight is a pre-estimate evidence pack.
+No. It stops before generation and deployment. The local `_ext` draft is non-deployable and targets Cloud Retrofit **without APD App**, which Guidewire labels not the recommended process. CUE is the official Cloud Upgrade Estimate; Cloud Assurance Services owns the official standards gate; Lighthouse is the migration lab. PreFlight is a pre-estimate evidence pack.
 
 **3. Is the evaluation self-graded?**
 It is measured on a controlled synthetic fixture with a frozen reference target, baselines, hard negatives, and a naming-shift holdout. It is **not** a benchmark. The reference target is internally authored and AI-assisted, not blind. There is no human IAA.
@@ -319,7 +320,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 |---|---|
 | “Guidewire-certified”, “official”, “Cloud Assurance pass” | “Independent prototype; official Cloud Assurance was not run.” |
 | “APD converter”, “replaces Cloud Retrofit” | “Stops before generation; local non-deployable `_ext` draft on Cloud Retrofit without APD App.” |
-| “CUE is free/fast and already in the account” | “CUE is an official, formal, high-level assessment; PreFlight prepares file-level evidence before it.” |
+| “CUE is free/fast and already in the account” | “CUE is the official Cloud Upgrade Estimate; PreFlight prepares file-level evidence before it.” |
 | “Nobody hands you the review packet” | “No public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet.” |
 | “Imports fail late” | “Endpoint generation then fails to compile.” |
 | “SBT is not an estimate line item” | “SBT is a readiness scope/estimate risk that must be priced or explicitly excluded.” |
@@ -354,7 +355,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
 - Packet (`packet`/`packet_json`), content digests, and audit head change with reviewer decisions and packet refreshes; read the live screen. The snapshot hash is the stable fixture hash. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
-- Tests: 410 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
+- Tests: 412 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
 ---
 
@@ -362,12 +363,13 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 
 ```text
 WORKBENCH     ?run=R-DEMO-001&feature=PA-VEH-01
-              31 evidence · 12 files · 4 types · 2 tests · 11 refs · 37 vs 24 · 3 gaps
+              31 evidence · 12 files · 4 types · 2 tests · 11 PA-VEH-01 refs · 3 gaps
+              long type 37 vs 24: 2 files, PA-VEH-02 dependency, not in the 11 refs
               click a spine node → EV-0001
 
 MANIFEST      /manifest?run=R-DEMO-001&excluded=1
               4 excluded: 2 binary · 1 corrupt · 1 unsupported
-              before = after 668872420dfb (immutable fixture snapshot)
+              before = after bd4a8a4b338a (immutable fixture snapshot)
 
 RECON         /reconstruction?run=R-DEMO-001
               seed: 12 pending · 3 assumptions · 9 audit events
@@ -395,12 +397,13 @@ PACKET        /packet?run=R-DEMO-001
               6 sections · 126 evidence · post-decision 11 events / 4 assumptions
               seed packet: 9 events / 3 assumptions; label it if shown
               download: /packet/export?run=R-DEMO-001
-              verify: preflight verify-audit R-DEMO-001
+              verify: preflight verify-packet R-DEMO-001
+                      preflight verify-audit R-DEMO-001 (audit chain only)
               packet hash = rendered HTML; packet_json = canonical JSON
               content digests bind findings/mappings/evidence; audit head = chain
               static docs/demo packet = historical, not hash-verifiable
 
-BUILD         410 tests · 18/18 freeze hashes · 9 seed audit events
+BUILD         412 tests · 18/18 freeze hashes · 9 seed audit events
 
 CLOSE         “Every claim has evidence; every unknown has a name;
                every change waits for a human.”

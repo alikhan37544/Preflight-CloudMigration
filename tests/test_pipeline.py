@@ -183,6 +183,36 @@ def test_tampered_packet_html_is_detected(run, tmp_path) -> None:
     assert "packet.html" in reason and "SHA-256" in reason
 
 
+def test_cli_verify_packet_reports_ok(run, capsys) -> None:
+    from app.cli import main as cli_main
+
+    store, _ = run
+    status = cli_main(["--data", str(store.base_dir), "verify-packet", "R-PIPE"])
+    captured = capsys.readouterr()
+    assert status == 0
+    assert "R-PIPE: OK" in captured.out
+    assert "content digests" in captured.out
+
+
+def test_cli_verify_packet_detects_tampered_html(run, tmp_path, capsys) -> None:
+    from app.cli import main as cli_main
+
+    store, _ = run
+    copied = tmp_path / "tamper-cli-data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    path = copy_store.run_dir("R-PIPE") / "packet.html"
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        "Review Packet", "Review Packet (edited)"
+    ), encoding="utf-8")
+    status = cli_main(["--data", str(copied), "verify-packet", "R-PIPE"])
+    captured = capsys.readouterr()
+    assert status == 1
+    assert "R-PIPE: TAMPERED" in captured.out
+    assert "packet.html" in captured.out
+    assert "SHA-256" in captured.out
+
+
 def test_tampered_packet_json_is_detected(run, tmp_path) -> None:
     store, _ = run
     copied = tmp_path / "tamper-json-data"

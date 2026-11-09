@@ -223,7 +223,7 @@ PRECISION_GUARDS = [
         "rule_id": "PF-GW-EXC-001",
         "title": "Swallowed exception",
         "negatives": [
-            ("catch (e : Exception) { log.error(e.Message) }", "logged exceptions are not swallowed"),
+            ('catch (e : Exception) { throw new RuntimeException("vehicle lookup failed", e) }', "rethrow with context is not suppression"),
             ("// catch (...) { } in prose", "commented code is masked"),
             ("SafePatterns.gs with no catch block", "absence of a catch is not a finding"),
         ],
