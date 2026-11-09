@@ -8,18 +8,33 @@ from typing import Any
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.error import YAMLError
+from ruamel.yaml.tokens import TagToken
+
+
+def _load_yaml_text(raw: str) -> Any:
+    """Load YAML while rejecting every explicit tag.
+
+    Scanning tokens first catches ``!!python/...``, single-``!`` tags, and
+    verbatim ``!<...>`` tags without relying on a substring check.
+    """
+    yaml = YAML(typ="rt")
+    yaml.preserve_quotes = True
+    try:
+        for token in yaml.scan(raw):
+            if isinstance(token, TagToken):
+                raise ValueError("YAML tags are not allowed in configuration files")
+        data = yaml.load(raw)
+    except YAMLError as exc:
+        raise ValueError(f"invalid YAML: {exc}") from exc
+    return data
 
 
 def parse_config_yaml(path: Path) -> "ParsedConfig":
     from app.services.parsers.base import ParsedConfig
 
     raw = Path(path).read_text(encoding="utf-8")
-    if "!!" in raw:
-        raise ValueError("YAML tags are not allowed in configuration files")
-    yaml = YAML(typ="rt")
-    yaml.preserve_quotes = True
-    with Path(path).open("r", encoding="utf-8") as fh:
-        data = yaml.load(fh)
+    data = _load_yaml_text(raw)
     if data is None:
         data = {}
     if not isinstance(data, (CommentedMap, dict)):

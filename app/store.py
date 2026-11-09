@@ -7,6 +7,8 @@ import json
 import os
 import re
 import shutil
+import tempfile
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,10 +16,11 @@ from typing import Any, Iterable
 
 _SAFE_RUN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _SAFE_ARTIFACT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+_CHECKPOINT_NAME = "audit.checkpoint.json"
 
 
 class StoreError(ValueError):
-    """Raised for unsafe or missing store operations."""
+    """Raised for unsafe, missing, or corrupt store operations."""
 
 
 def _utc_now() -> str:
@@ -33,10 +36,25 @@ def _hash_payload(payload: dict[str, Any]) -> str:
 
 
 class RunStore:
+    # Locks are shared between RunStore instances pointed at the same directory
+    # so that two callers in one process cannot interleave a read-modify-write.
+    _locks_guard = threading.Lock()
+    _locks: dict[tuple[str, str], threading.RLock] = {}
+
     def __init__(self, base_dir: Path | str) -> None:
         self.base_dir = Path(base_dir)
         self.runs_dir = self.base_dir / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True)
+
+    def _lock(self, run_id: str) -> threading.RLock:
+        self.run_dir(run_id)  # validate before using the id as a lock key
+        key = (str(self.runs_dir.resolve()), run_id)
+        with RunStore._locks_guard:
+            lock = RunStore._locks.get(key)
+            if lock is None:
+                lock = threading.RLock()
+                RunStore._locks[key] = lock
+            return lock
 
     # -- paths ---------------------------------------------------------
     def run_dir(self, run_id: str) -> Path:
@@ -60,25 +78,27 @@ class RunStore:
     def create_run(self, run_id: str, *, project_id: str = "demo", snapshot_id: str = "demo",
                    fixture_id: str = "demo-slice-300") -> Path:
         directory = self.run_dir(run_id)
-        directory.mkdir(parents=True, exist_ok=True)
-        status_path = directory / "status.json"
-        if not status_path.exists():
-            self._atomic_write(status_path, {
-                "run_id": run_id,
-                "project_id": project_id,
-                "snapshot_id": snapshot_id,
-                "fixture_id": fixture_id,
-                "status": "queued",
-                "stage": "queued",
-                "progress": {"stage": "queued", "files_done": 0, "files_total": 0, "percent": 0.0},
-                "created_at": _utc_now(),
-            })
+        with self._lock(run_id):
+            directory.mkdir(parents=True, exist_ok=True)
+            status_path = directory / "status.json"
+            if not status_path.exists():
+                self._atomic_write(status_path, {
+                    "run_id": run_id,
+                    "project_id": project_id,
+                    "snapshot_id": snapshot_id,
+                    "fixture_id": fixture_id,
+                    "status": "queued",
+                    "stage": "queued",
+                    "progress": {"stage": "queued", "files_done": 0, "files_total": 0, "percent": 0.0},
+                    "created_at": _utc_now(),
+                })
         return directory
 
     def delete_run(self, run_id: str) -> None:
         directory = self.run_dir(run_id)
-        if directory.exists():
-            shutil.rmtree(directory)
+        with self._lock(run_id):
+            if directory.exists():
+                shutil.rmtree(directory)
 
     def list_runs(self) -> list[str]:
         return sorted(p.name for p in self.runs_dir.iterdir() if p.is_dir())
@@ -86,16 +106,28 @@ class RunStore:
     # -- generic artifacts --------------------------------------------
     def _atomic_write(self, path: Path, data: Any) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        temp = path.with_suffix(path.suffix + ".tmp")
         if isinstance(data, str):
             text = data
         else:
             text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-        with temp.open("w", encoding="utf-8") as fh:
-            fh.write(text)
-            fh.flush()
-            os.fsync(fh.fileno())
-        temp.replace(path)
+        # A unique temp file in the destination directory prevents concurrent
+        # writers from sharing (and corrupting) one fixed ".tmp" path.
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent)
+        )
+        temp = Path(temp_name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(text)
+                fh.flush()
+                os.fsync(fh.fileno())
+            temp.replace(path)
+        except BaseException:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
         try:
             dir_fd = os.open(path.parent, os.O_RDONLY)
             os.fsync(dir_fd)
@@ -103,20 +135,53 @@ class RunStore:
         except OSError:
             pass
 
+    def _read_text(self, path: Path, label: str) -> str:
+        try:
+            return path.read_text(encoding="utf-8")
+        except FileNotFoundError as exc:
+            raise StoreError(f"{label} not found") from exc
+        except UnicodeDecodeError as exc:
+            raise StoreError(f"{label} is not valid UTF-8") from exc
+        except OSError as exc:
+            raise StoreError(f"cannot read {label}: {exc}") from exc
+
+    @staticmethod
+    def _parse_json(text: str, label: str) -> Any:
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise StoreError(f"{label} is corrupt or incomplete: {exc.msg}") from exc
+
+    def _read_json_file(self, path: Path, label: str) -> Any:
+        return self._parse_json(self._read_text(path, label), label)
+
     def write_artifact(self, run_id: str, name: str, data: Any) -> Path:
         target = self._artifact_path(run_id, name)
-        self._atomic_write(target, data)
+        with self._lock(run_id):
+            self._atomic_write(target, data)
         return target
 
     def read_artifact(self, run_id: str, name: str, *, allowlist: Iterable[str] | None = None) -> Any:
         target = self._artifact_path(run_id, name, allowlist=allowlist)
-        if not target.is_file():
-            raise StoreError(f"artifact not found: {name!r}")
-        text = target.read_text(encoding="utf-8")
-        if target.suffix.lower() in {".json"}:
-            return json.loads(text)
-        if target.suffix.lower() in {".jsonl"}:
-            return [json.loads(line) for line in text.splitlines() if line.strip()]
+        with self._lock(run_id):
+            if not target.is_file():
+                raise StoreError(f"artifact not found: {name!r}")
+            text = self._read_text(target, f"artifact {name!r}")
+        suffix = target.suffix.lower()
+        if suffix == ".json":
+            return self._parse_json(text, f"artifact {name!r}")
+        if suffix == ".jsonl":
+            items = []
+            for line_number, line in enumerate(text.splitlines(), start=1):
+                if not line.strip():
+                    continue
+                try:
+                    items.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    raise StoreError(
+                        f"artifact {name!r} is corrupt at line {line_number}: {exc.msg}"
+                    ) from exc
+            return items
         return text
 
     def exists(self, run_id: str, name: str) -> bool:
@@ -130,45 +195,123 @@ class RunStore:
                       files_done: int | None = None, files_total: int | None = None,
                       error: dict[str, Any] | None = None) -> dict[str, Any]:
         path = self.run_dir(run_id) / "status.json"
-        payload = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"run_id": run_id}
-        payload["status"] = status
-        payload["stage"] = stage
-        payload.setdefault("progress", {})
-        payload["progress"]["stage"] = stage
-        payload["progress"]["percent"] = max(0.0, min(100.0, float(percent)))
-        if files_done is not None:
-            payload["progress"]["files_done"] = files_done
-        if files_total is not None:
-            payload["progress"]["files_total"] = files_total
-        if status in {"succeeded", "failed", "cancelled"}:
-            payload["finished_at"] = _utc_now()
-        if error is not None:
-            payload["error"] = error
-        self._atomic_write(path, payload)
-        return payload
+        with self._lock(run_id):
+            if path.exists():
+                payload = self._read_json_file(path, f"status for run {run_id!r}")
+                if not isinstance(payload, dict):
+                    raise StoreError(f"status for run {run_id!r} is corrupt")
+            else:
+                payload = {"run_id": run_id}
+            payload["status"] = status
+            payload["stage"] = stage
+            payload.setdefault("progress", {})
+            payload["progress"]["stage"] = stage
+            payload["progress"]["percent"] = max(0.0, min(100.0, float(percent)))
+            if files_done is not None:
+                payload["progress"]["files_done"] = files_done
+            if files_total is not None:
+                payload["progress"]["files_total"] = files_total
+            if status in {"succeeded", "failed", "cancelled"}:
+                payload["finished_at"] = _utc_now()
+            if error is not None:
+                payload["error"] = error
+            self._atomic_write(path, payload)
+            return payload
 
     def read_status(self, run_id: str) -> dict[str, Any]:
         path = self.run_dir(run_id) / "status.json"
-        if not path.exists():
-            raise StoreError(f"run not found: {run_id!r}")
-        return json.loads(path.read_text(encoding="utf-8"))
+        with self._lock(run_id):
+            if not path.exists():
+                raise StoreError(f"run not found: {run_id!r}")
+            payload = self._read_json_file(path, f"status for run {run_id!r}")
+        if not isinstance(payload, dict):
+            raise StoreError(f"status for run {run_id!r} is corrupt")
+        return payload
 
     # -- audit ---------------------------------------------------------
     def read_audit(self, run_id: str) -> list[dict[str, Any]]:
+        with self._lock(run_id):
+            return self._read_audit_locked(run_id)
+
+    def _read_audit_locked(self, run_id: str) -> list[dict[str, Any]]:
         path = self.run_dir(run_id) / "audit.jsonl"
         if not path.exists():
             return []
-        events = []
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                events.append(json.loads(line))
+        text = self._read_text(path, f"audit log for run {run_id!r}")
+        events: list[dict[str, Any]] = []
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            if not line.strip():
+                continue
+            event = self._parse_json(
+                line, f"audit log for run {run_id!r} (line {line_number})"
+            )
+            if not isinstance(event, dict):
+                raise StoreError(
+                    f"audit log for run {run_id!r} is corrupt at line {line_number}"
+                )
+            events.append(event)
         return events
 
-    def append_audit(self, run_id: str, *, action: str, object_type: str, object_id: str,
-                     actor: str = "system", before_hash: str | None = None,
-                     after_hash: str | None = None) -> dict[str, Any]:
-        events = self.read_audit(run_id)
-        prev_hash = events[-1]["hash"] if events else "GENESIS"
+    def _checkpoint_path(self, run_id: str) -> Path:
+        return self.run_dir(run_id) / _CHECKPOINT_NAME
+
+    def _read_checkpoint_locked(self, run_id: str) -> dict[str, Any] | None:
+        path = self._checkpoint_path(run_id)
+        if not path.exists():
+            return None
+        payload = self._read_json_file(path, f"audit checkpoint for run {run_id!r}")
+        if not isinstance(payload, dict):
+            raise StoreError(f"audit checkpoint for run {run_id!r} is corrupt")
+        return payload
+
+    def _audit_state_locked(
+        self, run_id: str
+    ) -> tuple[bool, int, str | None]:
+        audit_path = self.run_dir(run_id) / "audit.jsonl"
+        checkpoint_path = self._checkpoint_path(run_id)
+        existed = audit_path.exists()
+        size = audit_path.stat().st_size if existed else 0
+        checkpoint = (
+            checkpoint_path.read_text(encoding="utf-8")
+            if checkpoint_path.exists()
+            else None
+        )
+        return existed, size, checkpoint
+
+    def _restore_audit_locked(
+        self, run_id: str, existed: bool, size: int, checkpoint: str | None
+    ) -> None:
+        """Best-effort rollback used when the paired write cannot complete."""
+        try:
+            audit_path = self.run_dir(run_id) / "audit.jsonl"
+            checkpoint_path = self._checkpoint_path(run_id)
+            if existed:
+                with audit_path.open("r+b") as fh:
+                    fh.truncate(size)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+            else:
+                audit_path.unlink(missing_ok=True)
+            if checkpoint is None:
+                checkpoint_path.unlink(missing_ok=True)
+            else:
+                self._atomic_write(checkpoint_path, checkpoint)
+        except Exception:
+            # Never hide the original write failure with a rollback failure.
+            pass
+
+    def _append_audit_locked(
+        self, run_id: str, *, action: str, object_type: str, object_id: str,
+        actor: str = "system", before_hash: str | None = None,
+        after_hash: str | None = None,
+    ) -> dict[str, Any]:
+        events = self._read_audit_locked(run_id)
+        if events:
+            prev_hash = events[-1].get("hash")
+            if not isinstance(prev_hash, str):
+                raise StoreError(f"audit log for run {run_id!r} is corrupt: missing hash")
+        else:
+            prev_hash = "GENESIS"
         event = {
             "schema_version": "1.0",
             "event_id": f"AE-{uuid.uuid4().hex[:12]}",
@@ -185,57 +328,118 @@ class RunStore:
         }
         event["hash"] = _hash_payload(event)
         path = self.run_dir(run_id) / "audit.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(event, ensure_ascii=False) + "\n")
-            fh.flush()
-            os.fsync(fh.fileno())
+        checkpoint_path = self._checkpoint_path(run_id)
+        state = self._audit_state_locked(run_id)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(event, ensure_ascii=False) + "\n")
+                fh.flush()
+                os.fsync(fh.fileno())
+            self._atomic_write(checkpoint_path, {
+                "schema_version": "1.0",
+                "run_id": run_id,
+                "count": len(events) + 1,
+                "head": event["hash"],
+                "updated_at": _utc_now(),
+            })
+        except BaseException:
+            self._restore_audit_locked(run_id, *state)
+            raise
         return event
 
+    def append_audit(self, run_id: str, *, action: str, object_type: str, object_id: str,
+                     actor: str = "system", before_hash: str | None = None,
+                     after_hash: str | None = None) -> dict[str, Any]:
+        with self._lock(run_id):
+            return self._append_audit_locked(
+                run_id,
+                action=action,
+                object_type=object_type,
+                object_id=object_id,
+                actor=actor,
+                before_hash=before_hash,
+                after_hash=after_hash,
+            )
+
     def verify_audit(self, run_id: str) -> bool:
-        events = self.read_audit(run_id)
-        prev = "GENESIS"
-        for index, event in enumerate(events):
-            if event.get("seq") != index:
+        with self._lock(run_id):
+            try:
+                events = self._read_audit_locked(run_id)
+            except StoreError:
                 return False
-            if event.get("prev_hash") != prev:
+
+            prev = "GENESIS"
+            for index, event in enumerate(events):
+                if event.get("run_id") != run_id:
+                    return False
+                if event.get("seq") != index:
+                    return False
+                if event.get("prev_hash") != prev:
+                    return False
+                observed = event.get("hash")
+                payload = {k: v for k, v in event.items() if k != "hash"}
+                if not isinstance(observed, str) or _hash_payload(payload) != observed:
+                    return False
+                prev = observed
+
+            try:
+                checkpoint = self._read_checkpoint_locked(run_id)
+            except StoreError:
                 return False
-            observed = event.get("hash")
-            payload = {k: v for k, v in event.items() if k != "hash"}
-            if _hash_payload(payload) != observed:
-                return False
-            prev = observed
-        return True
+            if checkpoint is not None:
+                if checkpoint.get("run_id") not in (None, run_id):
+                    return False
+                count = checkpoint.get("count")
+                if not isinstance(count, int) or isinstance(count, bool):
+                    return False
+                if count != len(events):
+                    return False
+                expected_head = events[-1]["hash"] if events else "GENESIS"
+                if checkpoint.get("head", "GENESIS") != expected_head:
+                    return False
+            return True
 
     # -- decisions -----------------------------------------------------
     def record_decision(self, run_id: str, *, object_type: str, object_id: str,
                         action: str, actor: str, reason: str,
                         before_hash: str | None = None, after_hash: str | None = None) -> dict[str, Any]:
-        decisions_path = self.run_dir(run_id) / "decisions.json"
-        payload = {"decisions": []}
-        if decisions_path.exists():
-            payload = json.loads(decisions_path.read_text(encoding="utf-8"))
-        decision = {
-            "schema_version": "1.0",
-            "decision_id": f"D-{uuid.uuid4().hex[:12]}",
-            "object_type": object_type,
-            "object_id": object_id,
-            "action": action,
-            "actor": actor,
-            "reason": reason,
-            "before_hash": before_hash,
-            "after_hash": after_hash,
-            "created_at": _utc_now(),
-        }
-        payload["decisions"].append(decision)
-        self._atomic_write(decisions_path, payload)
-        self.append_audit(
-            run_id,
-            action=f"{object_type}.{action}",
-            object_type=object_type,
-            object_id=object_id,
-            actor=actor,
-            before_hash=before_hash,
-            after_hash=after_hash,
-        )
-        return decision
+        with self._lock(run_id):
+            decisions_path = self.run_dir(run_id) / "decisions.json"
+            payload = {"decisions": []}
+            if decisions_path.exists():
+                payload = self._read_json_file(
+                    decisions_path, f"decisions for run {run_id!r}"
+                )
+                if not isinstance(payload, dict) or not isinstance(payload.get("decisions"), list):
+                    raise StoreError(f"decisions for run {run_id!r} is corrupt")
+            decision = {
+                "schema_version": "1.0",
+                "decision_id": f"D-{uuid.uuid4().hex[:12]}",
+                "object_type": object_type,
+                "object_id": object_id,
+                "action": action,
+                "actor": actor,
+                "reason": reason,
+                "before_hash": before_hash,
+                "after_hash": after_hash,
+                "created_at": _utc_now(),
+            }
+            audit_state = self._audit_state_locked(run_id)
+            # Audit first: if this fails, the decision is never persisted.
+            self.append_audit(
+                run_id,
+                action=f"{object_type}.{action}",
+                object_type=object_type,
+                object_id=object_id,
+                actor=actor,
+                before_hash=before_hash,
+                after_hash=after_hash,
+            )
+            payload["decisions"].append(decision)
+            try:
+                self._atomic_write(decisions_path, payload)
+            except BaseException:
+                self._restore_audit_locked(run_id, *audit_state)
+                raise
+            return decision
