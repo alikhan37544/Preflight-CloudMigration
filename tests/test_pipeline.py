@@ -6,7 +6,9 @@ Written before app/services/pipeline.py exists.
 from __future__ import annotations
 
 import json
+import re
 import shutil
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -84,6 +86,58 @@ def test_packet_has_six_pages_and_disclaimers(run) -> None:
     assert html.count("<caption>") >= 10
     assert 'scope="col"' in html
     assert 'scope="row"' in html
+
+
+def test_packet_table_captions_follow_each_tables_headers(run) -> None:
+    """Captions must come from the table they label, not a positional list.
+
+    A positional list shifts every caption when a finding rule is added or
+    removed; the old code even labelled a finding table "Readiness flags".
+    """
+    store, _ = run
+    html = (store.run_dir("R-PIPE") / "packet.html").read_text(encoding="utf-8")
+    tables = re.findall(r"<table[^>]*>(.*?)</table>", html, flags=re.S)
+    assert len(tables) >= 10
+    finding_tables = 0
+    for index, inner in enumerate(tables):
+        caption_match = re.search(r"<caption>(.*?)</caption>", inner, flags=re.S)
+        assert caption_match, f"table {index} has no caption"
+        caption = unescape(caption_match.group(1)).strip()
+        assert caption, f"table {index} has an empty caption"
+        first_row = re.search(r"<tr[^>]*>(.*?)</tr>", inner, flags=re.S)
+        assert first_row, f"table {index} has no header row"
+        header_cells = re.findall(r"<th[^>]*>(.*?)</th>", first_row.group(1), flags=re.S)
+        if index == 0:
+            assert caption == "Packet cover"
+            continue
+        assert header_cells, f"table {index} has no header cells"
+        if not re.search(r"<td[^>]*>", first_row.group(1)):
+            labels = [
+                re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", cell))).strip()
+                for cell in header_cells
+            ]
+            for label in dict.fromkeys(labels):
+                assert label in caption, (caption, label)
+        if "Decision" in first_row.group(1):
+            finding_tables += 1
+            assert caption.startswith("Table: Finding")
+            assert "Readiness flags" not in caption
+    assert finding_tables >= 2
+    assert "Readiness flags" not in "\n".join(
+        unescape(re.search(r"<caption>(.*?)</caption>", table, flags=re.S).group(1))
+        for table in tables
+    )
+    readiness_tables = [table for table in tables if "Flag</th>" in table]
+    assert readiness_tables
+    for table in readiness_tables:
+        caption = unescape(re.search(r"<caption>(.*?)</caption>", table, flags=re.S).group(1))
+        assert caption.startswith("Table: Flag")
+    # Mobile keeps the header row visible and scrolls the wrapper instead of
+    # stacking cells without labels.
+    assert "thead { display: none" not in html
+    assert 'role="group" aria-label="Table: Finding' in html
+    assert 'data-columns="7"' in html
+    assert "table[data-columns=\"7\"] { min-width: 760px; }" in html
 
 
 def test_codegen_draft_keeps_garage_location_names_coherent(run) -> None:
@@ -240,6 +294,17 @@ def test_edited_findings_artifact_breaks_packet_content_binding(run, tmp_path) -
     valid, reason = verify_packet_artifacts(copy_store, "R-PIPE", include_content=True)
     assert valid is False
     assert "findings" in reason and "content digest" in reason
+
+
+def test_documented_packet_fallback_has_accessible_tables() -> None:
+    html = (REPO / "docs/demo/preflight-review-packet.html").read_text(encoding="utf-8")
+    assert '<main class="page">' in html
+    assert html.count("<caption>") >= 10
+    assert "<thead>" in html
+    assert 'scope="col"' in html
+    assert 'scope="row"' in html
+    assert "thead { display: none" not in html
+    assert 'role="group" aria-label="Table: Finding' in html
 
 
 def test_packet_carries_readiness_evidence_mappings_and_excluded_files(run) -> None:

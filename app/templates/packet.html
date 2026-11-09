@@ -105,7 +105,8 @@
     {% if view.readiness %}
     {% call scroll_region("Packet readiness flags table, horizontally scrollable if needed") %}
       <table class="data-table compact readiness-table">
-        <thead><tr><th>Flag</th><th>Rule</th><th>Claim</th><th>Standard</th><th>State</th></tr></thead>
+        <caption>Readiness flags included in the review packet.</caption>
+        <thead><tr><th scope="col">Flag</th><th scope="col">Rule</th><th scope="col">Claim</th><th scope="col">Standard</th><th scope="col">State</th></tr></thead>
         <tbody>
           {% for finding in view.readiness %}
           <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ state_pill(finding.decision) }}</td></tr>
@@ -122,7 +123,8 @@
   {% if view.mappings %}
   {% call scroll_region("Packet dispositions table, horizontally scrollable if needed") %}
     <table class="data-table compact packet-mappings-table">
-      <thead><tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr></thead>
+      <caption>Mapping and disposition ledger included in the review packet.</caption>
+      <thead><tr><th scope="col">ID</th><th scope="col">Source</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Provenance</th><th scope="col">Reviewer state</th></tr></thead>
       <tbody>
         {% for item in view.mappings %}
         <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ state_pill(item.reviewer_state) }}</td></tr>
@@ -134,7 +136,8 @@
   {% if view.changes %}
   {% call scroll_region("Packet changes table, horizontally scrollable if needed") %}
     <table class="data-table compact changes-table">
-      <thead><tr><th>Change</th><th>Approval state</th><th>Target path</th></tr></thead>
+      <caption>Draft changes awaiting approval in the review packet.</caption>
+      <thead><tr><th scope="col">Change</th><th scope="col">Approval state</th><th scope="col">Target path</th></tr></thead>
       <tbody>
         {% for item in view.changes %}
         {% set item_state = effective_change_state(view.decisions, item.change_id, item.approval_state) %}
