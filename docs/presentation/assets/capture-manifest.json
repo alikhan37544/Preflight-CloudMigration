@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T16:20:34+00:00",
+  "generated_at": "2026-11-09T18:33:28+00:00",
   "base_url": "http://127.0.0.1:8000",
   "run_id": "R-DEMO-001",
   "viewports": {
@@ -28,23 +28,131 @@
   "after_decision": {
     "audit_events": 11,
     "assumptions": 4,
-    "audit_head": "53d9ec3585cc589a4a4215a661fcbe428b712432f04edc20f8e6746db3ef8113",
-    "packet_hash": "fd08fa92d89ab02bfc2c4b12e26d5799d7d7adf476419d8a514bb8523f92691e",
+    "snapshot_hash": "668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21",
+    "audit_head": "d411fa4bf877e7542446e09be502d1614ee851ecf6f88a467261980e7d67f86d",
+    "packet_hash": "81a07abad5e6401134311bf04d521e1eed7b81e745f84aa77118e7b521b73543",
     "packet_hash_scope": "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.",
     "packet_audit_event_count": 11,
     "packet_assumptions": 4
   },
+  "content_facts": {
+    "snapshot_short": "668872420dfb",
+    "snapshot_hash": "668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21",
+    "packet_cover_snapshot": "668872420dfb",
+    "packet_cover_packet": "81a07abad5e6"
+  },
+  "crop_checks": [
+    {
+      "name": "workbench",
+      "clip": {
+        "x": 218,
+        "y": 270,
+        "width": 1212,
+        "height": 630
+      },
+      "full": [],
+      "partial": [],
+      "bottom_before": null,
+      "ok": true,
+      "errors": []
+    },
+    {
+      "name": "manifest",
+      "clip": {
+        "x": 218,
+        "y": 200,
+        "width": 1212,
+        "height": 620
+      },
+      "full": [],
+      "partial": [],
+      "bottom_before": null,
+      "ok": true,
+      "errors": []
+    },
+    {
+      "name": "reconstruction",
+      "clip": {
+        "x": 218,
+        "y": 105,
+        "width": 1212,
+        "height": 770
+      },
+      "full": [],
+      "partial": [],
+      "bottom_before": "[data-mapping-row=\"M-06\"]",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "name": "findings",
+      "clip": {
+        "x": 218,
+        "y": 220,
+        "width": 1212,
+        "height": 1000
+      },
+      "full": [],
+      "partial": [],
+      "bottom_before": null,
+      "ok": true,
+      "errors": []
+    },
+    {
+      "name": "reconstruction",
+      "clip": {
+        "x": 218,
+        "y": 105,
+        "width": 1212,
+        "height": 770
+      },
+      "full": [
+        ".page-head .eyebrow",
+        ".page-head h1",
+        "[data-gen-writes]",
+        ".banner-info",
+        ".tabs",
+        "[data-mapping-row=\"M-01\"]",
+        "[data-mapping-row=\"M-04\"]",
+        "[data-assumption-notice]"
+      ],
+      "partial": [
+        ".mapping-table"
+      ],
+      "bottom_before": "[data-mapping-row=\"M-05\"]",
+      "ok": true,
+      "errors": []
+    },
+    {
+      "name": "packet",
+      "clip": {
+        "x": 218,
+        "y": 95,
+        "width": 1212,
+        "height": 772
+      },
+      "full": [
+        ".packet-sections",
+        ".packet-assumptions-table tbody tr:first-child"
+      ],
+      "partial": [],
+      "bottom_before": ".packet-assumptions-table tbody tr:nth-child(2)",
+      "ok": true,
+      "errors": []
+    }
+  ],
+  "crop_failures": [],
   "artifacts": [
     {
       "file": "workbench-1440x900.png",
-      "bytes": 167999,
-      "sha256": "0c9f6729d76a1e4e78d84b87c6dc956de61126114a9e915f26c889af8be01a9d",
+      "bytes": 168006,
+      "sha256": "4491735811d0552e478d435daba127d84f5062dcf51847ac35395c328d647a22",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
       "file": "workbench-focus-1440x900.png",
-      "bytes": 101244,
-      "sha256": "2fc60e85dadcb85fac3cbb6a698c0f7c40b09917e4aa0302b56f5435a27b245c",
+      "bytes": 101863,
+      "sha256": "efd6350e0885f79ef269591cb67d9dd7022826a2549b9bb08c9af810f8698d80",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
@@ -55,20 +163,20 @@
     },
     {
       "file": "workbench-1280x900.png",
-      "bytes": 170101,
-      "sha256": "0dbc2ce658a45aefb4a3432598d1993a0e9a300a0e2d3bb4f59166822a5e5cbc",
+      "bytes": 170144,
+      "sha256": "11617ae369f489667346765ff03f8e4e1832a43b2bebbd98fa11c885fb039f22",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
       "file": "workbench-1280x720.png",
-      "bytes": 145023,
-      "sha256": "ea73ab5c37fbe58582d460ebf76fd717f4c026756c0c2825ab1653cf65cd8ef4",
+      "bytes": 145064,
+      "sha256": "62ef0d2d180b7ab0791acacd8f40bf72a687437ab8739113c249dc310046d711",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
       "file": "workbench-evidence-1440x900.png",
-      "bytes": 181565,
-      "sha256": "bee99cff243223ad7f6394e07b49cdb500a05f4eca6aca4c29cfe21052c8ac82",
+      "bytes": 181571,
+      "sha256": "dbd60879c1186582c19abcca433b9553e1705a5e04efb44d2769d59439ffd5a6",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&evidence=EV-0001&run=R-DEMO-001"
     },
     {
@@ -91,8 +199,8 @@
     },
     {
       "file": "manifest-focus-1440x900.png",
-      "bytes": 108201,
-      "sha256": "5fc65064a28a29bdfe7226fb91b386396615511145aac2c36080e0403dfa63aa",
+      "bytes": 96759,
+      "sha256": "c3ff81313b9ae56449f4ed6b3d9d6fd681bc91597a5dcec68318cae27408fb81",
       "path": "http://127.0.0.1:8000/manifest?excluded=1&run=R-DEMO-001"
     },
     {
@@ -109,14 +217,14 @@
     },
     {
       "file": "reconstruction-focus-1440x900.png",
-      "bytes": 148403,
-      "sha256": "ff116b4f6869740e0d23207d45d4f43af104e9be641505b2a2462db57960c123",
+      "bytes": 142834,
+      "sha256": "32110ac0f791de2709dcc3ca7d868c4d3ef1690e44b01543669d233c9d1955b4",
       "path": "http://127.0.0.1:8000/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-full-1440.png",
-      "bytes": 330079,
-      "sha256": "a6cea6911e8c997f94ce0aa44cb5865b02a3c32b7cda1c363941376c976bfac9",
+      "bytes": 330118,
+      "sha256": "65b12b9d8e4422beca8aabe401de68e083b6211e8793714bf3af107fa93c21ab",
       "path": "http://127.0.0.1:8000/reconstruction?run=R-DEMO-001"
     },
     {
@@ -127,26 +235,26 @@
     },
     {
       "file": "findings-focus-1440x900.png",
-      "bytes": 131594,
-      "sha256": "522db35c487e374fddf81ac70c193b58ac403b7c47189c05b1f6c711b22ffa90",
+      "bytes": 215378,
+      "sha256": "c62216c5b430cf6d88b29ae5c588605329135251fd2124745dfd1a429ac32863",
       "path": "http://127.0.0.1:8000/findings?run=R-DEMO-001"
     },
     {
       "file": "findings-guards-1440.png",
-      "bytes": 154644,
-      "sha256": "9490a1447ef94397ac588aa71569c32ac9d3298b1fb656ffc5d7cd8faec415ea",
+      "bytes": 152548,
+      "sha256": "e1261b6fe46498e1691cb27dcfd2aa0206a2947bf33ae8fbe1f53c76395e4ef4",
       "path": "http://127.0.0.1:8000/findings?run=R-DEMO-001"
     },
     {
       "file": "findings-guard-query-make.png",
-      "bytes": 20998,
-      "sha256": "31b8868731313fe779a9f63ea2f066ec4dc95cf9b4724f4ffe51f3614be73662",
+      "bytes": 20560,
+      "sha256": "2673856252e8859e82671e13071e43c09cc8b5272f34e2ec776ec9b1632f9b14",
       "path": "http://127.0.0.1:8000/findings?run=R-DEMO-001"
     },
     {
       "file": "findings-full-1440.png",
-      "bytes": 622568,
-      "sha256": "fdf12d86d90b2bd19f671fa65f112d572c539b76555fdc2225bc4e45329db9b3",
+      "bytes": 622599,
+      "sha256": "2609ea0486394c1cd7ef14770886c192ea4b51a7e9a6da3184d053a43df6895a",
       "path": "http://127.0.0.1:8000/findings?run=R-DEMO-001"
     },
     {
@@ -205,14 +313,14 @@
     },
     {
       "file": "packet-predecision-focus-1440x900.png",
-      "bytes": 127597,
-      "sha256": "b086be6f29d0e24c0185b5132a9e57b0da78506e6d8e9907135aa07e6f1cc3cb",
+      "bytes": 137738,
+      "sha256": "3de0a0c2090e21ed53bd80d19d22238369e34ede0a3097057ae22e11f612b90f",
       "path": "http://127.0.0.1:8000/packet?run=R-DEMO-001"
     },
     {
       "file": "packet-predecision-full-1440.png",
-      "bytes": 688655,
-      "sha256": "b0116da22200dd9e2a05b96ffd36067f6b51b0a10e9286f34af749ff48593fca",
+      "bytes": 688671,
+      "sha256": "22b43e108d0cb856e97c337ebc1bf9278f7ffa8f3bb95ed2750e3763654b6051",
       "path": "http://127.0.0.1:8000/packet?run=R-DEMO-001"
     },
     {
@@ -229,51 +337,51 @@
     },
     {
       "file": "reconstruction-after-decision-1440x900.png",
-      "bytes": 181126,
-      "sha256": "b0685caeb2a9a43e059119d1c51a7a9b3d3e0ee76da6019227613a1d99d96646",
-      "path": "http://127.0.0.1:35057/reconstruction?run=R-DEMO-001"
+      "bytes": 177265,
+      "sha256": "51d77e106a0d81d03f491f9e43647248850a2d082d3b259b4b5c5ce635eb4231",
+      "path": "http://127.0.0.1:37075/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-after-decision-focus-1440x900.png",
-      "bytes": 141399,
-      "sha256": "20544e6cc1465ffc100dd279b554f003528bc2c5f5765102829d4685173d2ea0",
-      "path": "http://127.0.0.1:35057/reconstruction?run=R-DEMO-001"
+      "bytes": 128943,
+      "sha256": "05d4edb47745211c1a310828382bded56f7c8025e44ce023a17a8693be223178",
+      "path": "http://127.0.0.1:37075/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-m12-row.png",
-      "bytes": 15810,
-      "sha256": "376ad0e1dd565fbaca7d3405f5f80e59a1f67dc4cd59392dbfe3b761579a00a4",
-      "path": "http://127.0.0.1:35057/reconstruction?run=R-DEMO-001"
+      "bytes": 15929,
+      "sha256": "f7fd11a18d0a356ba20fab3ad5b27e95446c1fc343767a058bd58ffea3802edc",
+      "path": "http://127.0.0.1:37075/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-after-decision-full.png",
-      "bytes": 346137,
-      "sha256": "ee2b95650ab2969e7d356aedc0408b905fc385f75fb22b3d02a5e7c8fe8332cb",
-      "path": "http://127.0.0.1:35057/reconstruction?run=R-DEMO-001"
+      "bytes": 343276,
+      "sha256": "947a50f15b11743be4efe1963db0a7ff9b08c05bfe1bbc2fd634e3eb55b87f59",
+      "path": "http://127.0.0.1:37075/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-assumptions-1440x900.png",
       "bytes": 190724,
       "sha256": "4e51cb4038d2297f538670feaba9ddffc224632964eec2b69498c12a5693dd3b",
-      "path": "http://127.0.0.1:35057/reconstruction?tab=assumptions&run=R-DEMO-001"
+      "path": "http://127.0.0.1:37075/reconstruction?tab=assumptions&run=R-DEMO-001"
     },
     {
       "file": "packet-1440x900.png",
-      "bytes": 184623,
-      "sha256": "fa62d5f1c5a4cce0146c7d0e99f61a851bd1adbb67a1abca811304d9bfccae07",
-      "path": "http://127.0.0.1:35057/packet?run=R-DEMO-001"
+      "bytes": 184621,
+      "sha256": "ba7948c58942f4ef6f533f003783f0adf7b993006740367a10a207f7ac99139b",
+      "path": "http://127.0.0.1:37075/packet?run=R-DEMO-001"
     },
     {
       "file": "packet-focus-1440x900.png",
-      "bytes": 127562,
-      "sha256": "09caa67a6bfc094cf06ae266a1fcc59747ceb58bcd9aaa9ca469810414b72435",
-      "path": "http://127.0.0.1:35057/packet?run=R-DEMO-001"
+      "bytes": 137832,
+      "sha256": "34d5ecdab47d6fbd25d0fb23455871f07bda9e1ffa3e1fabe6a995ca4402df65",
+      "path": "http://127.0.0.1:37075/packet?run=R-DEMO-001"
     },
     {
       "file": "packet-full-1440.png",
-      "bytes": 703211,
-      "sha256": "40b4c677f0c35928d526c6c462ba5f3c7b0374b6bb8861324c642858ba85e77b",
-      "path": "http://127.0.0.1:35057/packet?run=R-DEMO-001"
+      "bytes": 702282,
+      "sha256": "3c25971b868339ad6aa0754a0a935144062714753dcf72ea4224b2df90b6fae6",
+      "path": "http://127.0.0.1:37075/packet?run=R-DEMO-001"
     }
   ]
 }

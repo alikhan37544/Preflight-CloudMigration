@@ -24,13 +24,34 @@
     },
     "console_errors": [],
     "external_requests": [],
-    "generated_at": "2026-11-09T16:20:34+00:00"
+    "layout_checks": {
+      "stage_labels_1920": {
+        "overlaps": [],
+        "ok": true
+      }
+    },
+    "accessibility": {
+      "mobile_matrix": {
+        "tabindex": "0",
+        "role": "region",
+        "label": "Capability comparison table; scroll horizontally at narrow widths",
+        "scrollWidth": 760,
+        "clientWidth": 358
+      }
+    },
+    "generated_at": "2026-11-09T18:33:27+00:00"
   },
   "pdf": {
-    "pdf": "/home/understressengineer/programming/Preflight-CloudMigration/docs/presentation/PreFlight-deck.pdf",
-    "bytes": 917890,
-    "sha256": "754bb980b9447fa1dd5b098d9c42abc92e37eeca3daa2d5b26047d862ae14f4f",
+    "pdf": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo2-deck/docs/presentation/PreFlight-deck.pdf",
+    "bytes": 967458,
+    "sha256": "8f2e009bcf2c94c1dbe1e8ee9c85038206927ae98588d883eb6e2fdc2434cdf7",
     "pages": 16,
     "page_size": "1200 x 675.12 pts"
+  },
+  "content_validation": {
+    "ok": true,
+    "failures": [],
+    "snapshot_short": "668872420dfb",
+    "source": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo2-deck/docs/presentation/index.html"
   }
 }

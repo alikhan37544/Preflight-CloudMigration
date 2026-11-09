@@ -66,3 +66,58 @@
 7. **PDF/packaging must be regenerated if the app fixes are rebased.** If the app branch changes after this commit, rerun the capture command before presenting.
 
 No score is claimed in this log; the independent reviewer panel decides.
+
+## Loop 2 — Hash scope, crops, and marker legibility (9 Nov 2026)
+
+**Branch:** `demo2/deck`, cut from `feat/deep-review-demo` HEAD `b7d0303`. Only `docs/presentation/**` and `scripts/capture_demo.py` were changed. App/content fixes remain owned by the parallel app branch.
+
+### What changed
+
+**Hash consistency and scope**
+- Slide 7 now shows `668872420dfb`, the fixture snapshot hash in the live immutability banner; the stale `20b5a25451f3` value is gone. The capture script reads the banner (`title` / short code text) and validates that the visible slide-7 prefix matches the captured manifest hash.
+- Slide 12 no longer hard-codes packet/audit values. It shows `packet`, `packet_json`, and `audit head` as **read live**, keeps only the stable snapshot digest, and carries a visible note that reviewer actions and packet refresh change the other values.
+- Packet hash scope is corrected on slides 5 and 12 and in the runbook: the main packet hash covers **rendered packet HTML** (hash fields normalized); `packet_json` covers **canonical packet JSON**; content digests bind findings, mappings, and evidence; the audit head covers the event chain. `evidence.json` now carries `packet_hash_scope` and capture-time examples with explicit labels.
+- `capture-manifest.json`, `evidence.json`, the runbook, README, and regenerated PDF now agree on the snapshot hash, post-decision counts, and PDF hash/bytes.
+
+**Crops and evidence**
+- Focus crops now start at `x=218` (50 px app gutter) and end at section boundaries. Coordinates used by `scripts/capture_demo.py`:
+  - Workbench: `x=218 y=270 w=1212 h=630`
+  - Manifest: `x=218 y=200 w=1212 h=620` (ends after pagination, before the app footer)
+  - Reconstruction: `x=218 y=105 w=1212 h=770` (ends after M-04; M-12 below the fold is labelled schematic)
+  - Findings: `x=218 y=220 w=1212 h=1000` (includes the complete Finding F-002 detail panel)
+  - Packet: `x=218 y=95 w=1212 h=772` (page header, six cards, and complete A-01 register row; no mid-row cut)
+- The decision toast is waited out before capture; the M-12 panel is visibly labelled “Schematic · M-12 row below the crop.” Slide 12’s caption now says the crop shows the assumption-register summary (A-01) and that the live register has four rows including A-DEC-04.
+- `capture_demo.py` now validates each crop against the live DOM: required elements must be wholly inside the crop, partial regions must start inside it, the next section must not be crossed, and the app footer must stay outside. Six checks passed; failures are recorded in `capture-manifest.json` and make the script exit non-zero.
+
+**Markers and layout**
+- Markers on slides 6, 7, 8, 9, and 12 are smaller and placed in the image gutter (or the table/detail-panel gutter for slide 9) at the measured row; they no longer sit on the text they explain.
+- Slide 9 gets a wider evidence column and a short-projector column ratio so the complete detail panel stays visible at 1440 × 900, 1280 × 720, and 1024 × 768.
+- Slide 4’s stage-label column switches to `max-content` at ≥1600 px; validated at 1920 × 1080 with no label/text overlap.
+- Slide 3 splits **CAST/ADDI** (portfolio and code discovery) from **Syntra ETL** (data migration/extraction), softens “files nobody classified” to “files that were never classified,” and compacts at 720/768 so the extra row does not clip.
+- Slide 12’s dark hash-block labels now use `#AFC4CF`; `.title-meta`, `.dot-label`, and `.pipe-num` were darkened through `--muted-2: #52636F`; the `.kicker` is included in the 10 px floor. The 390 capability matrix is a labelled `tabindex="0"` scroll region.
+
+### Validation (current capture)
+
+- Deck: 16/16 slides navigated at **1920×1080, 1440×900, 1280×720, 1024×768, 390×844**; **0 failures**, 0 console errors, 0 external requests; mobile matrix focusable; no 1920 stage-label overlap.
+- Crop checks: **6/6 pass** (workbench, manifest, reconstruction pre/post, findings, packet).
+- Content check: **ok** — slide-7 snapshot prefix matches the manifest; slide-12 packet/audit values are read-live; scope language present on slides 5 and 12.
+- PDF: **16 pages, 1200 × 675.12 pt**, 967,458 bytes, SHA-256 `8f2e009bcf2c94c1dbe1e8ee9c85038206927ae98588d883eb6e2fdc2434cdf7`.
+- `evidence.json` and `capture-manifest.json` regenerated from the same run.
+
+### Remaining risks / final recapture
+
+1. **App/content merge changes screens.** These captures are from the current live `127.0.0.1:8000` build at HEAD `b7d0303`. If the parallel app/content branch changes any captured screen, rerun:
+   ```bash
+   /home/understressengineer/programming/Preflight-CloudMigration/.venv/bin/python \
+     scripts/capture_demo.py --base-url http://127.0.0.1:8000 \
+     --run-id R-DEMO-001 --out docs/presentation/assets \
+     --data-source /home/understressengineer/programming/Preflight-CloudMigration/data \
+     --with-decisions --deck
+   ```
+   Then regenerate `evidence.json` PDF/asset hashes from the new PDF; the deck text/CSS should not need changes.
+2. **Packet/audit values remain capture-time.** That is deliberate: the deck no longer quotes them. Every isolated capture produced a different packet hash, which is why only the immutable fixture snapshot is visible.
+3. **Post-decision assets are isolated-copy captures.** They are reproducible with `--with-decisions`, but are not the live run. Do not verify the bundled static packet against them.
+4. **No real estate or human IAA.** The evaluation remains in-sample synthetic; this loop changes presentation evidence, not the underlying evidential limits.
+5. **Source IDs.** S-18/S-19 were rechecked against `sources.md`; both currently resolve to the same Guidewire Personal Auto and Sonar rows (no swap). The slide-3 footnote cites S-05–S-07 and S-19–S-24, matching the adjacent-tool rows it describes.
+
+No score is claimed in this log; the independent reviewer panel decides.
