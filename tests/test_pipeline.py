@@ -92,3 +92,19 @@ def test_immutability_artifact_is_written(run) -> None:
     payload = store.read_artifact("R-PIPE", "immutability.json")
     assert payload["unchanged"] is True
     assert payload["before"] == payload["after"] == result.manifest.sha256
+
+
+def test_every_feature_keeps_a_spine(run) -> None:
+    store, result = run
+    payload = store.read_artifact("R-PIPE", "spine.json")
+    feature_ids = {feature.feature_id for feature in result.discovery.features}
+    assert len(feature_ids) == 8
+    assert set(payload["spines"]) == feature_ids
+    for feature_id in feature_ids:
+        assert payload["spines"][feature_id]["nodes"], feature_id
+    # The reconstructed feature keeps its inventory nodes and gains target nodes.
+    pa_veh = payload["spines"]["PA-VEH-01"]
+    node_ids = {node["id"] for node in pa_veh["nodes"]}
+    assert any(node_id.startswith("pcf:") for node_id in node_ids)
+    assert any(node_id.startswith("schema:") for node_id in node_ids)
+    assert any(node_id.startswith("codegen:") for node_id in node_ids)

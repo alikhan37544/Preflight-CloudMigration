@@ -21,19 +21,61 @@
   Assurance violation.
 </div>
 
+{% if view.readiness %}
+<section class="panel readiness-panel" aria-label="Readiness flags">
+  <div class="panel-head">
+    <h2>SBT readiness flag</h2>
+    <span class="counter">{{ view.readiness|length }}</span>
+  </div>
+  {% for flag in view.readiness %}
+  <div class="readiness-row">
+    <span class="pill pill-severity">{{ flag.severity }}</span>
+    <strong>{{ flag.rule_id }}</strong>
+    <span>{{ flag.message }}</span>
+    <span class="pill pill-claim claim-{{ flag.claim_strength }}">{{ flag.claim_strength }}</span>
+  </div>
+  {% endfor %}
+  <p class="muted">Readiness flags are separate from the {{ view.findings|length }} advisory findings and the eight scored rules.</p>
+</section>
+{% else %}
+<section class="panel readiness-panel" aria-label="Readiness flags">
+  <div class="panel-head"><h2>SBT readiness flag</h2><span class="counter">0</span></div>
+  <p class="muted">No separate readiness flags. SBT markers, if present, appear here.</p>
+</section>
+{% endif %}
+
 {% if view.findings %}
+<div class="rule-summary-strip" aria-label="Findings by rule">
+  {% for rule_id, rows in view.findings|groupby('rule_id') %}
+  <span class="rule-summary-item"><code>{{ rule_id }}</code><span class="counter">{{ rows|length }}</span></span>
+  {% endfor %}
+  <span class="muted">{{ view.findings|length }} advisory findings from {{ view.findings|groupby('rule_id')|length }} rules</span>
+</div>
+
 <div class="finding-layout">
   <section class="panel">
     <table class="data-table" data-findings-table>
-      <thead><tr><th>Rule</th><th>Title</th><th>Severity</th><th>Claim strength</th><th>Standard</th><th>State</th><th></th></tr></thead>
+      <thead><tr><th>Rule</th><th>Title</th><th>Source</th><th>Severity</th><th>Claim strength</th><th>Standard</th><th>State</th><th></th></tr></thead>
       <tbody>
         {% for finding in view.findings %}
-        <tr class="{{ 'selected' if selected_finding and selected_finding.finding_id == finding.finding_id }}">
+        {% set ev = view.evidence_by_id.get(finding.evidence_ids[0]) if finding.evidence_ids else None %}
+        <tr class="{{ 'selected' if selected_finding and selected_finding.finding_id == finding.finding_id }}" data-finding-row="{{ finding.finding_id }}">
           <td><code class="rule-code">{{ finding.rule_id }}</code></td>
           <td>{{ finding.title }}</td>
+          <td>
+            {% if ev %}
+            <code>{{ ev.path }}{% if ev.locator.line %}:{{ ev.locator.line }}{% endif %}</code>
+            {% else %}<span class="muted">-</span>{% endif %}
+          </td>
           <td>{{ severity(finding.severity) }}</td>
           <td>{{ claim(finding.claim_strength) }}</td>
-          <td>{% if finding.standard_id %}<code class="rule-code">{{ finding.standard_id }}</code>{% else %}<span class="muted">none</span>{% endif %}</td>
+          <td>
+            {% if finding.standard_id %}
+            <code class="rule-code">{{ finding.standard_id }}</code>
+            {% elif finding.standard_title %}{{ finding.standard_title }}
+            {% elif finding.standard_url %}<a href="{{ finding.standard_url }}" target="_blank" rel="noopener">public reference</a>
+            {% else %}<span class="muted">none</span>{% endif %}
+          </td>
           <td><span class="pill pill-state" data-state>{{ finding.decision }}</span></td>
           <td class="actions-col">
             <a class="btn btn-small btn-ghost" href="/findings?run={{ run_id }}&selected={{ finding.finding_id }}">Inspect</a>
@@ -58,11 +100,14 @@
       </div>
       <h4>Remediation</h4>
       <p>{{ selected_finding.remediation }}</p>
-      {% if selected_finding.standard_id %}
+      {% if selected_finding.standard_id or selected_finding.standard_title or selected_finding.standard_url %}
       <h4>Standard</h4>
-      <p><code>{{ selected_finding.standard_id }}</code> - {{ selected_finding.standard_title }}
-      {% if selected_finding.standard_url %}<br><a href="{{ selected_finding.standard_url }}" target="_blank" rel="noopener">public reference</a>{% endif %}
-      <br><span class="muted">Access: {{ selected_finding.access }}. Bodies may be gated.</span></p>
+      <p>
+        {% if selected_finding.standard_id %}<code>{{ selected_finding.standard_id }}</code>{% endif %}
+        {% if selected_finding.standard_title %}{% if selected_finding.standard_id %} - {% endif %}{{ selected_finding.standard_title }}{% endif %}
+        {% if selected_finding.standard_url %}<br><a href="{{ selected_finding.standard_url }}" target="_blank" rel="noopener">public reference</a>{% endif %}
+        <br><span class="muted">Access: {{ selected_finding.access }}. Bodies may be gated.</span>
+      </p>
       {% endif %}
       <h4>Evidence</h4>
       {% for evidence_id in selected_finding.evidence_ids %}
@@ -81,29 +126,32 @@
     {% endif %}
   </aside>
 </div>
+
+<section class="panel precision-panel" aria-label="Precision guards">
+  <div class="panel-head">
+    <h2>Precision guards</h2>
+    <span class="counter">24</span>
+  </div>
+  <p class="muted">Eight rules, three hard negatives each: deliberate near-misses that must not fire.
+  The <strong>Query.make</strong> example is the supported database API, not direct SQL access.</p>
+  <div class="guard-grid">
+    {% for guard in view.precision_guards %}
+    <article class="guard-card">
+      <h3><code>{{ guard.rule_id }}</code></h3>
+      <div class="muted">{{ guard.title }}</div>
+      <ul class="guard-list">
+        {% for case, why in guard.negatives %}
+        <li><code>{{ case }}</code><span class="muted">{{ why }}</span></li>
+        {% endfor %}
+      </ul>
+    </article>
+    {% endfor %}
+  </div>
+</section>
 {% else %}
 <section class="panel empty-inline">
   <h2>No findings</h2>
   <p>The review engine produced no advisory findings for this run.</p>
 </section>
 {% endif %}
-
-<section class="panel">
-  <div class="panel-head">
-    <h2>Readiness flags</h2>
-    <span class="counter">{{ view.readiness|length }}</span>
-  </div>
-  {% if view.readiness %}
-  {% for flag in view.readiness %}
-  <div class="readiness-row">
-    <span class="pill pill-severity">{{ flag.severity }}</span>
-    <strong>{{ flag.rule_id }}</strong>
-    <span>{{ flag.message }}</span>
-    <span class="pill pill-claim claim-{{ flag.claim_strength }}">{{ flag.claim_strength }}</span>
-  </div>
-  {% endfor %}
-  {% else %}
-  <p class="muted">No separate readiness flags. SBT markers, if present, appear here.</p>
-  {% endif %}
-</section>
 {% endblock %}

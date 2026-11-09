@@ -118,9 +118,13 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
                 root, manifest, discovery, feature_id,
                 store=store, run_id=run_id, draft_root=store.run_dir(run_id) / "draft",
             )
+            # Keep inventory spines for every discovered feature; replace only the
+            # reconstructed feature with its target-enriched spine.
+            merged_spines = dict(discovery.spines)
+            merged_spines.update(reconstruction.spines)
             store.write_artifact(run_id, "spine.json", {
                 "schema_version": "1.0",
-                "spines": {k: v.model_dump(mode="json") for k, v in reconstruction.spines.items()},
+                "spines": {k: v.model_dump(mode="json") for k, v in merged_spines.items()},
             })
             completed += STAGE_WEIGHTS["reconstruct"]
 

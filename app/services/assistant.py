@@ -47,7 +47,8 @@ def _citations_from(items: list[Evidence], limit: int = 8) -> list[str]:
 
 
 def answer_question(question: str, discovery: DiscoveryResult, review: ReviewResult,
-                    reconstruction: ReconstructionResult) -> AssistantAnswer:
+                    reconstruction: ReconstructionResult,
+                    feature_id: str | None = None) -> AssistantAnswer:
     text = (question or "").strip()
     lower = text.lower()
 
@@ -113,17 +114,42 @@ def answer_question(question: str, discovery: DiscoveryResult, review: ReviewRes
         )
 
     if "test" in lower:
-        tests = [ev for ev in discovery.evidence if "gtest/" in ev.path or "/gtest/" in ev.path]
+        feature = (
+            next((f for f in discovery.features if f.feature_id == feature_id), None)
+            if feature_id else None
+        )
+        feature_evidence = set(feature.evidence_ids) if feature else None
+        tests = [
+            ev for ev in discovery.evidence
+            if ("gtest/" in ev.path or "/gtest/" in ev.path)
+            and (feature_evidence is None or ev.evidence_id in feature_evidence)
+        ]
+        scope = (
+            f" linked to {feature.name} ({feature.feature_id})"
+            if feature else " linked to the selected feature"
+        )
         if tests:
             citations = _citations_from(tests)
+            paths = {ev.path for ev in tests}
+            unit_findings = [f for f in review.findings if f.rule_id == "PF-GW-GUNIT-001"]
+            extra = (
+                " A separate PF-GW-GUNIT-001 advisory finding flags DB-coupled test code."
+                if unit_findings else ""
+            )
             return AssistantAnswer(
                 answer=(
-                    f"{len(tests)} test evidence records are linked to the feature. "
-                    "One is a pure unit test; one is DB-coupled and carries an advisory finding."
+                    f"{len(tests)} test evidence records across {len(paths)} file"
+                    f"{'s' if len(paths) != 1 else ''}{scope}.{extra}"
                 ),
                 grounded=True,
                 citations=citations,
                 searched_scopes=["gtest", "feature evidence"],
+            )
+        if feature:
+            return _refusal(
+                f"no test evidence is linked to {feature.feature_id} in this snapshot.",
+                searched=["gtest", "feature evidence"],
+                missing=[f"a test artefact linked to {feature.name}"],
             )
 
     if "finding" in lower or "blocker" in lower or "risk" in lower:

@@ -355,7 +355,9 @@ li { margin: 2px 0; }
 .evidence-panel > .panel-head { grid-column: 1 / -1; margin-bottom: 0; }
 .evidence-panel .assistant { margin-top: 0; border-top: 0; border-left: 1px solid var(--border); padding: 0 0 0 16px; }
 .feature-list { max-height: none; overflow: visible; }
-.spine-svg { min-width: 860px; }
+.spine-svg { min-width: 670px; }
+.node-label { font-size: 10px; }
+.node-kind { font-size: 8px; }
 .data-table td code { overflow-wrap: anywhere; }
 .rule-code { white-space: nowrap; }
 @media (max-width: 1280px) {
@@ -377,6 +379,7 @@ li { margin: 2px 0; }
 
 .detail-actions { display: flex; gap: 6px; margin: 8px 0 12px; }
 
+.spine-panel { overflow: visible; }
 .spine-node.selected rect { fill: #eef7fa; stroke: var(--focus); stroke-width: 2.5; }
 .row-accepted td { background: #f2f9f5; }
 .row-rejected td { background: #fdf4f3; }
@@ -398,7 +401,7 @@ progress.progress { width: 100%; height: 8px; accent-color: var(--brand); }
 
 .data-table tr.row-accepted td, .data-table tr.row-accepted:hover td { background: #f2f9f5; }
 .data-table tr.row-rejected td, .data-table tr.row-rejected:hover td { background: #fdf4f3; }
-html, body { max-width: 100%; overflow-x: hidden; }
+html, body { max-width: 100%; overflow-x: hidden; overflow-x: clip; }
 .shell, .canvas, .workbench-grid, .workbench-grid > *, .panel { min-width: 0; }
 @media (max-width: 980px) {
   .spine-svg { min-width: 0; width: 100%; }
@@ -408,3 +411,74 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .contextbar { padding: 8px 12px; }
   .canvas { padding: 16px 12px 32px; }
 }
+
+/* First-beat summary and compact evidence */
+.summary-strip {
+  display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); margin-bottom: 16px;
+}
+.summary-stat {
+  flex: 1 1 100px; min-width: 94px; padding: 10px 14px;
+  border-right: 1px solid var(--border);
+}
+.summary-stat:last-child { border-right: none; }
+.summary-value { display: block; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
+.summary-label { display: block; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.summary-signal .summary-value { color: var(--danger); }
+.summary-vs { color: var(--muted); font-size: 12px; font-weight: 600; }
+.spine-cue { color: var(--brand); font-weight: 600; }
+.evidence-inline {
+  position: sticky; top: 8px; z-index: 4; border: 1px solid var(--brand);
+  border-left-width: 4px; background: #f4f9fb; border-radius: 3px;
+  padding: 9px 11px; margin-bottom: 10px;
+}
+.evidence-inline-label { font-size: 10px; font-weight: 700; color: var(--brand-dark); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+.evidence-inline .evidence-path { font-size: 11px; }
+.evidence-inline .evidence-locator { margin: 2px 0 5px; }
+.evidence-inline .evidence-excerpt { max-height: 84px; margin-bottom: 5px; }
+.evidence-inline .evidence-head { margin-bottom: 3px; }
+.check-inline { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text); }
+.excluded-summary {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  border: 1px solid var(--border); background: var(--surface-2);
+  border-radius: 3px; padding: 8px 10px; margin-bottom: 12px; font-size: 13px;
+}
+.rule-summary-strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.rule-summary-item {
+  display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border);
+  background: var(--surface); border-radius: 12px; padding: 3px 8px; font-size: 11px;
+}
+.rule-summary-item code { font-size: 11px; }
+.guard-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.guard-card { border: 1px solid var(--border); border-radius: 3px; padding: 9px 10px; background: #fbfcfd; }
+.guard-card h3 { margin-bottom: 2px; font-size: 11px; }
+.guard-card h3 code { font-size: 11px; }
+.guard-list { margin: 7px 0 0 14px; padding: 0; font-size: 11px; }
+.guard-list li { margin: 0 0 6px; }
+.guard-list code { display: block; color: var(--text); overflow-wrap: anywhere; }
+.guard-list .muted { display: block; font-size: 10.5px; }
+.readiness-panel { border-left: 4px solid var(--warning); }
+.readiness-row strong { white-space: nowrap; }
+.assumption-notice { border-left-width: 4px; }
+.assumption-notice strong { margin-right: 4px; }
+.citation-list { display: grid; gap: 6px; margin-top: 8px; }
+.citation-card { border: 1px solid var(--border); border-radius: 3px; padding: 7px 8px; background: #fff; }
+.citation-card .citation-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.citation-card .evidence-excerpt { margin: 5px 0; max-height: 100px; }
+.citation-missing { font-size: 11px; color: var(--muted); }
+@media (max-width: 1279px) {
+  .spine-cue { display: inline; }
+}
+@media (min-width: 1280px) {
+  .spine-cue { display: none; }
+}
+@media (max-width: 1180px) {
+  .guard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .guard-grid { grid-template-columns: 1fr; }
+  .summary-stat { flex-basis: 50%; border-bottom: 1px solid var(--border); }
+}
+
+/* Keep the compact evidence card sticky even where generic panels scroll. */
+.spine-panel { overflow: visible; }

@@ -39,7 +39,7 @@ from app.services.pipeline import RunCancelled, execute_run
 from app.services.reconstruction import ReconstructionResult
 from app.services.review import ReviewResult
 from app.store import RunStore, StoreError
-from app.views import load_run_view, spine_layout
+from app.views import feature_summary, load_run_view, spine_layout
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 STATIC = Path(__file__).resolve().parent / "static"
@@ -75,6 +75,7 @@ class DecisionRequest(BaseModel):
 
 class AssistantRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
+    feature_id: str | None = None
 
 
 def _fixture_path(settings: Settings, fixture_id: str) -> Path:
@@ -291,6 +292,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 view["selected_feature"] = selected
                 view["selected_spine"] = view["spines"].get(feature)
                 view["spine_layout"] = spine_layout(view["selected_spine"])
+                view["feature_summary"] = feature_summary(view)
         selected_evidence = view["evidence_by_id"].get(evidence) if evidence else None
         if selected_evidence is None and view.get("selected_feature"):
             for candidate in view["selected_feature"].get("evidence_ids", []):
@@ -318,9 +320,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if response:
             return response
         artifacts = view["manifest"].get("artifacts", [])
+        unsupported = set(view["manifest"].get("unsupported_paths", []))
+        excluded_artifacts = [a for a in artifacts if a["path"] in unsupported]
+        excluded_counts = {
+            status: len([a for a in excluded_artifacts if a["status"] == status])
+            for status in ("binary", "corrupt", "unsupported")
+        }
         if excluded:
-            unsupported = set(view["manifest"].get("unsupported_paths", []))
-            artifacts = [a for a in artifacts if a["path"] in unsupported]
+            artifacts = excluded_artifacts
         if q:
             artifacts = [a for a in artifacts if q.lower() in a["path"].lower()]
         if status_filter:
@@ -333,7 +340,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             context=context(request, run_id, view, "Manifest",
                             artifacts=artifacts[start:start + size], total=total,
                             page=page, size=size, q=q, status_filter=status_filter,
-                            excluded=excluded,
+                            excluded=excluded, excluded_artifacts=excluded_artifacts,
+                            excluded_counts=excluded_counts,
                             pages=max(1, (total + size - 1) // size)),
         )
 
@@ -349,6 +357,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         view, response = guard(request, run_id, "Reconstruction")
         if response:
             return response
+        if tab not in {"mappings", "draft", "assumptions", "comparison"}:
+            tab = "mappings"
         return templates.TemplateResponse(
             request=request, name="reconstruction.html",
             context=context(request, run_id, view, "Reconstruction", tab=tab),
@@ -434,6 +444,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request=request, name="runs.html",
             context=context(request, None, None, "Runs", runs=runs),
+        )
+
+    @app.get("/import", response_class=HTMLResponse)
+    def import_page(request: Request):
+        return templates.TemplateResponse(
+            request=request, name="empty.html",
+            context=context(request, None, None, "Import snapshot"),
         )
 
     @app.get("/about", response_class=HTMLResponse)
@@ -617,7 +634,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/runs/{run_id}/spine")
     def spine_api(run_id: str):
         _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "spine.json", {"spines": {}})
+        view = load_run_view(app.state.store, run_id)
+        return {"schema_version": "1.0", "spines": view["spines"]}
 
     @app.get("/api/runs/{run_id}/findings")
     def findings_api(run_id: str):
@@ -687,6 +705,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _status_or_404(store, run_id)
         if body.action not in {"accept", "reject", "edit", "defer"}:
             raise HTTPException(status_code=400, detail="unknown action")
+        created_assumption: dict[str, Any] | None = None
         if body.object_type == "mapping":
             payload = _read(store, run_id, "mappings.json", {"mappings": []})
             obj = next((m for m in payload["mappings"] if m["mapping_id"] == body.object_id), None)
@@ -704,7 +723,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if body.action == "reject":
                 assumptions = _read(store, run_id, "assumptions.json", {"assumptions": []})
                 next_id = f"A-DEC-{len(assumptions['assumptions']) + 1:02d}"
-                assumptions["assumptions"].append({
+                created_assumption = {
                     "schema_version": "1.0", "assumption_id": next_id,
                     "statement": f"Mapping {body.object_id} was rejected by a reviewer: {body.reason}",
                     "impact": "medium", "impact_range_days": [1.0, 2.0],
@@ -714,7 +733,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "status": "open", "owner": "unassigned",
                     "question_to_ask": "What target should replace the rejected mapping?",
                     "related_mapping_id": body.object_id, "gap_id": None,
-                })
+                }
+                assumptions["assumptions"].append(created_assumption)
                 store.write_artifact(run_id, "assumptions.json", assumptions)
         elif body.object_type == "change":
             payload = _read(store, run_id, "changes.json", {"changes": []})
@@ -748,14 +768,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             before_hash=before, after_hash=after,
         )
         _refresh_packet(store, run_id, settings)
-        return {"decision": decision, "object": obj}
+        return {"decision": decision, "object": obj, "assumption": created_assumption}
 
     @app.post("/api/runs/{run_id}/assistant", dependencies=[Depends(require_csrf)])
     def assistant_api(run_id: str, body: AssistantRequest):
         store: RunStore = app.state.store
         _status_or_404(store, run_id)
         discovery, review, reconstruction = _assistant_context(store, run_id)
-        answer = answer_question(body.question, discovery, review, reconstruction)
+        answer = answer_question(
+            body.question, discovery, review, reconstruction, feature_id=body.feature_id
+        )
         return answer.model_dump(mode="json")
 
     @app.post("/api/runs/{run_id}/delete", dependencies=[Depends(require_csrf)])
