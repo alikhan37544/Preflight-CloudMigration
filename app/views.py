@@ -441,13 +441,36 @@ def evaluation_view(view: dict[str, Any]) -> dict[str, Any]:
     false_positives = sum(int(stats.get("fp", 0) or 0) for stats in per_rule.values())
     silent_negatives = max(0, hard_negatives - min(false_positives, hard_negatives))
 
+    m6_counts = None
+    if m6:
+        m6_tp = sum(int(stats.get("tp", 0) or 0) for stats in per_rule.values())
+        m6_fp = sum(int(stats.get("fp", 0) or 0) for stats in per_rule.values())
+        m6_fn = sum(int(stats.get("fn", 0) or 0) for stats in per_rule.values())
+        m6_counts = {
+            "tp": m6_tp,
+            "fp": m6_fp,
+            "fn": m6_fn,
+            "findings": m6_tp + m6_fp,
+            "f1": f"{float(m6.get('value', 0)):.2f}",
+            "detail": (
+                f"F1 {float(m6.get('value', 0)):.2f} \u00b7 "
+                f"{m6_tp} TP / {m6_fp} FP / {m6_fn} FN"
+            ),
+        }
+
     facts = []
     if m5:
         facts.append({"value": _fraction(m5), "label": "estimate-moving issues",
                       "title": "M5 recall"})
-    if m6:
-        facts.append({"value": _fraction(m6), "label": "finding F1",
-                      "title": "M6 micro-F1 numerator / denominator"})
+    if m6 and m6_counts:
+        facts.append({
+            "value": f"{m6_counts['findings']} findings",
+            "label": f"micro-F1 {m6_counts['f1']}",
+            "title": (
+                f"M6 micro-F1 {m6_counts['f1']} from {m6_counts['tp']} true positives, "
+                f"{m6_counts['fp']} false positives, and {m6_counts['fn']} false negatives"
+            ),
+        })
     if holdout:
         facts.append({"value": _fraction(holdout), "label": "holdout recall (not imported)",
                       "title": "Pre-computed holdout aggregate; never imported"})
@@ -468,11 +491,15 @@ def evaluation_view(view: dict[str, Any]) -> dict[str, Any]:
         low = metric.get("interval_low")
         high = metric.get("interval_high")
         has_interval = low is not None and high is not None
+        metric_id = metric.get("metric_id")
         chart_rows.append({
-            "id": metric.get("metric_id"),
+            "id": metric_id,
             "label": metric.get("label", ""),
             "value_pct": _pct(metric.get("value")),
-            "fraction": _fraction(metric),
+            "fraction": (
+                f"{m6_counts['findings']} findings \u00b7 F1 {m6_counts['f1']}"
+                if metric_id == "M6" and m6_counts else _fraction(metric)
+            ),
             "dot_left": f"{float(metric.get('value', 0)) * 100:.2f}",
             "has_interval": has_interval,
             "interval_left": f"{float(low) * 100:.2f}" if has_interval else "0",
@@ -575,6 +602,7 @@ def evaluation_view(view: dict[str, Any]) -> dict[str, Any]:
         "per_rule_rows": per_rule_rows,
         "supporting_rows": supporting_rows,
         "holdout": holdout_view,
+        "m6_counts": m6_counts,
         "m5_top8": (
             {"fraction": _fraction(top8), "pct": _pct(top8.get("value")),
              "aria": _metric_aria(top8)}

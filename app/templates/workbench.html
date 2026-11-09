@@ -9,7 +9,7 @@
     <div class="eyebrow">Evidence graph</div>
     <h1>Feature workbench</h1>
     <p class="lede">One selected feature, traced across PCF, entity metadata, typelists, the extracted
-    template, Gosu, and tests. Click a node to inspect file evidence.</p>
+    template, Gosu, and tests. Click a highlighted evidence-bearing node to inspect file evidence.</p>
   </div>
   <div class="head-meta">
     {% if view %}{{ status(view.status.status) }}{% endif %}
@@ -105,12 +105,13 @@
   <section class="panel spine-panel" aria-label="Feature spine">
     <div class="panel-head">
       <h2>Feature spine</h2>
-      <span class="muted">{{ pluralize(view.spine_layout.nodes|length if view.spine_layout else 0, 'node') }} - click a node for evidence
+      <span class="muted">{{ pluralize(view.spine_layout.nodes|length if view.spine_layout else 0, 'node') }} - Click a highlighted evidence-bearing node
         <span class="spine-selected-note" data-spine-selected>{% if evidence_selected %}Selected {{ evidence_query }}{% endif %}</span></span>
     </div>
     {% if view.spine_layout %}
     <p class="spine-caption">Six columns read left to right: PCF, entity, typelist, template / Gosu, API draft, tests.
-      Edges are directed. Labels wrap so test nodes stay inside the graph at 1280px.</p>
+      Edges are directed. Labels wrap so test nodes stay inside the graph at 1280px.
+      <span class="spine-structural-note">API-draft structural nodes carry no evidence record; they are muted and dashed.</span></p>
     <div class="evidence-inline" data-evidence-inline aria-live="polite"{% if not evidence_selected %} hidden{% endif %}>
       <div class="evidence-inline-label">Selected node evidence</div>
       <div data-evidence-inline-body>
@@ -129,7 +130,7 @@
     <div class="spine-scroll" data-spine-scroll>
       <svg class="spine-svg" viewBox="0 0 {{ view.spine_layout.width }} {{ view.spine_layout.height }}"
            width="{{ view.spine_layout.width }}" height="{{ view.spine_layout.height }}"
-           role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}: six columns from PCF to tests">
+           role="group" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}: six columns from PCF to tests. Highlighted nodes are keyboard-selectable; structural nodes carry no evidence record.">
         {% for column in view.spine_layout.columns %}
         <g class="spine-column-header" data-column-label="{{ column.label }}">
           <text class="column-label" x="{{ column.x }}" y="20">
@@ -146,11 +147,12 @@
         <g class="spine-nodes">
           {% for node in view.spine_layout.nodes %}
           {% set is_selected = evidence_selected and node.evidence_id and node.evidence_id == evidence_query %}
-          <g class="spine-node node-{{ node.kind }}{{ ' selected' if is_selected }}"
-             tabindex="0" role="button" aria-pressed="{{ 'true' if is_selected else 'false' }}"
+          {% set has_evidence = node.evidence_id %}
+          <g class="spine-node node-{{ node.kind }}{{ '' if has_evidence else ' node-structural' }}{{ ' selected' if is_selected }}"
+             {% if has_evidence %}tabindex="0" role="button" aria-pressed="{{ 'true' if is_selected else 'false' }}"{% else %}role="note"{% endif %}
              data-evidence-id="{{ node.evidence_id or '' }}" data-path="{{ node.artifact_path or '' }}"
-             aria-label="{{ node.label }} {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}">
-            <title>{{ node.label }} - {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}</title>
+             aria-label="{{ node.label }} {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}{% if not has_evidence %}; structural node, no evidence record{% endif %}">
+            <title>{{ node.label }} - {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}{% if not has_evidence %} (structural node; no evidence record){% endif %}</title>
             {% if is_selected %}<rect class="node-selected-outline" x="{{ node.x - 3 }}" y="{{ node.y - 3 }}"
                   width="{{ node.w + 6 }}" height="{{ node.h + 6 }}" rx="6"/>{% endif %}
             <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="4"/>

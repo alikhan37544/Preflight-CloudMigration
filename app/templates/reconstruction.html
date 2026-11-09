@@ -20,7 +20,10 @@
   Mapping provenance is shown per row: documented, PreFlight convention, or reviewer decision.
 </div>
 
-<div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
+<div class="banner banner-warning scope-note" data-scope-note>
+  <strong>Cloud Retrofit without APD App</strong> &middot; not Guidewire&rsquo;s recommended process &middot;
+  local, non-deployable draft.
+</div>
 
 <div class="tabs" role="tablist" aria-label="Reconstruction views">
   <button class="tab {{ 'active' if tab == 'mappings' }}" type="button" id="tab-mappings" role="tab"
@@ -91,6 +94,7 @@
         </tbody>
       </table>
     {% endcall %}
+    <div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
     {% else %}
     <div class="empty-inline"><p>No mappings were generated for this run.</p></div>
     {% endif %}

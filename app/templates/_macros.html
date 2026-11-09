@@ -22,6 +22,16 @@
 <span class="pill pill-state state-{{ value }}" data-state>{{ value }}</span>
 {%- endmacro %}
 
+{% macro standard_family(value) -%}
+{%- if value == 'cloud-standard' -%}
+<span class="standard-family standard-family-cloud">Cloud Standard</span>
+{%- elif value == 'gosu-secure-coding' -%}
+<span class="standard-family standard-family-gosu">Gosu Secure Coding</span>
+{%- elif value and value != 'none' -%}
+<span class="standard-family">{{ value }}</span>
+{%- endif -%}
+{%- endmacro %}
+
 {% macro pluralize(count, singular, plural=None) -%}
 {{ count }} {{ singular if count == 1 else (plural or singular ~ 's') }}
 {%- endmacro %}

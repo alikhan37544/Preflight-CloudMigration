@@ -45,7 +45,8 @@
     {% elif loop.index == 2 %}
     <p>{{ pluralize(view.features|length, 'feature') }}, {{ pluralize(view.findings|length, 'advisory finding') }},
     {{ pluralize(view.readiness|length, 'separate readiness flag') }}, {{ pluralize(view.mappings|length, 'disposition') }},
-    {{ view.changes|length }} target changes / {{ accepted_changes }} accepted, {{ pluralize(view.assumptions|length, 'assumption') }}.</p>
+    {{ pluralize(view.changes|length, 'target change') }} &middot;
+    {{ accepted_changes }} of {{ view.changes|length }} approved, {{ pluralize(view.assumptions|length, 'assumption') }}.</p>
     {% elif loop.index == 3 %}
     <p>{{ view.manifest.file_count }} files read; {{ view.unsupported_count }} unsupported/corrupt files
     appear in the packet's excluded-files table with path, status, and reason. Confidence labels are shown

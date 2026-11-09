@@ -86,25 +86,22 @@
   </div>
 
   <footer class="footer">
-    <div class="footer-line">
-      <strong>Independent research prototype.</strong> Not affiliated with, endorsed by, or certified by Guidewire
-      Software, Inc. Findings are pattern-based heuristics, not official Cloud Standards checks.
-      Official Cloud Assurance: not run.
-    </div>
     <div class="footer-line muted">
       {{ disclaimer }}
     </div>
   </footer>
-  <dialog class="decision-dialog" data-decision-dialog aria-labelledby="decision-dialog-title">
+  <dialog class="decision-dialog" data-decision-dialog aria-labelledby="decision-dialog-title" aria-describedby="decision-consequence">
     <form data-decision-form>
       <div class="panel-head">
-        <h2 id="decision-dialog-title">Record decision</h2>
+        <h2 id="decision-dialog-title" data-decision-title>Record decision</h2>
         <button class="btn btn-ghost btn-small" type="button" data-decision-cancel aria-label="Close decision dialog">Close</button>
       </div>
-      <p class="decision-object" data-decision-object></p>
-      <p class="muted">The decision is written to the hash-chained audit trail with your reason.</p>
+      <p class="decision-object"><span class="muted" data-decision-object-type></span> <code data-decision-object-id></code></p>
+      <p class="decision-object decision-summary" data-decision-object-summary></p>
+      <p class="decision-consequence" id="decision-consequence" data-decision-consequence role="note"></p>
       <label class="decision-label" for="decision-reason">Reason (required)</label>
-      <textarea class="input decision-reason" id="decision-reason" name="reason" rows="4" required data-decision-reason></textarea>
+      <textarea class="input decision-reason" id="decision-reason" name="reason" rows="4" required
+                placeholder="Why is this decision correct?" data-decision-reason></textarea>
       <div data-decision-edit hidden>
         <label class="decision-label" for="decision-value" data-decision-value-label>Edited value (required)</label>
         <input class="input" id="decision-value" name="edited_value" data-decision-value>

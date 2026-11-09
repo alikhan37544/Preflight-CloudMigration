@@ -8,6 +8,7 @@ network requests and console errors.
 from __future__ import annotations
 
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -158,8 +159,25 @@ def test_golden_path(server) -> None:
         first_accept = page.locator('[data-decision="accept"][data-object-type="mapping"]').first
         first_accept.click()
         expect(dialog).to_be_visible()
-        expect(dialog).to_contain_text("mapping M-01")
-        expect(page.locator("[data-decision-reason]")).not_to_have_value("")
+        expect(page.locator("[data-decision-title]")).to_have_text("Accept mapping M-01")
+        expect(page.locator("[data-decision-object-id]")).to_have_text("M-01")
+        expect(page.locator("[data-decision-object-summary]")).to_contain_text("PAVehicle")
+        expect(page.locator("[data-decision-object-summary]")).to_contain_text("PersonalVehicle")
+        expect(page.locator("[data-decision-confirm]")).to_have_text("Record acceptance")
+        expect(page.locator("[data-decision-consequence]")).to_contain_text("No assumption is created")
+        expect(page.locator("[data-decision-reason]")).to_have_value("")
+        expect(page.locator("[data-decision-reason]")).to_have_attribute(
+            "placeholder", "Why is this decision correct?"
+        )
+        assert page.evaluate(
+            "() => !document.querySelector('[data-decision-reason]').checkValidity()"
+        )
+        page.click("[data-decision-confirm]")
+        expect(dialog).to_be_visible()
+        page.fill("[data-decision-reason]", "   ")
+        page.click("[data-decision-confirm]")
+        expect(page.locator("[data-decision-error]")).to_contain_text("Enter a reason")
+        expect(dialog).to_be_visible()
         page.fill("[data-decision-reason]", "Reviewed mapping M-01 source and target evidence in e2e.")
         page.click("[data-decision-confirm]")
         expect(dialog).to_be_hidden()
@@ -169,15 +187,50 @@ def test_golden_path(server) -> None:
             "Decision recorded: accepted"
         )
         page.screenshot(path=str(shots / "reconstruction-1440.png"), full_page=True)
-        page.locator('[data-decision="reject"][data-object-type="mapping"]').last.click()
+        reject_row = page.locator('[data-mapping-row="M-12"]')
+        reject_row.scroll_into_view_if_needed()
+        reject_row.locator('[data-decision="reject"][data-object-type="mapping"]').click()
         expect(dialog).to_be_visible()
+        expect(page.locator("[data-decision-title]")).to_have_text("Reject mapping M-12")
+        expect(page.locator("[data-decision-object-id]")).to_have_text("M-12")
+        expect(page.locator("[data-decision-object-summary]")).to_contain_text("VehicleType.Motorcycle_Ext")
+        expect(page.locator("[data-decision-object-summary]")).to_contain_text("motorcycle")
+        expect(page.locator("[data-decision-confirm]")).to_have_text("Record rejection")
+        expect(page.locator("[data-decision-confirm]")).to_have_class(re.compile(r"btn-danger"))
+        expect(page.locator("[data-decision-consequence]")).to_have_text(
+            "This creates an assumption and records the rejection in the audit trail."
+        )
+        expect(page.locator("[data-decision-reason]")).to_have_value("")
+        page.screenshot(path=str(shots / "decision-reject-1440.png"))
         page.fill("[data-decision-reason]", "Rejected by e2e; a replacement mapping is required.")
         page.click("[data-decision-confirm]")
         expect(page.locator("[data-assumption-notice]")).to_contain_text("A-DEC-", timeout=8000)
         expect(page.locator("[data-assumption-notice]")).to_be_visible()
         expect(page.locator("[data-mapping-row]").last.locator("[data-state]")).to_have_text("rejected")
-        page.locator('.tab[data-tab="assumptions"]').click()
-        expect(page.locator("[data-tab-panel='assumptions']")).to_contain_text("A-DEC-")
+        # The page stays near the decision: the rejected row remains on screen and the
+        # notice is adjacent to the table rather than at the top of the document.
+        scroll_after_reject = page.evaluate("window.scrollY")
+        assert scroll_after_reject > 0, scroll_after_reject
+        viewport_height = page.evaluate("window.innerHeight")
+        row_box = reject_row.bounding_box()
+        notice_box = page.locator("[data-assumption-notice]").bounding_box()
+        assert row_box is not None and notice_box is not None
+        assert row_box["y"] < viewport_height, (row_box, viewport_height)
+        assert notice_box["y"] < viewport_height, (notice_box, viewport_height)
+        page.screenshot(path=str(shots / "reconstruction-after-reject-1440.png"), full_page=True)
+        page.click("[data-assumption-jump]")
+        expect(page.locator("#tabpanel-assumptions")).to_be_visible()
+        first_assumption = page.locator("[data-assumptions-body] tr").first
+        expect(first_assumption).to_have_attribute("data-assumption-id", "A-DEC-04")
+        expect(first_assumption).to_have_class(re.compile(r"assumption-new"))
+        expect(page.locator("[data-tab-panel='assumptions']")).to_contain_text("A-DEC-04")
+        expect(page.locator("[data-tab-panel='assumptions']")).to_contain_text("unassigned")
+        page.wait_for_function(
+            "() => document.activeElement && document.activeElement.dataset.assumptionId === 'A-DEC-04'"
+        )
+        keyboard_box = first_assumption.bounding_box()
+        assert keyboard_box is not None and keyboard_box["y"] < viewport_height
+        page.screenshot(path=str(shots / "reconstruction-assumption-1440.png"), full_page=True)
 
         # Findings
         page.goto(f"{base}/findings?run=R-E2E", wait_until="networkidle")
@@ -373,6 +426,104 @@ def test_routes_fit_1024_and_actions_stay_visible(server) -> None:
                     assert box is not None and box["x"] >= -1
                     assert box["x"] + box["width"] <= width + 1, (label, box)
                 page.screenshot(path=str(shots / "runs-1024.png"), full_page=True)
+        browser.close()
+
+
+@pytest.mark.e2e
+def test_reconstruction_breakpoints_keep_decisions_on_screen(server) -> None:
+    """No page overflow at 1280/1281/1290/1320 and decisions stay in view."""
+    base = server["base"]
+    shots = Path(server["data"]) / "screenshots"
+    shots.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for width in (1320, 1290, 1281, 1280, 1024, 390):
+            page = browser.new_page(viewport={"width": width, "height": 900})
+            page.goto(f"{base}/reconstruction?run=R-E2E", wait_until="networkidle")
+            assert page.evaluate("() => document.documentElement.scrollWidth") <= width + 1, width
+            assert page.evaluate("() => document.body.scrollWidth") <= width + 1, width
+            row = page.locator('[data-mapping-row]:has([data-decision="accept"])').first
+            row.scroll_into_view_if_needed()
+            for action in ("accept", "reject", "defer", "edit"):
+                button = row.locator(f'[data-decision="{action}"]')
+                expect(button).to_be_visible()
+                box = button.bounding_box()
+                assert box is not None, (width, action)
+                assert box["x"] >= -1, (width, action, box)
+                assert box["x"] + box["width"] <= width + 1, (width, action, box)
+            if width in (1280, 1024, 390):
+                page.screenshot(path=str(shots / f"reconstruction-{width}-actions.png"), full_page=False)
+            page.close()
+        browser.close()
+
+
+@pytest.mark.e2e
+def test_workbench_structural_nodes_are_marked_and_not_interactive(server) -> None:
+    """Six API-draft nodes are structural: muted/dashed, unfocusable, no evidence."""
+    base = server["base"]
+    shots = Path(server["data"]) / "screenshots"
+    shots.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page.goto(f"{base}/?run=R-E2E&feature=PA-VEH-01", wait_until="networkidle")
+        expect(page.locator(".spine-svg")).to_have_attribute("role", "group")
+        expect(page.locator(".spine-node.node-structural")).to_have_count(6)
+        expect(page.locator(".spine-node.node-structural[tabindex]")).to_have_count(0)
+        expect(page.locator(".spine-node.node-structural[role='button']")).to_have_count(0)
+        expect(page.locator(".spine-structural-note")).to_contain_text(
+            "structural nodes carry no evidence record"
+        )
+        expect(page.locator(".spine-panel")).to_contain_text(
+            "Click a highlighted evidence-bearing node"
+        )
+        assert page.evaluate(
+            "() => getComputedStyle(document.querySelector('.spine-node.node-structural')).cursor"
+        ) == "default"
+        # Evidence-bearing nodes remain keyboard-operable.
+        evidence_node = page.locator(".spine-node[data-evidence-id]:not([data-evidence-id=''])").first
+        expect(evidence_node).to_have_attribute("role", "button")
+        evidence_node.focus()
+        page.keyboard.press("Enter")
+        expect(page.locator("[data-evidence-drawer]")).to_contain_text("config/")
+        page.screenshot(path=str(shots / "workbench-structural-1280.png"), full_page=True)
+        browser.close()
+
+
+@pytest.mark.e2e
+def test_findings_standard_families_evaluation_and_packet_copy(server) -> None:
+    """Standard family labels and unambiguous evaluation/packet copy are visible."""
+    base = server["base"]
+    shots = Path(server["data"]) / "screenshots"
+    shots.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 1440, "height": 900})
+        page.goto(f"{base}/findings?run=R-E2E&selected=F-008", wait_until="networkidle")
+        expect(page.locator(".detail-panel .finding-top")).to_contain_text("Cloud Standard")
+        page.goto(f"{base}/findings?run=R-E2E&selected=F-014", wait_until="networkidle")
+        expect(page.locator(".detail-panel .finding-top")).to_contain_text("Gosu Secure Coding")
+        page.screenshot(path=str(shots / "findings-standard-family-1440.png"), full_page=True)
+
+        page.goto(f"{base}/evaluation?run=R-E2E", wait_until="networkidle")
+        expect(page.locator('[data-metric="M6"]')).to_contain_text("F1 1.00")
+        expect(page.locator('[data-metric="M6"]')).to_contain_text("24 TP / 0 FP / 0 FN")
+        expect(page.locator("body")).not_to_contain_text("48/48")
+        expect(page.locator("[data-eval-summary]")).to_contain_text("24 findings")
+        expect(page.locator("[data-eval-summary]")).to_contain_text("6/6")
+        expect(page.locator("[data-eval-summary]")).to_contain_text("4/4")
+        expect(page.locator("[data-eval-summary]")).to_contain_text("6/8")
+        expect(page.locator("[data-eval-summary]")).to_contain_text("24/24")
+        hint = page.locator("[data-details-hint]")
+        expect(hint).to_have_text("expand")
+        page.locator("#limitations summary").click()
+        expect(hint).to_have_text("collapse")
+        page.screenshot(path=str(shots / "evaluation-strip-1440.png"), full_page=True)
+
+        page.goto(f"{base}/packet?run=R-E2E", wait_until="networkidle")
+        expect(page.locator(".packet-card").nth(1)).to_contain_text("5 target changes")
+        expect(page.locator(".packet-card").nth(1)).to_contain_text("0 of 5 approved")
+        page.screenshot(path=str(shots / "packet-copy-1440.png"), full_page=True)
         browser.close()
 
 
