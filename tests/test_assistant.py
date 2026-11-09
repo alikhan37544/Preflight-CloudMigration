@@ -57,6 +57,41 @@ def test_vehicle_question_is_grounded_with_citations(context) -> None:
     assert answer.grounded is True
     assert answer.citations
     assert set(answer.citations) <= known_ids(discovery, review)
+    assert "Artefact families present:" in answer.answer
+    assert "territory gap" in answer.answer.lower()
+    assert "territory assumption" in answer.answer.lower()
+
+
+def test_one_evidence_feature_claims_only_what_is_present(context) -> None:
+    import copy
+
+    _, discovery, reconstruction, review, _ = context
+    sparse = copy.deepcopy(discovery)
+    feature = next(f for f in sparse.features if f.feature_id == "PA-VEH-01")
+    evidence_by_id = {item.evidence_id: item for item in sparse.evidence}
+    pcf = next(
+        evidence_by_id[eid] for eid in feature.evidence_ids
+        if evidence_by_id[eid].path.endswith(".pcf")
+    )
+    feature.evidence_ids = [pcf.evidence_id]
+    sparse.features = [feature]
+    sparse.evidence = [pcf]
+    sparse.gaps = []
+    sparse_reconstruction = copy.deepcopy(reconstruction)
+    sparse_reconstruction.assumptions = []
+
+    answer = answer_question(
+        "What evidence supports Vehicle Information?", sparse, review,
+        sparse_reconstruction, feature_id="PA-VEH-01",
+    )
+    assert answer.grounded is True
+    assert answer.citations == [pcf.evidence_id]
+    assert "1 evidence record" in answer.answer
+    assert "Artefact families present: PCF." in answer.answer
+    assert "installed entity" not in answer.answer
+    assert "territory" not in answer.answer.lower()
+    assert "assumption" not in answer.answer.lower()
+
 
 
 def test_motorcycle_question_cites_typelist_evidence(context) -> None:

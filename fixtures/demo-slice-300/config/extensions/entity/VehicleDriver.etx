@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entityExtension name="PersonalVehicleDriver">
+<entityExtension name="VehicleDriver">
   <column name="CDL_Ext" type="Boolean"/>
 </entityExtension>

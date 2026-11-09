@@ -19,7 +19,7 @@
       "lob": "PersonalAuto",
       "anchors": [
         "config/web/pcf/policy/PADriverDV.pcf",
-        "config/metadata/entity/PersonalVehicleDriver.eti"
+        "config/metadata/entity/VehicleDriver.eti"
       ]
     },
     {

@@ -21,6 +21,58 @@ if TYPE_CHECKING:
 SECRET_KEYS = re.compile(
     r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"((?:\\.|[^"\\])*)"'
 )
+# Single-quoted assignments are common in JavaScript-ish configuration snippets
+# and parser error text (``var password = 'hunter2'``).
+SINGLE_QUOTED_SECRET_KEYS = re.compile(
+    r"(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*'((?:\\.|[^'\\])*)'"
+)
+# Unquoted assignment/colon form used by reviewer notes and malformed config
+# errors (``password=hunter2`` or ``token: abc123``). The value stops at obvious
+# delimiters so surrounding prose and punctuation survive.
+UNQUOTED_SECRET_KEYS = re.compile(
+    r"""(?ix)
+    \b(?P<key>[A-Za-z_][A-Za-z0-9_]*)
+    [ \t]*(?::[ \t]*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?
+    [ \t]*(?:=|:)[ \t]*
+    (?P<value>[^\s,;)\]}"']+)
+    """
+)
+# A sensitive label followed by a quoted value without an explicit assignment
+# operator, e.g. ``password "hunter2"`` in a reviewer note or parser warning.
+LABELLED_QUOTED_SECRET = re.compile(
+    r"""(?ix)
+    (?<!["'A-Za-z0-9_])
+    (?P<key>[A-Za-z_][A-Za-z0-9_.-]*)
+    [ \t]*(?:=|:)?[ \t]+
+    (?P<quote>["'])
+    (?P<value>(?:\\.|(?!(?P=quote)).)*)
+    (?P=quote)
+    """
+)
+# XML attribute form: ``password="hunter2"``. ``default`` is treated as a
+# sensitive attribute in entity/config XML (``<column default="hunter2">``),
+# while ordinary display attributes such as ``name`` and ``value`` are left
+# untouched so evidence excerpts remain useful.
+XML_SECRET_ATTRIBUTE = re.compile(
+    r"""(?ix)
+    \b(?P<key>[A-Za-z_][A-Za-z0-9_.:-]*)
+    [ \t]*=[ \t]*
+    (?P<quote>["'])
+    (?P<value>(?:\\.|(?!(?P=quote)).)*)
+    (?P=quote)
+    """
+)
+XML_SENSITIVE_NAMES = {"default"}
+# JSON object form, including single-line documents where the YAML line matcher
+# cannot see the key at the start of a line.
+JSON_SECRET_KEY = re.compile(
+    r"""(?ix)
+    (?P<prefix>["'](?P<key>[A-Za-z_][A-Za-z0-9_.-]*)["'][ \t]*:[ \t]*)
+    (?P<quote>["'])
+    (?P<value>(?:\\.|(?!(?P=quote)).)*)
+    (?P=quote)
+    """
+)
 # YAML mapping form. Parser errors quote the offending source line, so warnings
 # such as ``password: "hunter2"`` must be filtered before they are persisted.
 # The RHS is deliberately not constrained to one quote style: malformed YAML
@@ -110,6 +162,65 @@ def _redact_quoted(match: re.Match[str]) -> str:
     return f'"{_marker(value)}"'
 
 
+def _redact_quoted_value(query: str, match: re.Match[str]) -> str:
+    """Redact the ``value`` group of an XML/JSON/labelled match."""
+    key = match.group("key")
+    if query == "xml":
+        sensitive = is_sensitive_secret_key(key) or key.lower() in XML_SENSITIVE_NAMES
+    else:
+        sensitive = is_sensitive_secret_key(key)
+    if not sensitive:
+        return match.group(0)
+    value = match.group("value")
+    if not value or REDACTED_VALUE.match(value.strip()):
+        return match.group(0)
+    start, end = match.start("value"), match.end("value")
+    prefix = match.group(0)[:start - match.start()]
+    suffix = match.group(0)[end - match.start():]
+    return prefix + _marker(value) + suffix
+
+
+def _redact_json(match: re.Match[str]) -> str:
+    return _redact_quoted_value("json", match)
+
+
+def _redact_xml(match: re.Match[str]) -> str:
+    return _redact_quoted_value("xml", match)
+
+
+def _redact_labelled(match: re.Match[str]) -> str:
+    return _redact_quoted_value("labelled", match)
+
+
+def _redact_single_assignment(match: re.Match[str]) -> str:
+    if not is_sensitive_secret_key(match.group(1)):
+        return match.group(0)
+    value = match.group(2)
+    if REDACTED_VALUE.match(value.strip()):
+        return match.group(0)
+    start = match.start(2) - match.start(0)
+    end = match.end(2) - match.start(0)
+    return match.group(0)[:start] + _marker(value) + match.group(0)[end:]
+
+
+def _redact_unquoted_assignment(match: re.Match[str]) -> str:
+    if not is_sensitive_secret_key(match.group("key")):
+        return match.group(0)
+    value = match.group("value")
+    lowered = value.strip().lower()
+    if (not value or REDACTED_VALUE.match(value.strip())
+            or value.startswith("[REDACTED")
+            or value in {"|", "|-", "|+", ">", ">-", ">+"}
+            or lowered in SECRET_PLACEHOLDERS
+            or lowered in {"true", "false", "null", "none", "undefined"}
+            or lowered.startswith(("system.", "getenv", "env.", "${", "{{"))):
+        return match.group(0)
+    start, end = match.start("value"), match.end("value")
+    prefix = match.group(0)[:start - match.start()]
+    suffix = match.group(0)[end - match.start():]
+    return prefix + _marker(value) + suffix
+
+
 def _quoted_scalar(rhs: str) -> tuple[int, str] | None:
     """Return ``(end_index, inner_value)`` for a quoted YAML scalar.
 
@@ -181,8 +292,14 @@ def _redact_yaml_line(line: str) -> str:
 
 
 def _redact_yaml_lines(text: str) -> str:
-    """Apply :func:`_redact_yaml_line` while preserving every line ending."""
+    """Apply :func:`_redact_yaml_line` while preserving every line ending.
+
+    A sensitive key with a block scalar (``password: |``) has no value on the
+    key line. Its indented body is redacted as a unit instead of being left in
+    the persisted excerpt.
+    """
     pieces: list[str] = []
+    block_indent: int | None = None
     for line in text.splitlines(keepends=True):
         if line.endswith("\r\n"):
             body, ending = line[:-2], "\r\n"
@@ -190,8 +307,37 @@ def _redact_yaml_lines(text: str) -> str:
             body, ending = line[:-1], line[-1]
         else:
             body, ending = line, ""
-        pieces.append(_redact_yaml_line(body) + ending)
+        if block_indent is not None:
+            if not body.strip():
+                pieces.append(body + ending)
+                continue
+            indent = len(body) - len(body.lstrip(" \t"))
+            if indent > block_indent:
+                stripped = body.strip()
+                if REDACTED_VALUE.match(stripped):
+                    pieces.append(body + ending)
+                else:
+                    pieces.append(body[:indent] + _marker(stripped) + ending)
+                continue
+            block_indent = None
+        processed = _redact_yaml_line(body)
+        pieces.append(processed + ending)
+        block_indent = _block_scalar_indent(processed)
     return "".join(pieces)
+
+
+def _block_scalar_indent(line: str) -> int | None:
+    """Indentation of a sensitive YAML key whose value is a block scalar."""
+    match = YAML_SECRET_LINE.match(line)
+    if match is None:
+        return None
+    key = match.group("key").strip("\"'")
+    if not is_sensitive_secret_key(key):
+        return None
+    rhs = match.group("rhs").strip()
+    if not re.fullmatch(r"[|>][+-]?(?:\s*#.*)?", rhs):
+        return None
+    return len(line) - len(line.lstrip(" \t"))
 
 
 def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
@@ -211,7 +357,12 @@ def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
         if not REDACTED_VALUE.match(value.strip()):
             text = text.replace(value, _marker(value))
     text = _redact_yaml_lines(text)
+    text = JSON_SECRET_KEY.sub(_redact_json, text)
+    text = XML_SECRET_ATTRIBUTE.sub(_redact_xml, text)
     text = SECRET_KEYS.sub(_redact_assignment, text)
+    text = SINGLE_QUOTED_SECRET_KEYS.sub(_redact_single_assignment, text)
+    text = UNQUOTED_SECRET_KEYS.sub(_redact_unquoted_assignment, text)
+    text = LABELLED_QUOTED_SECRET.sub(_redact_labelled, text)
     text = LIVE_TOKEN.sub(_redact_live_token, text)
     text = BEARER_TOKEN.sub(_redact_bearer, text)
     if all_quoted_strings:

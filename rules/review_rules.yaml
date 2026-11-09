@@ -134,7 +134,7 @@ rules:
     version: "1.0"
     title: Standards Based Template readiness flag
     severity: warning
-    claim_strength: verified-doc
+    claim_strength: heuristic
     standard_family: none
     standard_url: https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html
     access: public

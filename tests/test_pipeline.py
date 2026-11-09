@@ -12,7 +12,13 @@ from pathlib import Path
 import pytest
 
 from app.services.intake import snapshot_hash
-from app.services.packet import PacketIntegrityError, build_packet, packet_content_hash
+from app.services.packet import (
+    PacketIntegrityError,
+    build_packet,
+    packet_content_hash,
+    packet_html_hash,
+    verify_packet_artifacts,
+)
 from app.services.pipeline import execute_run
 from app.store import RunStore
 
@@ -129,8 +135,57 @@ def test_packet_audit_head_and_counts_are_current(run) -> None:
 def test_packet_hash_is_reproducible(run) -> None:
     store, _ = run
     packet = store.read_artifact("R-PIPE", "packet.json")
+    html = (store.run_dir("R-PIPE") / "packet.html").read_text(encoding="utf-8")
     assert packet["hashes"]["packet"] == packet["packet_sha256"]
-    assert packet_content_hash(packet) == packet["packet_sha256"]
+    assert packet["hashes"]["packet_html"] == packet["packet_sha256"]
+    assert packet["hashes"]["packet_json"] == packet_content_hash(packet)
+    assert packet_html_hash(html, packet["packet_sha256"]) == packet["packet_sha256"]
+    assert f'<meta name="packet-sha256" content="{packet["packet_sha256"]}">' in html
+    valid, reason = verify_packet_artifacts(store, "R-PIPE", include_content=True)
+    assert valid, reason
+
+
+def test_tampered_packet_html_is_detected(run, tmp_path) -> None:
+    store, _ = run
+    copied = tmp_path / "tamper-html-data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    path = copy_store.run_dir("R-PIPE") / "packet.html"
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        "Review Packet", "Review Packet (edited)"
+    ), encoding="utf-8")
+    valid, reason = verify_packet_artifacts(copy_store, "R-PIPE", include_content=True)
+    assert valid is False
+    assert "packet.html" in reason and "SHA-256" in reason
+
+
+def test_tampered_packet_json_is_detected(run, tmp_path) -> None:
+    store, _ = run
+    copied = tmp_path / "tamper-json-data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    packet = copy_store.read_artifact("R-PIPE", "packet.json")
+    # Editing the packet's findings/mapping digest (or any metadata) must break
+    # the canonical JSON hash even though packet.html is untouched.
+    packet["hashes"]["findings"] = "0" * 64
+    packet["counts"]["mappings"] = 11
+    copy_store.write_artifact("R-PIPE", "packet.json", packet)
+    valid, reason = verify_packet_artifacts(copy_store, "R-PIPE", include_content=True)
+    assert valid is False
+    assert "packet.json" in reason and "packet_json" in reason
+
+
+def test_edited_findings_artifact_breaks_packet_content_binding(run, tmp_path) -> None:
+    store, _ = run
+    copied = tmp_path / "tamper-findings-data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    findings = copy_store.read_artifact("R-PIPE", "findings.json")
+    findings["findings"][0]["message"] += " edited after packet generation"
+    copy_store.write_artifact("R-PIPE", "findings.json", findings)
+    valid, reason = verify_packet_artifacts(copy_store, "R-PIPE", include_content=True)
+    assert valid is False
+    assert "findings" in reason and "content digest" in reason
 
 
 def test_packet_carries_readiness_evidence_mappings_and_excluded_files(run) -> None:
@@ -166,6 +221,9 @@ def test_tampered_audit_fails_packet_build(run, tmp_path) -> None:
     lines[0] = json.dumps(first, ensure_ascii=False)
     audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     assert copy_store.verify_audit("R-PIPE") is False
+    valid, reason = verify_packet_artifacts(copy_store, "R-PIPE", include_content=True)
+    assert valid is False
+    assert "audit" in reason.lower()
     with pytest.raises(PacketIntegrityError):
         build_packet(
             store=copy_store, run_id="R-PIPE", project_id="demo",

@@ -13,6 +13,7 @@ import re
 import shutil
 import stat
 import zipfile
+import zlib
 from pathlib import Path
 
 from lxml import etree
@@ -592,6 +593,13 @@ def safe_extract_zip(
                         f"archive entry could not be extracted: {info.filename!r}: "
                         f"{type(exc).__name__}"
                     ) from exc
+    except (zipfile.BadZipFile, zlib.error, EOFError) as exc:
+        # Corrupt compressed data or a CRC mismatch is an archive error, not a
+        # 500. Clean up partial files and report it through the intake contract.
+        shutil.rmtree(out_dir, ignore_errors=True)
+        raise UnsafeArchiveError(
+            f"archive is corrupt or truncated: {type(exc).__name__}: {exc}"
+        ) from exc
     except BaseException:
         # Never leave a partially extracted snapshot behind, even when the
         # filesystem (not our validators) raises the error.
