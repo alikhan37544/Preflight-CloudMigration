@@ -109,6 +109,14 @@ _ARTIFACT_EXTRA_LISTS = {
     "findings.json": ("readiness",),
     "metrics.json": ("supporting",),
 }
+# Inputs whose contents feed build_packet(). Packet outputs are checked for
+# existence separately; the audit checkpoint head invalidates on decisions.
+_PACKET_INPUT_ARTIFACTS = (
+    "status.json", "manifest.json", "features.json", "evidence.json",
+    "review_evidence.json", "gaps.json", "findings.json", "mappings.json",
+    "changes.json", "assumptions.json", "comparison.json", "metrics.json",
+    "decisions.json",
+)
 
 _ACTION_STATE = {
     "accept": "accepted",
@@ -302,19 +310,42 @@ def _assistant_context(store: RunStore, run_id: str):
 
 
 def _refresh_packet(store: RunStore, run_id: str,
-                    settings: Settings) -> tuple[bool, str | None]:
-    """Rebuild the packet from current artifacts so its audit head is never stale.
+                    settings: Settings) -> tuple[bool, str | None, bool]:
+    """Refresh the packet when its inputs changed; otherwise reuse the artifact.
 
-    Returns ``(True, None)`` on success and ``(False, reason)`` when the artifact
-    could not be refreshed. Callers must not present a stale export as current.
+    Returns ``(True, None, rebuilt)`` on success and ``(False, reason, False)``
+    when the artifact could not be refreshed. A fresh packet is identified by
+    the audit checkpoint head plus artifact mtimes/sizes, so an unchanged page
+    view does not rebuild a multi-megabyte document. Callers must not present a
+    stale export as current.
     """
     try:
         status = store.read_status(run_id)
         if status.get("status") != "succeeded":
-            return False, f"run status is {status.get('status')!r}, not 'succeeded'"
+            return False, f"run status is {status.get('status')!r}, not 'succeeded'", False
+        # Use the persisted release context/reference from the original run. Legacy
+        # runs without metadata fall back to settings for compatibility.
+        release_context = status.get("release_context") or settings.release_context
+        if "reference_path" in status:
+            reference_path = Path(status["reference_path"]) if status["reference_path"] else None
+            reference_sha256 = status.get("reference_sha256")
+        elif status.get("fixture_id") in {"demo-slice-300", "acme-pc-2026.10"}:
+            reference_path = settings.reference_path
+            reference_sha256 = None
+        else:
+            reference_path = None
+            reference_sha256 = None
+        extra_paths = (reference_path,) if reference_path else ()
+        fingerprint = store.packet_input_fingerprint(
+            run_id, _PACKET_INPUT_ARTIFACTS, extra_paths
+        )
+        if (store.exists(run_id, "packet.json") and store.exists(run_id, "packet.html")
+                and store.packet_cache_hit(run_id, fingerprint)):
+            return True, None, False
+
         manifest_payload = _read(store, run_id, "manifest.json", None)
         if not manifest_payload:
-            return False, "manifest.json is missing"
+            return False, "manifest.json is missing", False
         manifest = Manifest.model_validate(manifest_payload)
         discovery, review, reconstruction = _assistant_context(store, run_id)
         comparison_payload = _read(store, run_id, "comparison.json", {"rows": [], "macro_f1": 0.0, "confusion": {}})
@@ -337,18 +368,6 @@ def _refresh_packet(store: RunStore, run_id: str,
                 per_rule=evaluation_payload.get("per_rule", {}),
                 m5_precision=evaluation_payload.get("m5_precision", 0.0),
             )
-        # Use the persisted release context/reference from the original run. Legacy
-        # runs without metadata fall back to settings for compatibility.
-        release_context = status.get("release_context") or settings.release_context
-        if "reference_path" in status:
-            reference_path = Path(status["reference_path"]) if status["reference_path"] else None
-            reference_sha256 = status.get("reference_sha256")
-        elif status.get("fixture_id") in {"demo-slice-300", "acme-pc-2026.10"}:
-            reference_path = settings.reference_path
-            reference_sha256 = None
-        else:
-            reference_path = None
-            reference_sha256 = None
         build_packet(
             store=store, run_id=run_id, project_id=status.get("project_id", "demo"),
             fixture_id=status.get("fixture_id", "demo-slice-300"),
@@ -357,10 +376,16 @@ def _refresh_packet(store: RunStore, run_id: str,
             evaluation=evaluation, reference_path=reference_path,
             reference_sha256=reference_sha256,
         )
-        return True, None
+        after = store.packet_input_fingerprint(
+            run_id, _PACKET_INPUT_ARTIFACTS, extra_paths
+        )
+        if after == fingerprint:
+            # Do not cache a packet built across a concurrent input change.
+            store.store_packet_fingerprint(run_id, after)
+        return True, None, True
     except Exception as exc:
         logger.warning("packet refresh failed for %s: %s", run_id, exc)
-        return False, f"{type(exc).__name__}: {exc}"
+        return False, f"{type(exc).__name__}: {exc}", False
 
 
 def _reconcile_interrupted_runs(store: RunStore) -> None:
@@ -539,6 +564,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if candidate in view["evidence_by_id"]:
                     selected_evidence = view["evidence_by_id"][candidate]
                     break
+        # The workbench only lets the user inspect evidence attached to the
+        # selected feature's spine. Scope the JSON island to that working set
+        # instead of inlining the whole estate on every view. The unscoped
+        # records remain available from /api/runs/<id>/evidence/<evidence_id>.
+        scoped_ids: set[str] = set()
+        if view.get("selected_feature"):
+            scoped_ids.update(view["selected_feature"].get("evidence_ids", []))
+        selected_spine = view.get("selected_spine")
+        if selected_spine:
+            spine_payload = (
+                selected_spine.model_dump(mode="json")
+                if hasattr(selected_spine, "model_dump") else selected_spine
+            )
+            scoped_ids.update(
+                node["evidence_id"] for node in spine_payload.get("nodes", [])
+                if node.get("evidence_id")
+            )
+        if evidence:
+            scoped_ids.add(evidence)
+        view["evidence_by_id"] = {
+            evidence_id: view["evidence_by_id"][evidence_id]
+            for evidence_id in scoped_ids
+            if evidence_id in view["evidence_by_id"]
+        }
         return templates.TemplateResponse(
             request=request, name="workbench.html",
             context=context(request, run_id, view, "Workbench",
@@ -651,8 +700,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         view, response = guard(request, run_id, "Packet")
         if response:
             return response
-        refreshed, refresh_error = _refresh_packet(app.state.store, run_id, settings)
-        view = _load_view(app.state.store, run_id)
+        refreshed, refresh_error, rebuilt = _refresh_packet(
+            app.state.store, run_id, settings
+        )
+        if rebuilt or not refreshed:
+            view = _load_view(app.state.store, run_id)
         return templates.TemplateResponse(
             request=request, name="packet.html",
             context=context(request, run_id, view, "Packet",
@@ -668,7 +720,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=409,
                 detail=f"packet refresh requires a succeeded run; status is {status.get('status')!r}",
             )
-        refreshed, refresh_error = _refresh_packet(store, run, settings)
+        refreshed, refresh_error, _rebuilt = _refresh_packet(store, run, settings)
         if not refreshed:
             raise HTTPException(
                 status_code=503,
@@ -909,6 +961,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         by_id = {e["evidence_id"]: e for e in evidence}
         return {"feature": feature, "evidence": [by_id[e] for e in feature["evidence_ids"] if e in by_id]}
 
+    @app.get("/api/runs/{run_id}/evidence/{evidence_id}")
+    def evidence_api(run_id: str, evidence_id: str):
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        evidence = _payload_list(
+            store, run_id, "evidence.json", "evidence", {"evidence": []}
+        )["evidence"]
+        review_evidence = _payload_list(
+            store, run_id, "review_evidence.json", "evidence", {"evidence": []}
+        )["evidence"]
+        for item in evidence + review_evidence:
+            if item.get("evidence_id") == evidence_id:
+                return item
+        raise HTTPException(status_code=404, detail="evidence not found")
+
     @app.get("/api/runs/{run_id}/spine")
     def spine_api(run_id: str):
         _status_or_404(app.state.store, run_id)
@@ -979,7 +1046,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=409,
                 detail=f"packet refresh requires a succeeded run; status is {status.get('status')!r}",
             )
-        refreshed, refresh_error = _refresh_packet(store, run_id, settings)
+        refreshed, refresh_error, _rebuilt = _refresh_packet(store, run_id, settings)
         if not refreshed:
             raise HTTPException(
                 status_code=503,

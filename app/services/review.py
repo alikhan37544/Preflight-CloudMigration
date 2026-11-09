@@ -27,6 +27,7 @@ from app.models import (
 from app.services.discovery import DiscoveryResult
 from app.services.parsers.gosu import mask_comments, mask_source, parse_gunit, scan_gosu
 from app.services.parsers.product import parse_template_xml
+from app.services.textindex import TextIndex
 from app.services.redaction import (
     SECRET_KEYS,
     SECRET_PLACEHOLDERS,
@@ -83,14 +84,17 @@ class _Evidence:
         return ev
 
 
-def _line_at(source: str, position: int) -> int:
-    return source.count("\n", 0, position) + 1
+def _line_at(source: str, position: int, index: TextIndex | None = None) -> int:
+    if index is None:
+        index = TextIndex(source)
+    return index.line_at(position)
 
 
-def _excerpt_at(source: str, line: int, span: int = 3) -> str:
-    lines = source.splitlines()
-    start = max(0, line - 1)
-    return "\n".join(lines[start:start + span]).strip()
+def _excerpt_at(source: str, line: int, span: int = 3,
+                index: TextIndex | None = None) -> str:
+    if index is None:
+        index = TextIndex(source)
+    return index.excerpt(line, span)
 
 
 def _match_brace(masked: str, open_index: int) -> int:
@@ -151,6 +155,7 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                 warnings.append(f"{rel}: {exc}")
                 continue
             raw, masked = doc.raw, doc.masked
+            index = TextIndex(raw)
 
             for rule_id in ["PF-GW-SQL-001", "PF-GW-PKG-001", "PF-GW-SRV-001"]:
                 if rule_id not in rules:
@@ -163,8 +168,10 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                         hit = match
                         break
                 if hit:
-                    line = _line_at(raw, hit.start())
-                    ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="regex_masked")
+                    line = _line_at(raw, hit.start(), index)
+                    ev = collector.add(path=rel, line=line,
+                                       excerpt=_excerpt_at(raw, line, index=index),
+                                       method="regex_masked")
                     emit(rule_id, evidence=ev,
                          message=f"{rules[rule_id]['title']} detected at {rel}:{line}.",
                          bucket=findings)
@@ -193,13 +200,13 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                     if following.startswith("+") and not re.search(r"[A-Za-z0-9]{8,}", value):
                         continue
                     value_fingerprint = fingerprint(value)
-                    line = _line_at(raw, match.start())
+                    line = _line_at(raw, match.start(), index)
                     all_values = {
                         item.group(2) for item in SECRET_KEYS.finditer(code_only)
                         if item.group(2) and len(item.group(2)) >= 3
                     }
                     excerpt, _ = redact_excerpt(
-                        _excerpt_at(raw, line), all_quoted_strings=True,
+                        _excerpt_at(raw, line, index=index), all_quoted_strings=True,
                         extra_values=all_values,
                     )
                     ev = collector.add(path=rel, line=line, excerpt=excerpt,
@@ -217,9 +224,10 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                     if close_index == -1:
                         continue
                     if re.sub(r"[\s;]+", "", masked[open_index + 1:close_index]) == "":
-                        line = _line_at(raw, match.start())
+                        line = _line_at(raw, match.start(), index)
                         ev = collector.add(path=rel, line=line,
-                                           excerpt=_excerpt_at(raw, line, span=5), method="lexer")
+                                           excerpt=_excerpt_at(raw, line, span=5, index=index),
+                                           method="lexer")
                         emit("PF-GW-EXC-001", evidence=ev,
                              message=f"Empty catch block at {rel}:{line}.", bucket=findings)
 
@@ -230,9 +238,15 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                         if commit_line in seen_commits:
                             continue
                         seen_commits.add(commit_line)
-                        ev = collector.add(path=rel, line=commit_line,
-                                           excerpt=_excerpt_at(raw, block.start_line, span=max(1, block.end_line - block.start_line + 1)),
-                                           method="lexer")
+                        ev = collector.add(
+                            path=rel, line=commit_line,
+                            excerpt=_excerpt_at(
+                                raw, block.start_line,
+                                span=max(1, block.end_line - block.start_line + 1),
+                                index=index,
+                            ),
+                            method="lexer",
+                        )
                         emit("PF-GW-TX-001", evidence=ev,
                              message=f"Explicit commit inside runWithNewBundle at {rel}:{commit_line}.",
                              bucket=findings)
@@ -240,34 +254,42 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
             if include_thesis and "PF-GW-LOG-001" in rules:
                 code_only = mask_source(raw)
                 lines = code_only.splitlines()
-                index = 0
-                while index < len(lines):
-                    start = index
-                    window = lines[index]
+                line_cursor = 0
+                while line_cursor < len(lines):
+                    start = line_cursor
+                    window = lines[line_cursor]
                     if LOG_CALL.search(window):
                         balance = window.count("(") - window.count(")")
-                        while balance > 0 and index + 1 < len(lines):
-                            index += 1
-                            window += "\n" + lines[index]
-                            balance += lines[index].count("(") - lines[index].count(")")
+                        while balance > 0 and line_cursor + 1 < len(lines):
+                            line_cursor += 1
+                            window += "\n" + lines[line_cursor]
+                            balance += lines[line_cursor].count("(") - lines[line_cursor].count(")")
                         if SENSITIVE_LOGGED.search(window):
                             line_number = start + 1
-                            ev = collector.add(path=rel, line=line_number,
-                                               excerpt=_excerpt_at(raw, line_number, span=min(4, index - start + 1)),
-                                               method="lexer")
+                            ev = collector.add(
+                                path=rel, line=line_number,
+                                excerpt=_excerpt_at(
+                                    raw, line_number,
+                                    span=min(4, line_cursor - start + 1),
+                                    index=index,
+                                ),
+                                method="lexer",
+                            )
                             emit("PF-GW-LOG-001", evidence=ev,
                                  message=f"Sensitive field written to a log at {rel}:{line_number}.",
                                  bucket=findings)
                             break
-                    index += 1
+                    line_cursor += 1
 
             if include_thesis and "PF-GW-LOG-002" in rules:
                 patterns = rules["PF-GW-LOG-002"]["detection"].get("patterns", [])
                 for pattern in patterns:
                     match = re.search(pattern, masked)
                     if match:
-                        line = _line_at(raw, match.start())
-                        ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="lexer")
+                        line = _line_at(raw, match.start(), index)
+                        ev = collector.add(path=rel, line=line,
+                                           excerpt=_excerpt_at(raw, line, index=index),
+                                           method="lexer")
                         emit("PF-GW-LOG-002", evidence=ev,
                              message=f"Print or stack-trace output at {rel}:{line}.", bucket=findings)
                         break
@@ -280,8 +302,15 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                 continue
             if test.db_calls:
                 raw = path.read_text(encoding="utf-8", errors="replace")
-                line = next((i + 1 for i, text in enumerate(raw.splitlines()) if any(token in text for token in test.db_calls)), 1)
-                ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line), method="lexer")
+                index = TextIndex(raw)
+                line = next(
+                    (i + 1 for i, text in enumerate(index.lines)
+                     if any(token in text for token in test.db_calls)),
+                    1,
+                )
+                ev = collector.add(path=rel, line=line,
+                                   excerpt=_excerpt_at(raw, line, index=index),
+                                   method="lexer")
                 emit("PF-GW-GUNIT-001", evidence=ev,
                      message=f"Pure unit test uses database calls ({', '.join(test.db_calls)}) at {rel}:{line}.",
                      bucket=findings)
@@ -304,6 +333,7 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
 
         elif kind == "product_xml" and "PF-GW-SBT-001" in rules:
             raw = path.read_text(encoding="utf-8", errors="replace")
+            index = TextIndex(raw)
             sbt_element = None
             try:
                 from app.services.parsers._xml import safe_parser
@@ -321,7 +351,8 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                 sbt_element = None
             if sbt_element is not None:
                 _element, line = sbt_element
-                ev = collector.add(path=rel, line=line, excerpt=_excerpt_at(raw, line),
+                ev = collector.add(path=rel, line=line,
+                                   excerpt=_excerpt_at(raw, line, index=index),
                                    method="xml_xpath", confidence=Confidence.LINKED)
                 meta = rules["PF-GW-SBT-001"]
                 readiness.append(

@@ -291,6 +291,29 @@ def test_workbench_direct_evidence_url_selects_node(api, run_id) -> None:
     assert target["path"] in text
 
 
+def test_workbench_evidence_json_is_scoped_to_the_selected_feature(api, run_id) -> None:
+    import json
+
+    client, _ = api
+    feature = client.get(f"/api/runs/{run_id}/features/PA-POL-02").json()
+    expected = {item["evidence_id"] for item in feature["evidence"]}
+    text = client.get(f"/?run={run_id}&feature=PA-POL-02").text
+    fragment = text.split(
+        '<script type="application/json" id="evidence-data">', 1
+    )[1].split("</script>", 1)[0]
+    payload = json.loads(fragment)
+    assert set(payload) == expected
+    assert len(payload) < len(
+        client.get(f"/api/runs/{run_id}/features/PA-VEH-01").json()["evidence"]
+    ) + len(expected)
+
+    other = client.get(f"/api/runs/{run_id}/features/PA-VEH-01").json()["evidence"]
+    unrelated = next(item for item in other if item["evidence_id"] not in expected)
+    detail = client.get(f"/api/runs/{run_id}/evidence/{unrelated['evidence_id']}")
+    assert detail.status_code == 200
+    assert detail.json()["path"] == unrelated["path"]
+
+
 def test_decision_persists_and_is_audited(api, run_id) -> None:
     client, token = api
     response = client.post(
@@ -565,6 +588,8 @@ def test_packet_refresh_preserves_readiness_and_run_context(api, run_id) -> None
 
 def test_packet_refresh_failure_is_visible_and_export_blocks(api, run_id, monkeypatch) -> None:
     client, _ = api
+    # Force the refresh path instead of the unchanged-input cache hit.
+    client.app.state.store.clear_packet_cache(run_id)
 
     def fail_build(**kwargs):
         raise RuntimeError("synthetic refresh failure")
@@ -577,6 +602,47 @@ def test_packet_refresh_failure_is_visible_and_export_blocks(api, run_id, monkey
     export = client.get(f"/packet/export?run={run_id}")
     assert export.status_code == 503
     assert "refusing to export a stale artifact" in export.json()["detail"]
+
+
+def test_packet_page_reuses_unchanged_packet_and_rebuilds_on_mtime(
+    api, run_id, monkeypatch
+) -> None:
+    import os
+
+    client, token = api
+    store = client.app.state.store
+    # Prime the cache through the same page route used by the assertion.
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+
+    calls = []
+    real_build = __import__("app.main", fromlist=["build_packet"]).build_packet
+
+    def spy(**kwargs):
+        calls.append(1)
+        return real_build(**kwargs)
+
+    monkeypatch.setattr("app.main.build_packet", spy)
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+    assert calls == []
+
+    # An input mtime change must invalidate the cached packet.
+    features = store.run_dir(run_id) / "features.json"
+    stat = features.stat()
+    os.utime(features, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000))
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+    assert len(calls) == 1
+
+    # A decision appends to the audit chain, so the next view must rebuild.
+    calls.clear()
+    decision = client.post(
+        f"/api/runs/{run_id}/decisions",
+        json={"object_type": "mapping", "object_id": "M-03", "action": "defer",
+              "reason": "cache invalidation check"},
+        headers={"X-CSRF-Token": token},
+    )
+    assert decision.status_code == 200, decision.text
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+    assert len(calls) >= 1
 
 
 def test_delete_run(api, run_id) -> None:

@@ -241,6 +241,59 @@ def test_verify_audit_without_checkpoint_is_backward_compatible(store: RunStore)
     assert store.verify_audit("R-1") is True
 
 
+def test_append_rebuilds_a_missing_checkpoint(store: RunStore) -> None:
+    store.create_run("R-1")
+    for index in range(3):
+        store.append_audit(
+            "R-1", action="mapping.reviewed", object_type="mapping",
+            object_id=f"M-{index}",
+        )
+    (store.run_dir("R-1") / "audit.checkpoint.json").unlink()
+    store.append_audit(
+        "R-1", action="mapping.reviewed", object_type="mapping", object_id="M-3"
+    )
+    events = store.read_audit("R-1")
+    assert [event["seq"] for event in events] == [0, 1, 2, 3]
+    assert events[3]["prev_hash"] == events[2]["hash"]
+    assert store.verify_audit("R-1") is True
+
+
+def test_append_rebuilds_a_corrupt_checkpoint(store: RunStore) -> None:
+    store.create_run("R-1")
+    store.append_audit("R-1", action="run.created", object_type="run", object_id="R-1")
+    (store.run_dir("R-1") / "audit.checkpoint.json").write_text(
+        "{not json", encoding="utf-8"
+    )
+    second = store.append_audit(
+        "R-1", action="mapping.accepted", object_type="mapping", object_id="M-1"
+    )
+    assert second["seq"] == 1
+    assert store.verify_audit("R-1") is True
+    checkpoint = store.read_artifact("R-1", "audit.checkpoint.json")
+    assert checkpoint["count"] == 2
+    assert checkpoint["head"] == second["hash"]
+    assert checkpoint["log_size"] == (store.run_dir("R-1") / "audit.jsonl").stat().st_size
+
+
+def test_append_refuses_a_log_truncated_against_its_checkpoint(store: RunStore) -> None:
+    store.create_run("R-1")
+    for index in range(2):
+        store.append_audit(
+            "R-1", action="mapping.reviewed", object_type="mapping",
+            object_id=f"M-{index}",
+        )
+    audit_path = store.run_dir("R-1") / "audit.jsonl"
+    lines = audit_path.read_text(encoding="utf-8").splitlines()
+    audit_path.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+    with pytest.raises(StoreError) as excinfo:
+        store.append_audit(
+            "R-1", action="mapping.reviewed", object_type="mapping",
+            object_id="M-2",
+        )
+    assert excinfo.value.code == "CORRUPT_ARTIFACT"
+    assert store.verify_audit("R-1") is False
+
+
 # -- decision/audit consistency and corrupt reads ---------------------------
 
 

@@ -15,6 +15,8 @@ from pathlib import Path
 import pytest
 
 from app.models import (
+    Artifact,
+    ArtifactStatus,
     Confidence,
     Locator,
     LocatorKind,
@@ -470,6 +472,41 @@ def test_mapping_grounding_rejects_empty_and_common_tokens(demo_eval) -> None:
     two_tokens.source_ref = "PAVehicle.Year"
     two_tokens.source_name = "Year"
     assert _mapping_grounded(two_tokens, grounding, manifest) is True
+
+
+def test_grep_baseline_ignores_unlabelled_matching_files(demo_eval, tmp_path: Path) -> None:
+    manifest, discovery, reconstruction, review, comparison, result = demo_eval
+    fixture = tmp_path / "fixture"
+    shutil.copytree(DEMO, fixture)
+    relative = "gsrc/acme/query/UnlabelledExtra.gs"
+    extra = fixture / relative
+    extra.parent.mkdir(parents=True, exist_ok=True)
+    extra.write_text(
+        'package acme.query\nclass UnlabelledExtra {\n'
+        '  function load() { DriverManager.getConnection("jdbc:acme:x") }\n}\n',
+        encoding="utf-8",
+    )
+    changed_manifest = manifest.model_copy(deep=True)
+    changed_manifest.artifacts.append(Artifact(
+        path=relative,
+        sha256=hashlib.sha256(extra.read_bytes()).hexdigest(),
+        size=extra.stat().st_size,
+        kind="gosu",
+        parser="gosu",
+        status=ArtifactStatus.PARSED,
+        line_count=len(extra.read_text(encoding="utf-8").splitlines()),
+    ))
+    changed_manifest.file_count += 1
+    changed_manifest.total_size += extra.stat().st_size
+
+    changed = evaluate_run(
+        fixture_id="demo-slice-300", manifest=changed_manifest,
+        discovery=discovery, reconstruction=reconstruction, review=review,
+        comparison=comparison, ground_truth_dir=GROUND, tier="demo",
+        fixture_root=fixture,
+    )
+    assert changed.baselines["grep_only_findings"] == result.baselines["grep_only_findings"]
+    assert changed.baselines["grep_only_findings_f1"] == result.baselines["grep_only_findings_f1"]
 
 
 def test_m6_finding_with_one_valid_evidence_link_still_counts(demo_eval) -> None:

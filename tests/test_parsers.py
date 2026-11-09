@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+from lxml import etree
+
+from app.services.parsers._xml import XPathBuilder, safe_parser, xpath_with_index
 from app.services.parsers.config import parse_config_yaml, parse_json_with_pointer
 from app.services.parsers.entity import parse_entity
 from app.services.parsers.gosu import parse_gunit, scan_gosu
@@ -25,6 +28,49 @@ def test_parse_pcf_widgets_and_lines(tiny_snapshot: Path) -> None:
     assert [w.binding for w in doc.widgets] == ["VehicleType", "ModelYear", "GarageLocation_Ext"]
     assert all(w.line and w.line >= 1 for w in doc.widgets)
     assert doc.widgets[0].xpath.endswith("TypeKeyInput[1]")
+
+
+def test_xpath_builder_matches_lxml_getpath_including_namespaces(tmp_path: Path) -> None:
+    xml = (
+        '<PCF xmlns:x="urn:prefixed" name="P">'
+        "<Screen>"
+        '<TextInput id="a"/><TextInput id="b"/>'
+        '<x:TextInput id="c"/><TextInput id="d"/>'
+        "<Other><TextInput id=\"e\"/></Other>"
+        "</Screen>"
+        "</PCF>"
+    )
+    path = tmp_path / "Namespaced.pcf"
+    path.write_text(xml, encoding="utf-8")
+    tree = etree.parse(str(path), safe_parser())
+    builder = XPathBuilder(tree)
+    for element in tree.iter():
+        assert builder.path(element) == tree.getpath(element)
+
+    # Default-namespace elements use lxml's wildcard step; prefixed elements
+    # keep their prefix so tree.xpath() resolves the stored locator.
+    default_xml = (
+        '<PCF xmlns="urn:default"><Screen><TextInput id="a"/><TextInput id="b"/>'
+        "</Screen></PCF>"
+    )
+    default_tree = etree.fromstring(default_xml).getroottree()
+    default_builder = XPathBuilder(default_tree)
+    widgets = [element for element in default_tree.iter() if element.get("id")]
+    assert [default_builder.path(element) for element in widgets] == [
+        "/*/*/*[1]", "/*/*/*[2]",
+    ]
+    for element in widgets:
+        assert default_tree.xpath(default_builder.path(element))[0] == element
+
+
+def test_parse_pcf_locator_paths_resolve_back_to_widgets(tiny_snapshot: Path) -> None:
+    path = tiny_snapshot / "config/web/pcf/policy/PAVehicleDV.pcf"
+    doc = parse_pcf(path)
+    tree = etree.parse(str(path), safe_parser())
+    for widget in doc.widgets:
+        found = tree.xpath(widget.xpath)
+        assert len(found) == 1
+        assert found[0].get("id") == widget.widget_id
 
 
 def test_parse_entity_columns_and_extension(tiny_snapshot: Path) -> None:

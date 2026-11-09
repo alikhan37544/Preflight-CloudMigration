@@ -85,6 +85,9 @@ class RunStore:
     # open a second flock descriptor: a second flock in the same process would
     # block on the lock it already owns.
     _lock_depth = threading.local()
+    _packet_cache_guard = threading.Lock()
+    _packet_cache: dict[str, tuple] = {}
+    _packet_cache_limit = 256
 
     def __init__(self, base_dir: Path | str) -> None:
         self.base_dir = Path(base_dir)
@@ -224,6 +227,7 @@ class RunStore:
             # next write rather than recreate the directory after rmtree.
             marker = self._tombstone_path(run_id)
             self._atomic_write(marker, {"run_id": run_id, "deleted_at": _utc_now()})
+            self.clear_packet_cache(run_id)
             if directory.exists():
                 try:
                     shutil.rmtree(directory)
@@ -298,6 +302,7 @@ class RunStore:
         with self.locked(run_id):
             self._ensure_not_deleted_locked(run_id)
             self._atomic_write(target, data)
+            self.clear_packet_cache(run_id)
         return target
 
     def read_artifact(self, run_id: str, name: str, *, allowlist: Iterable[str] | None = None) -> Any:
@@ -329,6 +334,73 @@ class RunStore:
             return self._artifact_path(run_id, name).is_file()
         except StoreError:
             return False
+
+    # -- packet refresh cache -----------------------------------------
+    def _stat_token(self, path: Path) -> tuple[int, int] | None:
+        try:
+            stat = path.stat()
+        except OSError:
+            return None
+        return (stat.st_mtime_ns, stat.st_size)
+
+    def _packet_audit_token_locked(self, run_id: str) -> tuple:
+        """Cheap audit identity: checkpoint when valid, otherwise log stat."""
+        audit_path = self.run_dir(run_id) / "audit.jsonl"
+        try:
+            checkpoint = self._read_checkpoint_locked(run_id)
+        except StoreError:
+            checkpoint = None
+        if checkpoint is not None:
+            count = checkpoint.get("count")
+            head = checkpoint.get("head", "GENESIS")
+            log_size = checkpoint.get("log_size")
+            if (isinstance(count, int) and not isinstance(count, bool)
+                    and isinstance(head, str)
+                    and isinstance(log_size, int) and not isinstance(log_size, bool)):
+                return ("checkpoint", count, head, log_size)
+        return ("log", self._stat_token(audit_path))
+
+    def packet_input_fingerprint(self, run_id: str,
+                                 artifact_names: Iterable[str],
+                                 extra_paths: Iterable[Path] = ()) -> tuple:
+        """Fingerprint every input that can change packet content.
+
+        Mtimes/sizes are intentional: hashing multi-megabyte artifacts on every
+        page view would recreate the cost the cache exists to avoid. The audit
+        token is the checkpoint head/count, so a decision always invalidates.
+        """
+        names = tuple(sorted(set(artifact_names)))
+        with self.locked(run_id):
+            artifacts = tuple(
+                (name, self._stat_token(self._artifact_path(run_id, name)))
+                for name in names
+            )
+            audit = self._packet_audit_token_locked(run_id)
+        extras = tuple((str(path), self._stat_token(Path(path))) for path in extra_paths)
+        return (audit, artifacts, extras)
+
+    def _packet_key(self, run_id: str) -> tuple[str, str]:
+        return (str(self.runs_dir.resolve()), run_id)
+
+    def packet_cache_hit(self, run_id: str, fingerprint: tuple) -> bool:
+        key = self._packet_key(run_id)
+        with RunStore._packet_cache_guard:
+            return RunStore._packet_cache.get(key) == fingerprint
+
+    def store_packet_fingerprint(self, run_id: str, fingerprint: tuple) -> None:
+        key = self._packet_key(run_id)
+        with RunStore._packet_cache_guard:
+            cache = RunStore._packet_cache
+            cache[key] = fingerprint
+            while len(cache) > RunStore._packet_cache_limit:
+                cache.pop(next(iter(cache)))
+
+    def clear_packet_cache(self, run_id: str | None = None) -> None:
+        with RunStore._packet_cache_guard:
+            if run_id is None:
+                RunStore._packet_cache.clear()
+                return
+            RunStore._packet_cache.pop(self._packet_key(run_id), None)
 
     # -- run status ----------------------------------------------------
     def update_status(self, run_id: str, *, status: str, stage: str, percent: float,
@@ -450,27 +522,82 @@ class RunStore:
             # Never hide the original write failure with a rollback failure.
             pass
 
+    def _audit_tail_locked(self, run_id: str) -> tuple[int, str, int]:
+        """Return ``(count, head_hash, log_size)`` without scanning the log.
+
+        The checkpoint is the fast path. It is rebuilt from the log when it is
+        missing/corrupt (or predates the stored byte offset). A checkpoint that
+        is present but disagrees with the log size is corruption: appending would
+        otherwise let a truncated log continue from a stale head.
+        """
+        audit_path = self.run_dir(run_id) / "audit.jsonl"
+        checkpoint_path = self._checkpoint_path(run_id)
+        rebuild = False
+        if checkpoint_path.exists():
+            try:
+                checkpoint = self._read_checkpoint_locked(run_id)
+            except StoreError:
+                checkpoint = None
+                rebuild = True
+            if checkpoint is None:
+                rebuild = True
+            else:
+                count = checkpoint.get("count")
+                head = checkpoint.get("head", "GENESIS")
+                log_size = checkpoint.get("log_size")
+                valid = (
+                    isinstance(count, int) and not isinstance(count, bool)
+                    and isinstance(head, str)
+                    and (count > 0 or head == "GENESIS")
+                )
+                if not valid:
+                    rebuild = True
+                elif not isinstance(log_size, int) or isinstance(log_size, bool):
+                    # Legacy checkpoint: one full read to learn the byte offset.
+                    rebuild = True
+                else:
+                    try:
+                        actual_size = audit_path.stat().st_size
+                    except OSError:
+                        actual_size = 0
+                    if actual_size != log_size:
+                        raise StoreError(
+                            f"audit log for run {run_id!r} does not match its checkpoint",
+                            code="CORRUPT_ARTIFACT",
+                        )
+                    return count, head, actual_size
+        else:
+            rebuild = True
+        if not rebuild:
+            return 0, "GENESIS", 0
+        events = self._read_audit_locked(run_id)
+        if events:
+            head = events[-1].get("hash")
+            if not isinstance(head, str):
+                raise StoreError(
+                    f"audit log for run {run_id!r} is corrupt: missing hash",
+                    code="CORRUPT_ARTIFACT",
+                )
+        else:
+            head = "GENESIS"
+        try:
+            size = audit_path.stat().st_size
+        except OSError:
+            size = 0
+        return len(events), head, size
+
     def _append_audit_locked(
         self, run_id: str, *, action: str, object_type: str, object_id: str,
         actor: str = "system", before_hash: str | None = None,
         after_hash: str | None = None, reason: str | None = None,
     ) -> dict[str, Any]:
         self._ensure_not_deleted_locked(run_id)
-        events = self._read_audit_locked(run_id)
-        if events:
-            prev_hash = events[-1].get("hash")
-            if not isinstance(prev_hash, str):
-                raise StoreError(
-                    f"audit log for run {run_id!r} is corrupt: missing hash",
-                    code="CORRUPT_ARTIFACT",
-                )
-        else:
-            prev_hash = "GENESIS"
+        count, prev_hash, _log_size = self._audit_tail_locked(run_id)
         event = {
             "schema_version": "1.0",
             "event_id": f"AE-{uuid.uuid4().hex[:12]}",
             "run_id": run_id,
-            "seq": len(events),
+            "seq": count,
             "ts": _utc_now(),
             "actor": actor,
             "action": action,
@@ -492,11 +619,13 @@ class RunStore:
                 fh.write(json.dumps(event, ensure_ascii=False) + "\n")
                 fh.flush()
                 os.fsync(fh.fileno())
+            log_size = path.stat().st_size
             self._atomic_write(checkpoint_path, {
                 "schema_version": "1.0",
                 "run_id": run_id,
-                "count": len(events) + 1,
+                "count": count + 1,
                 "head": event["hash"],
+                "log_size": log_size,
                 "updated_at": _utc_now(),
             })
         except BaseException:
@@ -556,6 +685,17 @@ class RunStore:
                 expected_head = events[-1]["hash"] if events else "GENESIS"
                 if checkpoint.get("head", "GENESIS") != expected_head:
                     return False
+                log_size = checkpoint.get("log_size")
+                if log_size is not None:
+                    if not isinstance(log_size, int) or isinstance(log_size, bool):
+                        return False
+                    audit_path = self.run_dir(run_id) / "audit.jsonl"
+                    try:
+                        actual_size = audit_path.stat().st_size
+                    except OSError:
+                        actual_size = 0
+                    if actual_size != log_size:
+                        return False
             return True
 
     # -- decisions -----------------------------------------------------

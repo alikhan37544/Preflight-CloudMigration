@@ -8,13 +8,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.services.parsers._xml import WIDGET_TAGS, excerpt as xml_excerpt, line_of, parse_file, xpath_with_index
+from app.services.parsers._xml import (
+    WIDGET_TAGS,
+    XPathBuilder,
+    excerpt as xml_excerpt,
+    line_of,
+    parse_file,
+    xpath_with_index,
+)
 from app.services.parsers.base import ParsedPcf, ParsedWidget
 
 
 def parse_pcf(path: Path) -> ParsedPcf:
     tree = parse_file(path)
     root = tree.getroot()
+    builder = XPathBuilder(tree)
     name = root.get("name") or Path(path).stem
     doc = ParsedPcf(name=name, path=str(path))
     for element in root.iter():
@@ -31,7 +39,7 @@ def parse_pcf(path: Path) -> ParsedPcf:
                 widget_type=local,
                 widget_id=widget_id,
                 binding=binding,
-                xpath=xpath_with_index(tree, element),
+                xpath=xpath_with_index(tree, element, builder=builder),
                 line=line_of(element),
                 excerpt=xml_excerpt(tree, element).strip(),
             )
