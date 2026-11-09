@@ -191,3 +191,86 @@ def test_golden_path(server) -> None:
     assert external == [], external
     assert console_errors == [], console_errors
     assert page_errors == [], page_errors
+
+
+@pytest.mark.e2e
+def test_mobile_390_no_overflow_and_nav_reachable(server) -> None:
+    """Every route fits a 390px viewport; the mobile nav exposes every link."""
+    base = server["base"]
+    shots = Path(server["data"]) / "screenshots"
+    shots.mkdir(parents=True, exist_ok=True)
+    console_errors: list[str] = []
+    page_errors: list[str] = []
+    routes = [
+        ("workbench", f"{base}/?run=R-E2E&feature=PA-VEH-01"),
+        ("manifest", f"{base}/manifest?run=R-E2E"),
+        ("manifest-excluded", f"{base}/manifest?run=R-E2E&excluded=1"),
+        ("reconstruction", f"{base}/reconstruction?run=R-E2E"),
+        ("reconstruction-draft", f"{base}/reconstruction?run=R-E2E&tab=draft"),
+        ("reconstruction-assumptions", f"{base}/reconstruction?run=R-E2E&tab=assumptions"),
+        ("reconstruction-comparison", f"{base}/reconstruction?run=R-E2E&tab=comparison"),
+        ("findings", f"{base}/findings?run=R-E2E"),
+        ("findings-selected", f"{base}/findings?run=R-E2E&selected=F-008"),
+        ("evaluation", f"{base}/evaluation?run=R-E2E"),
+        ("packet", f"{base}/packet?run=R-E2E"),
+        ("runs", f"{base}/runs"),
+        ("settings", f"{base}/settings"),
+        ("about", f"{base}/about"),
+        ("import", f"{base}/import"),
+    ]
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
+
+        for name, url in routes:
+            page.goto(url, wait_until="networkidle")
+            width = page.evaluate("() => window.innerWidth")
+            scroll_width = page.evaluate("() => document.documentElement.scrollWidth")
+            body_width = page.evaluate("() => document.body.scrollWidth")
+            assert scroll_width <= width + 1, (name, scroll_width, width)
+            assert body_width <= width + 1, (name, body_width, width)
+
+            toggle = page.locator("[data-nav-toggle]")
+            expect(toggle).to_be_visible()
+            toggle.click()
+            expect(toggle).to_have_attribute("aria-expanded", "true")
+            links = page.locator(".sidebar .side-link")
+            expect(links).to_have_count(9)
+            for index in range(links.count()):
+                link = links.nth(index)
+                expect(link).to_be_visible()
+                box = link.bounding_box()
+                assert box is not None, (name, index)
+                assert box["x"] >= -1, (name, index, box)
+                assert box["x"] + box["width"] <= width + 1, (name, index, box)
+            open_width = page.evaluate("() => document.documentElement.scrollWidth")
+            assert open_width <= width + 1, (name, "nav open", open_width, width)
+            toggle.click()
+            expect(toggle).to_have_attribute("aria-expanded", "false")
+
+            if name == "workbench":
+                hint = page.locator("[data-spine-scroll-hint]")
+                expect(hint).to_be_visible()
+                graph_width = page.evaluate(
+                    "() => document.querySelector('.spine-svg').getBoundingClientRect().width"
+                )
+                assert graph_width >= 672, graph_width
+            if name == "findings-selected":
+                expect(page.locator("tr.selected")).to_have_count(1)
+                expect(page.locator(".selected-flag")).to_have_count(1)
+                selected_cells = page.locator("tr.selected td")
+                expect(selected_cells.first).to_have_attribute("aria-current", "true")
+                expect(selected_cells.first).to_contain_text("PF-GW-PKG-001")
+                assert selected_cells.nth(6).inner_text().strip() == "open"
+            if name == "runs":
+                expect(page.locator("[data-runs-table] [data-scroll-hint]")).to_be_visible()
+
+            page.screenshot(path=str(shots / f"mobile-390-{name}.png"), full_page=True)
+
+        browser.close()
+
+    assert console_errors == [], console_errors
+    assert page_errors == [], page_errors

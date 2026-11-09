@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import scroll_region %}
 {% block content %}
 <div class="page-head">
   <div>
@@ -23,29 +24,33 @@
     <li>Not a live-tenant connector, autonomous migration agent, or deployment tool.</li>
   </ul>
   <h2>Claim legend</h2>
-  <table class="data-table compact">
-    <caption>Claim legend with allowed wording.</caption>
-    <thead><tr><th scope="col">Status</th><th scope="col">Meaning</th><th scope="col">Allowed wording</th></tr></thead>
-    <tbody>
-      <tr><td>Designed</td><td>Architecture exists</td><td>"We designed..."</td></tr>
-      <tr><td>Implemented</td><td>Code runs on the synthetic fixture</td><td>"The prototype executes..."</td></tr>
-      <tr><td>Measured</td><td>Metrics on a controlled synthetic fixture</td><td>"Measured on one synthetic fixture..."</td></tr>
-      <tr><td>Proposed</td><td>Future work</td><td>"Planned..."</td></tr>
-      <tr><td>Gated</td><td>Requires external access</td><td>"Gated on..."</td></tr>
-    </tbody>
-  </table>
+  {% call scroll_region("Claim legend table, horizontally scrollable if needed") %}
+    <table class="data-table compact claim-legend-table">
+      <caption>Claim legend with allowed wording.</caption>
+      <thead><tr><th scope="col">Status</th><th scope="col">Meaning</th><th scope="col">Allowed wording</th></tr></thead>
+      <tbody>
+        <tr><td>Designed</td><td>Architecture exists</td><td>"We designed..."</td></tr>
+        <tr><td>Implemented</td><td>Code runs on the synthetic fixture</td><td>"The prototype executes..."</td></tr>
+        <tr><td>Measured</td><td>Metrics on a controlled synthetic fixture</td><td>"Measured on one synthetic fixture..."</td></tr>
+        <tr><td>Proposed</td><td>Future work</td><td>"Planned..."</td></tr>
+        <tr><td>Gated</td><td>Requires external access</td><td>"Gated on..."</td></tr>
+      </tbody>
+    </table>
+  {% endcall %}
   <h2>Claim strength</h2>
-  <table class="data-table compact">
-    <caption>Claim-strength meanings.</caption>
-    <thead><tr><th scope="col">Strength</th><th scope="col">Meaning</th></tr></thead>
-    <tbody>
-      <tr><td>verified-id</td><td>Public Guidewire standard ID and title; full body may be gated.</td></tr>
-      <tr><td>verified-policy</td><td>Public Guidewire guidance without a single public ID.</td></tr>
-      <tr><td>verified-doc</td><td>Public Guidewire documentation, such as the 24-character APD type limit.</td></tr>
-      <tr><td>secondary</td><td>Vendor blog or credible secondary source.</td></tr>
-      <tr><td>heuristic</td><td>PreFlight invention, clearly labelled and never given a standard ID.</td></tr>
-    </tbody>
-  </table>
+  {% call scroll_region("Claim strength table, horizontally scrollable if needed") %}
+    <table class="data-table compact">
+      <caption>Claim-strength meanings.</caption>
+      <thead><tr><th scope="col">Strength</th><th scope="col">Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>verified-id</td><td>Public Guidewire standard ID and title; full body may be gated.</td></tr>
+        <tr><td>verified-policy</td><td>Public Guidewire guidance without a single public ID.</td></tr>
+        <tr><td>verified-doc</td><td>Public Guidewire documentation, such as the 24-character APD type limit.</td></tr>
+        <tr><td>secondary</td><td>Vendor blog or credible secondary source.</td></tr>
+        <tr><td>heuristic</td><td>PreFlight invention, clearly labelled and never given a standard ID.</td></tr>
+      </tbody>
+    </table>
+  {% endcall %}
   <h2>Full disclaimer</h2>
   <p class="muted">{{ disclaimer }}</p>
 </section>

@@ -39,6 +39,58 @@
     return response.json();
   }
 
+  /* Responsive navigation: collapse the primary nav behind a toggle on small screens. */
+  const sidebar = document.querySelector(".sidebar");
+  const navToggle = document.querySelector("[data-nav-toggle]");
+  const navToggleHint = document.querySelector("[data-nav-toggle-hint]");
+
+  function setNavOpen(open) {
+    if (!sidebar || !navToggle) return;
+    sidebar.classList.toggle("nav-open", open);
+    navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (navToggleHint) navToggleHint.textContent = open ? "Close" : "Menu";
+  }
+
+  if (sidebar && navToggle) {
+    navToggle.addEventListener("click", () => {
+      setNavOpen(!sidebar.classList.contains("nav-open"));
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && sidebar.classList.contains("nav-open")) {
+        setNavOpen(false);
+        navToggle.focus();
+      }
+    });
+    const desktopQuery = window.matchMedia("(min-width: 981px)");
+    const closeOnDesktop = (event) => {
+      if (event.matches) setNavOpen(false);
+    };
+    if (desktopQuery.addEventListener) desktopQuery.addEventListener("change", closeOnDesktop);
+    else desktopQuery.addListener(closeOnDesktop);
+  }
+
+  /* Horizontally scrollable tables: show the cue only when columns really overflow. */
+  function syncScrollRegion(region) {
+    if (!region) return;
+    const previous = region.previousElementSibling;
+    const hint = previous && previous.matches("[data-scroll-hint]") ? previous : null;
+    const scrollable = region.scrollWidth > region.clientWidth + 1;
+    region.classList.toggle("is-scrollable", scrollable);
+    if (hint) hint.hidden = !scrollable;
+  }
+
+  function syncScrollRegions() {
+    document.querySelectorAll("[data-table-scroll]").forEach(syncScrollRegion);
+  }
+
+  syncScrollRegions();
+  window.addEventListener("resize", syncScrollRegions, { passive: true });
+  if (typeof ResizeObserver !== "undefined") {
+    document.querySelectorAll("[data-table-scroll]").forEach((region) => {
+      new ResizeObserver(() => syncScrollRegion(region)).observe(region);
+    });
+  }
+
   /* Tabs */
   document.querySelectorAll(".tab[data-tab]").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -50,6 +102,7 @@
       document.querySelectorAll(".tab-panel[data-tab-panel]").forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.tabPanel === name);
       });
+      window.requestAnimationFrame(syncScrollRegions);
     });
   });
 

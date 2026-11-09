@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import claim, severity %}
+{% from "_macros.html" import claim, severity, scroll_region %}
 
 {% block content %}
 {% set packet_section_count = view.packet.pages|length if view.packet else 0 %}
@@ -71,40 +71,46 @@
   <section class="panel">
     <div class="panel-head"><h2>Assumption register</h2></div>
     {% if view.assumptions %}
-    <table class="data-table compact">
-      <caption>Assumptions included in the review packet.</caption>
-      <thead><tr><th scope="col">ID</th><th scope="col">Statement</th><th scope="col">Range</th><th scope="col">Question</th><th scope="col">Owner</th><th scope="col">Status</th></tr></thead>
-      <tbody>
-        {% for item in view.assumptions %}
-        <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td><td>{{ item.owner }}</td><td>{{ item.status }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Packet assumption register table, horizontally scrollable if needed") %}
+      <table class="data-table compact packet-assumptions-table">
+        <caption>Assumptions included in the review packet.</caption>
+        <thead><tr><th scope="col">ID</th><th scope="col">Statement</th><th scope="col">Range</th><th scope="col">Question</th><th scope="col">Owner</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          {% for item in view.assumptions %}
+          <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td><td>{{ item.owner }}</td><td>{{ item.status }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     {% else %}<p class="muted">No assumptions.</p>{% endif %}
   </section>
   <section class="panel">
     <div class="panel-head"><h2>Findings summary</h2></div>
     {% if view.findings %}
-    <table class="data-table compact">
-      <caption>Findings summary included in the review packet.</caption>
-      <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Claim</th><th scope="col">State</th></tr></thead>
-      <tbody>
-        {% for finding in view.findings %}
-        <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.decision }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Packet findings summary table, horizontally scrollable if needed") %}
+      <table class="data-table compact">
+        <caption>Findings summary included in the review packet.</caption>
+        <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Claim</th><th scope="col">State</th></tr></thead>
+        <tbody>
+          {% for finding in view.findings %}
+          <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.decision }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     {% else %}<p class="muted">No findings.</p>{% endif %}
     <h3>Readiness flags ({{ view.readiness|length }})</h3>
     {% if view.readiness %}
-    <table class="data-table compact">
-      <thead><tr><th>Flag</th><th>Rule</th><th>Claim</th><th>Standard</th><th>State</th></tr></thead>
-      <tbody>
-        {% for finding in view.readiness %}
-        <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ finding.decision }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Packet readiness flags table, horizontally scrollable if needed") %}
+      <table class="data-table compact readiness-table">
+        <thead><tr><th>Flag</th><th>Rule</th><th>Claim</th><th>Standard</th><th>State</th></tr></thead>
+        <tbody>
+          {% for finding in view.readiness %}
+          <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ finding.decision }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     {% else %}<p class="muted">No separate readiness flags.</p>{% endif %}
   </section>
 </div>
@@ -112,38 +118,44 @@
 <section class="panel">
   <div class="panel-head"><h2>Dispositions and approvals</h2><span class="muted">{{ view.mappings|length }} mappings / {{ view.changes|length }} changes</span></div>
   {% if view.mappings %}
-  <table class="data-table compact">
-    <thead><tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr></thead>
-    <tbody>
-      {% for item in view.mappings %}
-      <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ item.reviewer_state }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Packet dispositions table, horizontally scrollable if needed") %}
+    <table class="data-table compact packet-mappings-table">
+      <thead><tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr></thead>
+      <tbody>
+        {% for item in view.mappings %}
+        <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ item.reviewer_state }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
   {% else %}<p class="muted">No mappings.</p>{% endif %}
   {% if view.changes %}
-  <table class="data-table compact">
-    <thead><tr><th>Change</th><th>Approval state</th><th>Target path</th></tr></thead>
-    <tbody>
-      {% for item in view.changes %}
-      <tr><td><code>{{ item.change_id }}</code></td><td>{{ item.approval_state }}</td><td>{{ item.target_path }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Packet changes table, horizontally scrollable if needed") %}
+    <table class="data-table compact changes-table">
+      <thead><tr><th>Change</th><th>Approval state</th><th>Target path</th></tr></thead>
+      <tbody>
+        {% for item in view.changes %}
+        <tr><td><code>{{ item.change_id }}</code></td><td>{{ item.approval_state }}</td><td>{{ item.target_path }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
   {% else %}<p class="muted">No target changes.</p>{% endif %}
 </section>
 
 <section class="panel">
   <div class="panel-head"><h2>Hashes and audit</h2><span class="muted">{{ 'tamper-evident local log' if view.audit_verified else 'audit verification FAILED' }}</span></div>
-  <table class="data-table compact">
-    <caption>Packet hashes and audit values.</caption>
-    <thead><tr><th scope="col">Hash</th><th scope="col">Value</th></tr></thead>
-    <tbody>
-      {% for name, value in view.packet.hashes.items() %}
-      <tr><td>{{ name }}</td><td><code class="hash">{{ value }}</code></td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Packet hashes and audit values table, horizontally scrollable if needed") %}
+    <table class="data-table compact">
+      <caption>Packet hashes and audit values.</caption>
+      <thead><tr><th scope="col">Hash</th><th scope="col">Value</th></tr></thead>
+      <tbody>
+        {% for name, value in view.packet.hashes.items() %}
+        <tr><td>{{ name }}</td><td><code class="hash">{{ value }}</code></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
   <p class="muted">Audit events: {{ view.packet.audit_event_count|default(counts.get('audit_events', 0), true) }}.
   Packet hash covers the canonical packet JSON payload, excluding the hash itself and the rendered HTML.
   This is a local tamper-evident log, not non-repudiation. Verify with

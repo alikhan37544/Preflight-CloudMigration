@@ -475,6 +475,22 @@ def test_findings_selected_route_preserves_detail(api, run_id) -> None:
     assert "Hidden or internal package reference" in response.text
 
 
+def test_findings_selected_marker_is_in_rule_cell_not_state(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/findings?run={run_id}&selected=F-008").text
+    assert text.count('class="selected-flag"') == 1
+    row = text.split('data-finding-row="F-008"', 1)[1].split("</tr>", 1)[0]
+    assert 'aria-current="true"' in row
+    assert 'data-selected="true"' in row
+    cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+    assert len(cells) == 8
+    assert 'class="selected-flag"' in cells[0]
+    assert all('class="selected-flag"' not in cell for cell in cells[1:])
+    assert re.fullmatch(
+        r'\s*<span class="pill pill-state" data-state>open</span>\s*', cells[6]
+    ), cells[6]
+
+
 def test_unknown_reconstruction_tab_falls_back_to_mappings(api, run_id) -> None:
     client, _ = api
     response = client.get(f"/reconstruction?run={run_id}&tab=not-a-tab")
