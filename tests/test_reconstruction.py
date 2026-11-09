@@ -42,6 +42,18 @@ def reconstruction(demo_manifest, discovery, tmp_path_factory):
     )
 
 
+def test_installed_driver_entity_matches_codegen_override(demo_manifest, discovery, reconstruction) -> None:
+    driver_feature = next(f for f in discovery.features if f.feature_id == "PA-DRV-01")
+    evidence_by_id = {e.evidence_id: e for e in discovery.evidence}
+    driver_paths = {evidence_by_id[eid].path for eid in driver_feature.evidence_ids}
+    assert "config/metadata/entity/VehicleDriver.eti" in driver_paths
+    assert "config/extensions/entity/VehicleDriver.etx" in driver_paths
+    assert not any("PersonalVehicleDriver" in path for path in driver_paths)
+    driver_mapping = next(m for m in reconstruction.mappings if m.rule_id == "R-CG-03")
+    assert driver_mapping.target_name == "VehicleDriver"
+    assert (DEMO / "config/metadata/entity/VehicleDriver.eti").is_file()
+
+
 def test_twelve_explicit_mappings(reconstruction) -> None:
     rules = [m.rule_id for m in reconstruction.mappings]
     assert rules == [
@@ -97,6 +109,7 @@ def test_draft_validates_against_local_contract(reconstruction) -> None:
 
 
 def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
+    import json
     import yaml
 
     path = reconstruction.draft_root / "config/integration/apis/installedlobs/pa_codegen_config_ext-1.0.yaml"
@@ -104,9 +117,19 @@ def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
     types = data["types"]
     assert types["PAVehicle"]["nameOverride"] == "PersonalVehicle"
     assert types["PAVehicle"]["fields"]["Year"]["nameOverride"] == "ModelYear"
+    assert types["PAVehicle"]["fields"]["GarageLocation_Ext"]["requiredForCreate"] is False
+    assert "GarageLocation" not in types["PAVehicle"]["fields"]
     assert types["PADriver"]["nameOverride"] == "VehicleDriver"
     assert types["PALine"]["nameOverride"] == "PersonalAutoLine"
     assert types["PersonalAutoRatingFactor"]["nameOverride"] == "PersonalAutoRatingFactorConfiguration"
+
+    updater = json.loads(
+        (reconstruction.draft_root / "config/integration/updaters/ext/policyperiod/v1/"
+         "policyperiod_pa_ext-1.0.updater.json").read_text(encoding="utf-8")
+    )
+    assert updater["create"]["garageLocation"] == "GarageLocation_Ext"
+    assert updater["update"]["garageLocation"] == "GarageLocation_Ext"
+    assert updater["create"]["vehicleType"] == "VehicleType"
 
 
 def test_schema_draft_has_expected_properties(reconstruction) -> None:

@@ -22,6 +22,42 @@ class CompareResult:
     confusion: dict[str, dict[str, int]] = field(default_factory=dict)
 
 
+def _normalized_target(value: str | None) -> str:
+    return (value or "").strip().lower().replace("\\", "/")
+
+
+def _mapping_targets(mapping: Mapping) -> set[str]:
+    """Normalized target identifiers carried by a mapping."""
+    candidates = {
+        _normalized_target(mapping.target_name),
+        _normalized_target(mapping.target_path),
+    }
+    path = _normalized_target(mapping.target_path)
+    for prefix in ("schema.", "codegen."):
+        if path.startswith(prefix):
+            candidates.add(path[len(prefix):])
+    return {value for value in candidates if value}
+
+
+def _target_matches(reference_target: str | None, mapping: Mapping) -> bool:
+    """Whether the mapping's actual target name/path matches the reference.
+
+    A disposition alone is not evidence that the source property maps to the
+    reference target: two different target names can share a disposition. Match
+    on the concrete target name or a dotted path suffix (``vehicleType`` /
+    ``schema.vehicleType`` / ``vehicleType.motorcycle``).
+    """
+    target = _normalized_target(reference_target)
+    if not target:
+        return True
+    for candidate in _mapping_targets(mapping):
+        if target == candidate:
+            return True
+        if target.endswith("." + candidate) or candidate.endswith("." + target):
+            return True
+    return False
+
+
 def _predicted_class(property_row: dict[str, Any], mapping: Mapping | None,
                      target_scope_complete: bool) -> ComparisonClass:
     source = property_row.get("source")
@@ -34,12 +70,16 @@ def _predicted_class(property_row: dict[str, Any], mapping: Mapping | None,
             return ComparisonClass.MISSING if row_scope else ComparisonClass.UNRESOLVED
         return ComparisonClass.UNRESOLVED
     disposition = mapping.disposition.value
+    if disposition in {"unresolved_gap", "unsupported"}:
+        return ComparisonClass.UNRESOLVED
+    if target is not None and not _target_matches(target, mapping):
+        # The mapping points somewhere else. With a complete target scope that
+        # is a miss, not a preserved value that merely shares a disposition.
+        return ComparisonClass.MISSING if target_scope_complete else ComparisonClass.UNRESOLVED
     if disposition == "mapped_exact":
         return ComparisonClass.PRESERVED
     if disposition == "mapped_transformed":
         return ComparisonClass.CHANGED
-    if disposition in {"unresolved_gap", "unsupported"}:
-        return ComparisonClass.UNRESOLVED
     if disposition in {"intentionally_dropped", "not_applicable"}:
         return ComparisonClass.MISSING if target_scope_complete else ComparisonClass.UNRESOLVED
     return ComparisonClass.UNRESOLVED

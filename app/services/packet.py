@@ -1,10 +1,10 @@
 """Six-page review packet (JSON + standalone HTML).
 
-The packet is an evidence-complete, self-verifying artifact: every hash and
-audit count is captured at generation time, the audit chain is verified before
-the packet is written, and the packet JSON carries its own canonical content
-hash. A broken audit chain fails the build rather than producing a packet that
-merely looks complete.
+The packet is an evidence-complete, self-verifying artifact: the rendered HTML
+hash and a canonical JSON hash are captured at generation time, content digests
+bind the packet to the persisted findings/mappings/evidence, and the audit chain
+is verified before the packet is written. A broken audit chain fails the build
+rather than producing a packet that merely looks complete.
 """
 
 from __future__ import annotations
@@ -49,12 +49,31 @@ PAGES = [
     "Evidence and audit appendix",
 ]
 
+PACKET_HASH_PLACEHOLDER = "__PACKET_SHA256__"
+
 PACKET_HASH_SCOPE = (
-    "SHA-256 over the canonical packet JSON payload (sorted keys, compact separators), "
-    "excluding packet_sha256 and hashes.packet. It covers run identity, page list, counts, "
-    "all other artifact hashes, audit verification and event count, disclaimer, and created_at. "
-    "It does not cover the rendered HTML wrapper or external source files."
+    "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to "
+    "a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical "
+    "packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the "
+    "packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, "
+    "hashes.evidence and the other content digests bind the artifact payloads to the packet."
 )
+
+# Persisted artifacts whose canonical content digest is carried by the packet.
+# (hash key, artifact name, list key in the artifact payload)
+CONTENT_ARTIFACTS = (
+    ("features", "features.json", "features"),
+    ("findings", "findings.json", "findings"),
+    ("readiness", "findings.json", "readiness"),
+    ("mappings", "mappings.json", "mappings"),
+    ("changes", "changes.json", "changes"),
+    ("assumptions", "assumptions.json", "assumptions"),
+    ("evidence", "evidence.json", "evidence"),
+    ("review_evidence", "review_evidence.json", "evidence"),
+    ("gaps", "gaps.json", "gaps"),
+)
+
+HASH_EXCLUDED_KEYS = {"packet", "packet_html", "packet_json"}
 
 UNSUPPORTED_STATUSES = {
     ArtifactStatus.UNSUPPORTED,
@@ -90,18 +109,127 @@ def _canonical_json(payload: dict) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
-def packet_content_hash(packet_payload: dict) -> str:
-    """Recompute the packet hash from its canonical payload.
+def _hash_payload(payload) -> str:
+    return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
 
-    ``packet_sha256`` and ``hashes.packet`` are excluded so the stored hash is
-    reproducible from the packet JSON without a circular dependency.
+
+def packet_content_hash(packet_payload: dict) -> str:
+    """Recompute the canonical packet-JSON hash from the packet payload.
+
+    ``packet_sha256`` and the packet/packet_html/packet_json hash entries are
+    excluded so the stored JSON hash is reproducible from the packet without a
+    circular dependency. The rendered HTML has its own digest
+    (:func:`packet_html_hash`).
     """
     payload = {key: value for key, value in packet_payload.items() if key != "packet_sha256"}
     hashes = dict(payload.get("hashes") or {})
-    hashes.pop("packet", None)
-    hashes.pop("packet_sha256", None)
+    for key in HASH_EXCLUDED_KEYS:
+        hashes.pop(key, None)
     payload["hashes"] = hashes
-    return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
+    return _hash_payload(payload)
+
+
+def packet_html_hash(html: str, expected_hash: str | None) -> str:
+    """Hash complete rendered HTML with the packet hash fields normalized.
+
+    The packet document contains its own digest. Hashing the final document
+    directly would therefore be circular, so every occurrence of ``expected_hash``
+    is replaced with a fixed placeholder before hashing. Verification recomputes
+    this value from the stored hash and the bytes currently on disk; changing any
+    other byte in the document changes the digest.
+    """
+    canonical = html
+    if expected_hash:
+        canonical = canonical.replace(expected_hash, PACKET_HASH_PLACEHOLDER)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _content_hashes(*, discovery: DiscoveryResult, review: ReviewResult,
+                    reconstruction: ReconstructionResult | None) -> dict[str, str]:
+    mappings = reconstruction.mappings if reconstruction else []
+    changes = reconstruction.changes if reconstruction else []
+    assumptions = reconstruction.assumptions if reconstruction else []
+    return {
+        "features": _hash_payload([f.model_dump(mode="json") for f in discovery.features]),
+        "findings": _hash_payload([f.model_dump(mode="json") for f in review.findings]),
+        "readiness": _hash_payload([f.model_dump(mode="json") for f in review.readiness]),
+        "mappings": _hash_payload([m.model_dump(mode="json", by_alias=True) for m in mappings]),
+        "changes": _hash_payload([c.model_dump(mode="json") for c in changes]),
+        "assumptions": _hash_payload([a.model_dump(mode="json") for a in assumptions]),
+        "evidence": _hash_payload([e.model_dump(mode="json") for e in discovery.evidence]),
+        "review_evidence": _hash_payload([e.model_dump(mode="json") for e in review.evidence]),
+        "gaps": _hash_payload([g.model_dump(mode="json") for g in discovery.gaps]),
+    }
+
+
+def verify_packet_artifacts(store, run_id: str, *, include_content: bool = False,
+                            include_audit: bool = True) -> tuple[bool, str | None]:
+    """Verify the packet's own hashes, the live audit chain, and optionally content.
+
+    Returns ``(True, None)`` or ``(False, reason)``. The self-hash checks catch
+    edits to either packet.html or packet.json. ``include_content`` additionally
+    compares the content digests captured at build time with the current
+    persisted findings/mappings/evidence artifacts. A packet is never treated as
+    verified merely because the files exist.
+    """
+    try:
+        packet = store.read_artifact(run_id, "packet.json")
+        html = store.read_artifact(run_id, "packet.html")
+    except Exception as exc:  # StoreError or unreadable output
+        return False, f"packet artifacts are unreadable: {exc}"
+    if not isinstance(packet, dict) or not isinstance(html, str):
+        return False, "packet artifacts do not have the expected shape"
+    expected = packet.get("packet_sha256")
+    hashes = packet.get("hashes")
+    if not isinstance(expected, str) or len(expected) != 64:
+        return False, "packet_sha256 is missing or malformed"
+    if not isinstance(hashes, dict):
+        return False, "packet hashes are missing"
+    if hashes.get("packet_html") != expected:
+        return False, "hashes.packet_html does not match packet_sha256"
+    if hashes.get("packet") != expected:
+        return False, "hashes.packet does not match packet_sha256"
+    actual_html = packet_html_hash(html, expected)
+    if actual_html != expected:
+        return False, (
+            "rendered packet.html SHA-256 does not match packet_sha256 "
+            f"(expected {expected[:12]}..., observed {actual_html[:12]}...)"
+        )
+    stored_json_hash = hashes.get("packet_json")
+    actual_json_hash = packet_content_hash(packet)
+    if not isinstance(stored_json_hash, str) or actual_json_hash != stored_json_hash:
+        return False, (
+            "packet.json canonical content SHA-256 does not match hashes.packet_json "
+            "(the packet metadata or a content digest was edited)"
+        )
+    if include_audit:
+        if packet.get("audit_verified") is not True:
+            return False, "packet does not record a verified audit chain"
+        try:
+            audit = store.read_audit(run_id)
+            live_head = audit[-1]["hash"] if audit else "GENESIS"
+        except Exception as exc:
+            return False, f"audit log is unreadable: {exc}"
+        if packet.get("audit_head") != live_head:
+            return False, "packet audit head does not match the live audit log"
+        if not store.verify_audit(run_id):
+            return False, "audit chain does not verify"
+    if include_content:
+        for key, artifact_name, list_key in CONTENT_ARTIFACTS:
+            try:
+                payload = store.read_artifact(run_id, artifact_name)
+            except Exception as exc:
+                return False, f"content artifact {artifact_name!r} is unreadable: {exc}"
+            items = payload.get(list_key) if isinstance(payload, dict) else None
+            if not isinstance(items, list):
+                return False, f"content artifact {artifact_name!r} has no {list_key!r} list"
+            observed = _hash_payload(items)
+            if hashes.get(key) != observed:
+                return False, (
+                    f"content digest {key!r} does not match {artifact_name}; "
+                    "the packet no longer reflects the persisted artifacts"
+                )
+    return True, None
 
 
 def _locator_text(evidence: Evidence) -> str:
@@ -220,6 +348,9 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         "ground_truth_manifest": _ground_truth_hash(),
         "audit_head": audit_head,
     }
+    hashes.update(_content_hashes(
+        discovery=discovery, review=review, reconstruction=reconstruction
+    ))
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     feature_count = len(discovery.features)
@@ -335,9 +466,13 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         audit_event_count=len(audit),
         hash_scope=PACKET_HASH_SCOPE,
     )
-    packet_sha256 = packet_content_hash(packet.model_dump(mode="json"))
-    packet.hashes["packet"] = packet_sha256
-    packet.packet_sha256 = packet_sha256
+    # The canonical JSON hash covers every packet field except the hash entries
+    # themselves. It is stored inside the packet and recomputed on verification.
+    packet.hashes["packet_json"] = packet_content_hash(packet.model_dump(mode="json"))
+    # Render with placeholders so the complete HTML can be hashed before the
+    # digest is embedded in the document (avoiding a circular hash).
+    packet.hashes["packet"] = PACKET_HASH_PLACEHOLDER
+    packet.hashes["packet_html"] = PACKET_HASH_PLACEHOLDER
 
     html = template.render(
         run_id=run_id,
@@ -348,7 +483,7 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         snapshot_hash=manifest.sha256,
         audit_head=audit_head,
         hashes=packet.hashes,
-        packet_sha256=packet_sha256,
+        packet_sha256=PACKET_HASH_PLACEHOLDER,
         hash_scope=PACKET_HASH_SCOPE,
         counts=counts,
         file_count=manifest.file_count,
@@ -377,6 +512,11 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         audit_verified=audit_verified,
         disclaimer=DISCLAIMER,
     )
+    packet_sha256 = packet_html_hash(html, PACKET_HASH_PLACEHOLDER)
+    packet.hashes["packet"] = packet_sha256
+    packet.hashes["packet_html"] = packet_sha256
+    packet.packet_sha256 = packet_sha256
+    html = html.replace(PACKET_HASH_PLACEHOLDER, packet_sha256)
 
     store.write_artifact(run_id, "packet.json", packet.model_dump(mode="json"))
     store.write_artifact(run_id, "packet.html", html)

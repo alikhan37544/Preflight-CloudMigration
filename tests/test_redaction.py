@@ -119,6 +119,81 @@ def test_yaml_redaction_is_idempotent_for_all_quote_styles() -> None:
     assert twice == once
 
 
+def test_xml_attributes_are_redacted_without_touching_bindings() -> None:
+    text = (
+        '<column name="PasswordHash" default="hunter2" type="Text"/>\n'
+        '<connection password="s3cr3t-value" tokenUrl="https://example.test/token"/>\n'
+        '<TextInput id="VehicleType" value="VehicleType"/>'
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "s3cr3t-value" not in redacted
+    assert 'default="[REDACTED:' in redacted
+    assert 'password="[REDACTED:' in redacted
+    assert 'value="VehicleType"' in redacted
+    assert 'tokenUrl="https://example.test/token"' in redacted
+
+
+def test_json_secret_keys_are_redacted_and_safe_keys_are_not() -> None:
+    text = (
+        '{"password": "hunter2", "token": "tok-live-abc123", '
+        '"tokenUrl": "https://example.test/token", "passwordPolicy": "standard"}'
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "tok-live-abc123" not in redacted
+    assert '"tokenUrl": "https://example.test/token"' in redacted
+    assert '"passwordPolicy": "standard"' in redacted
+
+
+def test_yaml_block_scalar_body_is_redacted() -> None:
+    text = (
+        "credentials:\n"
+        "  password: |\n"
+        "    hunter2\n"
+        "    second-secret\n"
+        "  token: >-\n"
+        "    tok-live-abc123\n"
+        "  tokenUrl: https://example.test/token\n"
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "second-secret" not in redacted
+    assert "tok-live-abc123" not in redacted
+    assert "https://example.test/token" in redacted
+    twice, again = redact_excerpt(redacted)
+    assert again is False
+    assert twice == redacted
+
+
+def test_single_quoted_assignments_and_labelled_values_are_redacted() -> None:
+    text = (
+        "var password = 'hunter2'\n"
+        "var token : String = 'tok-live-abc123'\n"
+        "var passwordPolicy = 'standard-policy'\n"
+        'reason: password "hunter2" and token "sk-live-reason1234"'
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "tok-live-abc123" not in redacted
+    assert "sk-live-reason1234" not in redacted
+    assert "passwordPolicy = 'standard-policy'" in redacted
+
+
+def test_unquoted_reviewer_note_secrets_are_redacted() -> None:
+    text = "reviewer note password=hunter2 token: abc123 tokenUrl=https://example.test/token"
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "abc123" not in redacted
+    assert "tokenUrl=https://example.test/token" in redacted
+    assert redact_excerpt(redacted)[1] is False
+
+
 def test_redact_evidence_preserves_locator_and_updates_fingerprint() -> None:
     evidence = make_evidence(
         evidence_id="EV-0001",

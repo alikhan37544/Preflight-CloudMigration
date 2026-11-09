@@ -168,7 +168,7 @@ def _codegen_document() -> dict:
                 "toRemove": "removeVehicle",
                 "fields": {
                     "Year": {"nameOverride": "ModelYear"},
-                    "GarageLocation": {"requiredForCreate": False},
+                    "GarageLocation_Ext": {"requiredForCreate": False},
                 },
             },
             "PADriver": {"nameOverride": "VehicleDriver"},

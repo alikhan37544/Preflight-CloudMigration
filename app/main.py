@@ -8,6 +8,8 @@ import logging
 import threading
 import time
 import uuid
+import zipfile
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -38,9 +40,10 @@ from app.services.compare import CompareResult
 from app.services.discovery import DiscoveryResult
 from app.services.evaluate import EvaluationResult
 from app.services.intake import UnsafeArchiveError, safe_extract_zip
-from app.services.packet import DISCLAIMER, build_packet
+from app.services.packet import DISCLAIMER, build_packet, verify_packet_artifacts
 from app.services.pipeline import RunCancelled, execute_run
 from app.services.reconstruction import ReconstructionResult
+from app.services.redaction import redact_excerpt
 from app.services.review import ReviewResult
 from app.store import RunStore, StoreError
 from app.views import feature_summary, load_run_view, spine_layout
@@ -339,9 +342,28 @@ def _refresh_packet(store: RunStore, run_id: str,
         fingerprint = store.packet_input_fingerprint(
             run_id, _PACKET_INPUT_ARTIFACTS, extra_paths
         )
-        if (store.exists(run_id, "packet.json") and store.exists(run_id, "packet.html")
-                and store.packet_cache_hit(run_id, fingerprint)):
-            return True, None, False
+        outputs_exist = (
+            store.exists(run_id, "packet.json") and store.exists(run_id, "packet.html")
+        )
+        if outputs_exist:
+            # Never trust a cached packet merely because its input mtimes look
+            # unchanged: verify the rendered HTML digest and the packet JSON
+            # digest before reuse.
+            self_ok, self_reason = verify_packet_artifacts(
+                store, run_id, include_audit=False
+            )
+            if not self_ok:
+                return False, f"packet integrity check failed: {self_reason}", False
+            if store.packet_cache_hit(run_id, fingerprint):
+                audit_ok, audit_reason = verify_packet_artifacts(
+                    store, run_id, include_audit=True
+                )
+                if not audit_ok:
+                    return False, f"packet integrity check failed: {audit_reason}", False
+                return True, None, False
+        elif store.packet_cache_hit(run_id, fingerprint):
+            # A cache entry without both outputs is not a usable hit.
+            store.clear_packet_cache(run_id)
 
         manifest_payload = _read(store, run_id, "manifest.json", None)
         if not manifest_payload:
@@ -379,6 +401,11 @@ def _refresh_packet(store: RunStore, run_id: str,
         after = store.packet_input_fingerprint(
             run_id, _PACKET_INPUT_ARTIFACTS, extra_paths
         )
+        valid, reason = verify_packet_artifacts(
+            store, run_id, include_content=True, include_audit=True
+        )
+        if not valid:
+            return False, f"packet integrity check failed after rebuild: {reason}", True
         if after == fingerprint:
             # Do not cache a packet built across a concurrent input change.
             store.store_packet_fingerprint(run_id, after)
@@ -705,6 +732,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         if rebuilt or not refreshed:
             view = _load_view(app.state.store, run_id)
+        if not refreshed:
+            # A stale or tampered packet must not be presented as verified even
+            # when the audit log itself happens to be intact.
+            view["audit_verified"] = False
+            if isinstance(view.get("packet"), dict):
+                view["packet"]["audit_verified"] = False
         return templates.TemplateResponse(
             request=request, name="packet.html",
             context=context(request, run_id, view, "Packet",
@@ -722,9 +755,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         refreshed, refresh_error, _rebuilt = _refresh_packet(store, run, settings)
         if not refreshed:
+            integrity = "integrity" in str(refresh_error).lower()
             raise HTTPException(
-                status_code=503,
-                detail=f"review packet refresh failed; refusing to export a stale artifact: {refresh_error}",
+                status_code=409 if integrity else 503,
+                detail=(
+                    "review packet integrity check failed; refusing to export "
+                    f"tampered or unverifiable HTML: {refresh_error}"
+                    if integrity else
+                    "review packet refresh failed; refusing to export a stale artifact: "
+                    f"{refresh_error}"
+                ),
+            )
+        valid, reason = verify_packet_artifacts(
+            store, run, include_content=True, include_audit=True
+        )
+        if not valid:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "review packet integrity check failed; refusing to export "
+                    f"tampered or unverifiable HTML: {reason}"
+                ),
             )
         try:
             html = store.read_artifact(run, "packet.html")
@@ -857,6 +908,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except UnsafeArchiveError as exc:
             store.delete_run(run_id)
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except (zipfile.BadZipFile, zlib.error, EOFError) as exc:
+            store.delete_run(run_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"archive is corrupt or truncated: {type(exc).__name__}: {exc}",
+            ) from exc
+        except Exception as exc:
+            # Extraction can fail on filesystem or decoder errors that are not
+            # UnsafeArchiveError; never leave a half-created run behind.
+            store.delete_run(run_id)
+            raise HTTPException(
+                status_code=400,
+                detail=f"archive could not be extracted: {type(exc).__name__}: {exc}",
+            ) from exc
         finally:
             if archive.exists():
                 archive.unlink()
@@ -1048,9 +1113,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         refreshed, refresh_error, _rebuilt = _refresh_packet(store, run_id, settings)
         if not refreshed:
+            integrity = "integrity" in str(refresh_error).lower()
             raise HTTPException(
-                status_code=503,
-                detail=f"review packet refresh failed: {refresh_error}",
+                status_code=409 if integrity else 503,
+                detail=(
+                    "review packet integrity check failed: "
+                    f"{refresh_error}"
+                    if integrity else
+                    f"review packet refresh failed: {refresh_error}"
+                ),
+            )
+        valid, reason = verify_packet_artifacts(
+            store, run_id, include_content=True, include_audit=True
+        )
+        if not valid:
+            raise HTTPException(
+                status_code=409,
+                detail=f"review packet integrity check failed: {reason}",
             )
         packet = _read(app.state.store, run_id, "packet.json", None)
         if packet is None:
@@ -1089,6 +1168,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="unsupported object_type")
         if body.action == "edit" and not body.edited_value:
             raise HTTPException(status_code=400, detail="edit requires edited_value")
+        # Reviewer free text is persisted into assumptions, decisions, audit and
+        # the packet. Redact it at the API boundary before any of that happens.
+        body.reason = redact_excerpt(body.reason)[0]
+        if body.edited_value is not None:
+            body.edited_value = redact_excerpt(body.edited_value)[0]
         _status_or_404(store, run_id)
 
         response: dict[str, Any] | None = None
@@ -1117,6 +1201,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             target_state = _ACTION_STATE[body.action]
             created_assumption: dict[str, Any] | None = None
             rollback: dict[str, Any] = {}
+            writes: list[tuple[str, Any]] = []
             decision_reason = body.reason
             before = after = None
 
@@ -1149,6 +1234,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     obj["reviewer_state"] = target_state
                     if body.action == "edit":
                         obj["target_name"] = body.edited_value
+                    new_assumption = False
                     if body.action == "reject":
                         assumptions = _payload_list(
                             store, run_id, "assumptions.json", "assumptions",
@@ -1183,8 +1269,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 "related_mapping_id": body.object_id, "gap_id": None,
                             }
                             assumptions["assumptions"].append(created_assumption)
-                            store.write_artifact(run_id, "assumptions.json", assumptions)
-                    store.write_artifact(run_id, "mappings.json", payload)
+                            new_assumption = True
+                    writes.append(("mappings.json", payload))
+                    if new_assumption:
+                        writes.append(("assumptions.json", assumptions))
                     after = _json_hash(obj)
             elif body.object_type == "change":
                 payload = _payload_list(
@@ -1211,7 +1299,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     if body.action == "edit":
                         obj["edited_value"] = body.edited_value
                         obj["edit_reason"] = body.reason
-                    store.write_artifact(run_id, "changes.json", payload)
+                    writes.append(("changes.json", payload))
                     after = _json_hash(obj)
             else:  # finding
                 payload = _payload_list(
@@ -1238,11 +1326,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         decision_reason = (
                             f"{body.reason} (edited value: {body.edited_value})"
                         )
-                    store.write_artifact(run_id, "findings.json", payload)
+                    writes.append(("findings.json", payload))
                     after = _json_hash(obj)
 
             if response is None:
+                applied: list[str] = []
                 try:
+                    # Artifact writes and the audit/decision commit are one
+                    # transaction. Mapping rejection writes the mapping before
+                    # the assumption; a failure rolls both artifacts back.
+                    for artifact_name, artifact_payload in writes:
+                        store.write_artifact(run_id, artifact_name, artifact_payload)
+                        applied.append(artifact_name)
                     decision = store.record_decision(
                         run_id, object_type=body.object_type,
                         object_id=body.object_id, action=body.action,
@@ -1250,9 +1345,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         before_hash=before, after_hash=after,
                     )
                 except BaseException:
-                    # Best-effort rollback keeps the artifact state consistent
-                    # with the audit/decision chain if the commit fails.
-                    for name, data in rollback.items():
+                    # Restore only artifacts that were actually written. A
+                    # failed first write must not create an empty companion
+                    # artifact during rollback.
+                    for name in reversed(applied):
+                        data = rollback.get(name)
+                        if data is None:
+                            continue
                         try:
                             store.write_artifact(run_id, name, data)
                         except Exception:

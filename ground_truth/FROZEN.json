@@ -1,16 +1,16 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-07T21:43:24Z",
-  "commit": "a18d35bd21ff9993659a1c87f7fc9f8ffe26c5c4",
+  "frozen_at": "2026-11-09T15:07:16Z",
+  "commit": "67e54d13ddf5601ffcf753096741a6d77ce71beb",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
-      "sha256": "44090acc32bff07807c0263f5d8cc0d8b66091a716f7b9aa753426417bef9ff6",
+      "sha256": "58ac6f6b62c6f2d4063ce1630ec27bd859944aa5a95d93a106a1206c402c073d",
       "files": 650
     },
     "demo-slice-300": {
-      "sha256": "20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404",
+      "sha256": "668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21",
       "files": 300
     },
     "northstar-pc-2026.10": {
@@ -21,11 +21,11 @@
   "reference_target_sha256": "7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541",
   "annotation_guide_sha256": "5aa49b80a242acd203994498a26886c42c32df0a834ff9d77b065e236ae4db4a",
   "annotation_concordance_sha256": "5aba02843e4780d9857857036e6a0eb64a56c2e7ee6f369cba38af3d9c885182",
-  "rulepack_sha256": "d151a780899b712d3b8ad6595606142b20594460afa754336f7248340051bcae",
+  "rulepack_sha256": "9accdec2e9f4fc0ae67557286b4380ff2fb0f795aab4704b991bcf2fc7dd5fb9",
   "pre_registration_sha256": "6cca8f43a56f7e3f5c7c146503038cad60e874e950cd3d3cd17cb491b73309cc",
-  "claims_ledger_sha256": "04f413d02ffcec7735d056e6ef73864b2fbce2ae0625d773468a3ad95f181f31",
+  "claims_ledger_sha256": "f2662d3731ad68d0c2240067c70a865553c6652192d599b3875d318a0374345e",
   "gold": {
-    "features.json": "f3533970b6b418eb6a948b4c1531d6625d15400ded6a9c88749b016b02743f8a",
+    "features.json": "ae74a3879e756c107c793a3d1d37926d45a41a8f2cc6e79fb079aa28c8f06c40",
     "mappings.json": "4f0e2a05dc1d3528b2deec5ede106bd6d18ce5cd0270c65a279f36e45c56a7fa",
     "findings.json": "987ecca9cfd38cb27349f286ecef7cbb94b9eea33b454cab7e64fabac729c394",
     "gaps.json": "2a343c2e5209fbd301fe8f6c48e9fb55759ee02d985902b00eb65ae37775b900",
@@ -37,7 +37,7 @@
   },
   "change_log": [
     {
-      "date": "2026-11-07",
+      "date": "2026-11-09",
       "change": "Frozen demo-tier fixtures and rule pack."
     }
   ]

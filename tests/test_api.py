@@ -6,6 +6,7 @@ Written before app/main.py exists.
 from __future__ import annotations
 
 import re
+import shutil
 import threading
 from pathlib import Path
 
@@ -475,6 +476,33 @@ def test_zip_snapshot_import(api, tmp_path) -> None:
     assert client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token}).status_code == 200
 
 
+def test_corrupt_zip_import_returns_400_and_leaves_no_run(api, tmp_path) -> None:
+    import zipfile
+
+    client, token = api
+    store: RunStore = client.app.state.store
+    archive = tmp_path / "bad-crc.zip"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as zf:
+        zf.writestr("README.txt", "synthetic archive payload")
+    data = bytearray(archive.read_bytes())
+    payload = b"synthetic archive payload"
+    index = data.find(payload)
+    assert index >= 0
+    data[index] ^= 0x01  # corrupt the stored bytes without breaking the header
+    archive.write_bytes(data)
+
+    before = set(store.list_runs())
+    with archive.open("rb") as fh:
+        response = client.post(
+            "/api/imports",
+            files={"file": ("bad-crc.zip", fh, "application/zip")},
+            headers={"X-CSRF-Token": token},
+        )
+    assert response.status_code == 400, response.text
+    assert "corrupt" in response.json()["detail"].lower() or "crc" in response.json()["detail"].lower()
+    assert set(store.list_runs()) == before
+
+
 def test_missing_run_pages_return_scoped_404(api) -> None:
     client, _ = api
     for path in ["/manifest", "/reconstruction", "/findings", "/evaluation", "/packet"]:
@@ -712,6 +740,84 @@ def test_packet_page_reuses_unchanged_packet_and_rebuilds_on_mtime(
     assert len(calls) >= 1
 
 
+def test_packet_export_rejects_tampered_html(api, run_id) -> None:
+    client, _ = api
+    store: RunStore = client.app.state.store
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+    path = store.run_dir(run_id) / "packet.html"
+    original = path.read_text(encoding="utf-8")
+    try:
+        path.write_text(
+            original.replace("Review Packet", "Tampered Review Packet", 1),
+            encoding="utf-8",
+        )
+        export = client.get(f"/packet/export?run={run_id}")
+        assert export.status_code in {409, 503}, export.text
+        assert "integrity" in export.json()["detail"].lower()
+        assert "Tampered Review Packet" not in export.text
+        page = client.get(f"/packet?run={run_id}")
+        assert page.status_code == 200
+        assert "Packet refresh failed; this artifact may be stale" in page.text
+        assert "Audit chain verified: <strong>no" in page.text
+        assert "Audit chain verified: <strong>yes" not in page.text
+    finally:
+        path.write_text(original, encoding="utf-8")
+        store.clear_packet_cache(run_id)
+    assert client.get(f"/packet/export?run={run_id}").status_code == 200
+
+
+def test_packet_export_rejects_tampered_packet_json(api, run_id) -> None:
+    client, _ = api
+    store: RunStore = client.app.state.store
+    original = store.read_artifact(run_id, "packet.json")
+    try:
+        tampered = __import__("copy").deepcopy(original)
+        tampered["hashes"]["findings"] = "0" * 64
+        tampered["counts"]["findings"] = 0
+        store.write_artifact(run_id, "packet.json", tampered)
+        export = client.get(f"/packet/export?run={run_id}")
+        assert export.status_code in {409, 503}, export.text
+        assert "integrity" in export.json()["detail"].lower()
+    finally:
+        store.write_artifact(run_id, "packet.json", original)
+        store.clear_packet_cache(run_id)
+    assert client.get(f"/api/runs/{run_id}/packet").status_code == 200
+
+
+def test_tampered_audit_never_reports_verified(api, run_id, tmp_path) -> None:
+    import json
+
+    client, _ = api
+    store: RunStore = client.app.state.store
+    copied = tmp_path / "tampered-audit-data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    audit_path = copy_store.run_dir(run_id) / "audit.jsonl"
+    lines = audit_path.read_text(encoding="utf-8").splitlines()
+    first = json.loads(lines[0])
+    first["action"] = "stage.tampered"
+    lines[0] = json.dumps(first, ensure_ascii=False)
+    audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert copy_store.verify_audit(run_id) is False
+
+    settings = Settings(
+        data_dir=copied,
+        fixtures_dir=REPO / "fixtures",
+        reference_path=REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json",
+        secret_key="test-secret",
+        sync_runs=True,
+    )
+    app = create_app(settings)
+    with TestClient(app) as tampered_client:
+        page = tampered_client.get(f"/packet?run={run_id}")
+        assert page.status_code == 200
+        assert "Audit chain verified: <strong>no" in page.text
+        assert "Audit chain verified: <strong>yes" not in page.text
+        export = tampered_client.get(f"/packet/export?run={run_id}")
+        assert export.status_code in {409, 503}
+        assert "audit" in export.json()["detail"].lower() or "integrity" in export.json()["detail"].lower()
+
+
 def test_delete_run(api, run_id) -> None:
     client, token = api
     response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
@@ -798,6 +904,73 @@ def _post_decision(client, token: str, run_id: str, object_type: str, object_id:
         body["edited_value"] = edited_value
     return client.post(f"/api/runs/{run_id}/decisions", json=body,
                        headers={"X-CSRF-Token": token})
+
+
+def test_reviewer_reason_and_edit_value_are_redacted_before_persistence(api) -> None:
+    client, token = api
+    store: RunStore = client.app.state.store
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    run_id = response.json()["run_id"]
+    try:
+        reject = _post_decision(
+            client, token, run_id, "mapping", "M-01", "reject",
+            reason='reviewer note password=hunter2 token sk-live-reason1234',
+        )
+        assert reject.status_code == 200, reject.text
+        edit = _post_decision(
+            client, token, run_id, "mapping", "M-02", "edit",
+            edited_value="sk-live-edited9876",
+            reason="rename with password='hunter2468'",
+        )
+        assert edit.status_code == 200, edit.text
+        assert client.get(f"/packet?run={run_id}").status_code == 200
+
+        run_dir = store.run_dir(run_id)
+        blobs = {
+            "assumptions.json": (run_dir / "assumptions.json").read_text(encoding="utf-8"),
+            "decisions.json": (run_dir / "decisions.json").read_text(encoding="utf-8"),
+            "audit.jsonl": (run_dir / "audit.jsonl").read_text(encoding="utf-8"),
+            "packet.html": (run_dir / "packet.html").read_text(encoding="utf-8"),
+        }
+        for name, text in blobs.items():
+            for secret in (
+                "sk-live-reason1234", "sk-live-edited9876", "hunter2", "hunter2468",
+            ):
+                assert secret not in text, (name, secret)
+            assert "REDACTED" in text, name
+        assert store.verify_audit(run_id) is True
+    finally:
+        client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
+
+
+def test_mapping_write_failure_leaves_no_orphan_assumption(api, monkeypatch) -> None:
+    client, token = api
+    run_id = "R-MAPPING-WRITE-FAILURE"
+    store = _synthetic_run(
+        client, run_id,
+        mappings=[{"mapping_id": "M-1", "target_name": "Old",
+                   "reviewer_state": "pending"}],
+    )
+    original_write = store.write_artifact
+
+    def failing_write(run: str, name: str, data):
+        if name == "mappings.json":
+            raise OSError("synthetic mapping write failure")
+        return original_write(run, name, data)
+
+    monkeypatch.setattr(store, "write_artifact", failing_write)
+    with pytest.raises(OSError):
+        _post_decision(client, token, run_id, "mapping", "M-1", "reject",
+                       reason="reject for rollback test")
+    assert not store.exists(run_id, "assumptions.json")
+    assert store.read_artifact(run_id, "mappings.json")["mappings"][0]["reviewer_state"] == "pending"
+    assert store.read_audit(run_id) == []
+
 
 
 def test_decision_state_machine_and_idempotency(api) -> None:

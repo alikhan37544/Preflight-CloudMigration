@@ -148,5 +148,9 @@ def test_sbt_readiness_flag_is_separate(review) -> None:
     assert len(review.readiness) == 1
     flag = review.readiness[0]
     assert flag.rule_id == "PF-GW-SBT-001"
-    assert flag.claim_strength.value == "verified-doc"
+    assert flag.claim_strength.value == "heuristic"
+    assert flag.standard_family.value == "none"
+    assert flag.standard_id is None
+    assert "heuristic" in flag.message.lower()
+    assert "olos" in flag.message.lower()
     assert all(f.rule_id != "PF-GW-SBT-001" for f in review.findings)

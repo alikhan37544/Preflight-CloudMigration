@@ -358,8 +358,10 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                 readiness.append(
                     _finding(len(findings) + 1, meta, evidence=ev,
                              message=(
-                                 f"SBT marker detected in {rel}. SBT lines could not be converted to "
-                                 "APD-managed lines per the Olos release note; confirm on the target release."
+                                 f"Synthetic marker heuristic: {rel} contains "
+                                 "standardsBasedTemplate=\"true\". This is not an official SBT "
+                                 "assessment or a conversion check; the documented Olos SBT "
+                                 "limitation is context for reviewer follow-up on the target release."
                              ))
                 )
 
