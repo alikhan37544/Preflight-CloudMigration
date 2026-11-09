@@ -274,6 +274,16 @@
   .quote-bar b { color: var(--teal-dark); }
 
   /* Slide 3 */
+  .slide--gap h2 { max-width: 54ch; font-size: clamp(1.45rem, 2.3vw, 2.7rem); }
+  .ack-line { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .fixture-note { margin: 6px 0 0; font-size: 10px; line-height: 1.35; color: var(--muted); }
+  .guards-shot { border: 1px solid var(--border-strong); background: var(--paper); position: relative; margin-top: 8px; }
+  .guards-shot img { display: block; width: 100%; height: auto; }
+  .guards-shot .cap { padding: 5px 8px; border-top: 1px solid var(--border); font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .m12-list { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 3px 6px; margin: 0; font-size: 10px; line-height: 1.35; }
+  .m12-list dt { color: var(--muted); font-weight: 700; }
+  .m12-list dd { margin: 0; overflow-wrap: anywhere; }
+  .m12-list code { font-size: 10px; }
   .matrix { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--border); }
   .matrix th, .matrix td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .matrix th { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 800; background: #EEF3F5; line-height: 1.2; }
@@ -375,15 +385,19 @@
 
   /* Evaluation */
   .eval-top { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-bottom: 8px; }
-  .eval-stats { display: flex; border: 1px solid var(--border); background: var(--paper); }
-  .eval-stat { flex: 1; padding: 7px 9px; border-right: 1px solid var(--border); }
-  .eval-stat:last-child { border-right: 0; }
+  .eval-metric-block { min-width: 0; }
+  .eval-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); background: var(--paper); }
+  .eval-stat { padding: 7px 9px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .eval-stat:nth-child(3n) { border-right: 0; }
+  .eval-stat:nth-child(n+4) { border-bottom: 0; }
   .eval-stat b { display: block; font-size: clamp(1rem, 1.2vw, 1.3rem); line-height: 1; }
   .eval-stat span { display: block; margin-top: 3px; font-size: 8.4px; line-height: 1.2; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+  .guard-line { margin: 5px 0 0; font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .guard-line b { color: var(--ink); }
   .chart-panel { padding: 10px 12px 8px; }
   .chart-panel h3 { margin-bottom: 2px; }
   .chart-panel .chart-sub { font-size: 9.5px; color: var(--muted); margin-bottom: 4px; }
-  .chart-svg { display: block; width: 100%; height: auto; }
+  .chart-svg { display: block; width: 100%; height: clamp(190px, 26vh, 300px); }
   .mobile-ci { display: none; }
   .mobile-ci-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 72px; gap: 7px; align-items: center; margin: 6px 0; font-size: 10px; }
   .mobile-ci-track { position: relative; height: 11px; background: #E5ECF0; border: 1px solid #D0DBE2; }
@@ -471,6 +485,8 @@
   .ask b { display: block; font-size: clamp(.76rem, .82vw, .9rem); margin-bottom: 4px; color: #F3F7F9; }
   .ask span { display: block; font-size: clamp(.65rem, .7vw, .76rem); color: #AFC2CD; line-height: 1.35; }
   .contact-line { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: clamp(.68rem, .73vw, .8rem); color: #9FB4C0; margin-bottom: 12px; }
+  .pilot-ask { font-size: clamp(.8rem, .88vw, .96rem); color: #E7F0F4; margin: 0 0 10px; }
+  .pilot-ask b { color: #8FD3E1; }
   .contact-line b { color: #DCE8EE; font-weight: 700; }
   .disclaimer { font-size: 9px; line-height: 1.45; color: #7D94A2; border-top: 1px solid #3A4F5D; padding-top: 10px; max-width: 125ch; }
 
@@ -480,8 +496,9 @@
     width: min(400px, 92vw); background: #14232D; color: #E7F0F4;
     border-left: 1px solid #3A4F5D; transform: translateX(101%);
     transition: transform .2s ease; display: flex; flex-direction: column;
+    visibility: hidden; pointer-events: none;
   }
-  .notes-panel.open { transform: translateX(0); }
+  .notes-panel.open { transform: translateX(0); visibility: visible; pointer-events: auto; }
   .notes-head { padding: 12px 15px; border-bottom: 1px solid #3A4F5D; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .notes-head h2 { font-size: 13px; margin: 0; letter-spacing: .08em; text-transform: uppercase; color: #8FD3E1; }
   .notes-close { background: transparent; border: 1px solid #4B6270; color: #DCE8EE; width: 28px; height: 28px; cursor: pointer; }
@@ -512,9 +529,10 @@
   .help-note { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 12px; }
 
   /* Mobile */
-  @media (max-width: 900px) {
+  @media screen and (max-width: 900px) {
     :root { --chrome-h: 50px; --foot-h: 32px; --pad-x: 18px; }
-    body { overflow: auto; padding-top: var(--chrome-h); }
+    html { scroll-padding-top: calc(var(--chrome-h) + 10px); }
+    body { overflow: auto; overflow-x: hidden; padding-top: var(--chrome-h); }
     .chrome { gap: 10px; padding: 0 10px; }
     .brand-name { font-size: 13px; }
     .brand-divider, .deck-title, .chrome-mid { display: none; }
@@ -522,7 +540,7 @@
     .chrome-btn kbd { display: none; }
     .counter { min-width: 58px; font-size: 10.5px; }
     .deck { position: static; overflow: visible; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); }
-    .slide { position: static; display: none; overflow: visible; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); }
+    .slide { position: static; display: none; overflow: visible; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); scroll-margin-top: calc(var(--chrome-h) + 10px); }
     .slide.is-active { display: block; }
     .slide-body { height: auto; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); padding: 16px 16px calc(var(--foot-h) + 24px); }
     .slide-head { display: block; margin-bottom: 12px; }
@@ -541,8 +559,11 @@
     .bottom-band, .bottom-band.four { grid-template-columns: 1fr 1fr; }
     .stage-grid { grid-template-columns: 1fr; }
     .run-strip { flex-wrap: wrap; row-gap: 3px; }
-    .eval-stats { flex-wrap: wrap; }
-    .eval-stat { flex: 1 0 33.33%; border-bottom: 1px solid var(--border); }
+    .eval-stats { grid-template-columns: 1fr 1fr; }
+    .eval-stat { border-bottom: 1px solid var(--border); }
+    .eval-stat:nth-child(3n) { border-right: 1px solid var(--border); }
+    .eval-stat:nth-child(2n) { border-right: 0; }
+    .eval-stat:nth-child(n+5) { border-bottom: 0; }
     .hash-block, .hash-block .hv { overflow-wrap: anywhere; word-break: break-all; }
     .chart-svg { display: none; }
     .mobile-ci { display: block; }
@@ -560,10 +581,13 @@
     .title-meta { font-size: 9.5px; }
     .matrix th, .matrix td { padding: 6px; }
     .shot .marker { width: 22px; height: 22px; font-size: 10px; }
+    .m12-shot { overflow-x: auto; }
+    .m12-shot .mini-table { table-layout: fixed; }
+    .m12-shot .mini-table code { overflow-wrap: anywhere; }
     .qcard .qnum { font-size: 1.2rem; }
     .claim-code { font-size: 10.5px; }
   }
-  @media (max-width: 380px) {
+  @media screen and (max-width: 380px) {
     .invariants, .demo-stats, .ask-grid, .roadmap, .section-list { grid-template-columns: 1fr; }
     .stat { min-width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
   }
@@ -571,23 +595,101 @@
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   }
 
+  /* Projector legibility floor: supporting text never renders below 10px. */
+  .tag, .source, .stat-label, .dot-label, .pain-tag, .matrix th, .stage-item,
+  .stage-item b, .pipe-num, .pipe-desc, .invariant span, .rung .desc, .chain-node,
+  .demo-stat span, .evidence-mini .cap, .mini-table, .mini-table th, .mini-table code,
+  .assistant-strip span, .eval-stat span, .chart-panel .chart-sub, .mobile-ci-value,
+  .section-item b, .section-item span, .cmd, .rigor-badge, .fix-table th, .fix-table td,
+  .prior-table th, .prior-table td, .score-note, .road, .road b, .disclaimer,
+  .foot-note, .title-meta, .marker { font-size: max(10px, 0.64vw); }
+
+  /* Short projectors: compact spacing first; never hide the argument. */
+  @media screen and (max-height: 840px) and (min-width: 901px) {
+    .slide-body { padding-top: 12px; padding-bottom: 8px; }
+    .slide-head { margin-bottom: 8px; }
+    h2 { font-size: clamp(1.5rem, 2.3vw, 2.4rem); }
+    .slide-lede { font-size: .82rem; line-height: 1.35; }
+    .panel { padding: 10px 12px; }
+    .cols, .demo-grid, .assistant-grid, .packet-grid, .gap-call, .eval-top { gap: 10px; }
+    .callout-list { gap: 5px; }
+    .bottom-band, .bottom-band.four { margin-top: 6px; }
+    .chart-svg { height: 210px; }
+    .fix-table td, .prior-table td { padding: 4px 6px; }
+    .demo-side .panel { padding: 8px 10px; }
+    .run-strip { padding: 7px 10px; margin-top: 6px; }
+    .stage-grid { margin-top: 4px; }
+    .stage-item { padding: 3px 0; }
+    .closing-line { padding-top: 5px; }
+  }
+  @media screen and (max-height: 800px) and (min-width: 901px) {
+    .eval-bottom, .eval-margins, .optional-row, .assistant-strip,
+    .label-buys, .optional-panel, .packet-verify, .packet-source,
+    .shot figcaption, .ack-line, .scope-note { display: none !important; }
+    .matrix .tool-sub { display: none; }
+    .matrix th, .matrix td { padding-top: 3px; padding-bottom: 3px; }
+    .gap-call .panel { padding: 7px 9px; }
+    .callout-list { gap: 4px; }
+    .bottom-band { margin-top: 3px; }
+    .bottom-card { padding: 6px 8px; }
+    .m12-shot { overflow-x: auto; }
+    .m12-shot .mini-table { table-layout: fixed; }
+    .m12-shot .mini-table code { overflow-wrap: anywhere; }
+    .assistant-card { padding: 7px; }
+    .assistant-card h3 { margin-bottom: 4px; }
+    .assistant-card .callout { margin-top: 2px !important; }
+    .assistant-grid { gap: 8px; }
+    .pain-list { gap: 5px; }
+    .quote-bar { margin-bottom: 8px; }
+    .guards-shot { max-width: 250px !important; }
+    .guard-line { margin-top: 3px; }
+  }
+  @media screen and (max-height: 760px) and (min-width: 901px) {
+    h2 { font-size: clamp(1.35rem, 2.05vw, 2rem); }
+    .slide-lede { font-size: .76rem; }
+    .kicker { margin-bottom: 3px; }
+    .panel { padding: 8px 10px; }
+    .panel h3 { font-size: .9rem; }
+    .shot figcaption { padding: 4px 7px; }
+    .bottom-band { margin-top: 5px; }
+  }
+
   /* Print: one 16:9 slide per page */
   @page { size: 1600px 900px; margin: 0; }
   @media print {
     html, body { width: 1600px; height: auto; overflow: visible; background: #fff; }
     body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .chrome, .foot, .notes-panel, .help-backdrop, .skip-link { display: none !important; }
+    .chrome, .foot, .notes-panel, .help-backdrop, .skip-link, .speaker-note { display: none !important; }
     .deck { position: static; inset: auto; overflow: visible; background: #fff; }
     .slide, .slide[hidden] {
       display: block !important; position: relative !important; inset: auto !important;
       width: 1600px !important; height: 900px !important; min-height: 900px !important;
-      overflow: hidden !important; page-break-after: always; break-after: page;
+      overflow: hidden !important; page-break-after: always;
       background: var(--canvas); color: var(--ink);
     }
-    .slide:last-child { page-break-after: auto; break-after: auto; }
-    .slide-body { width: 1600px; height: 900px; max-width: none; margin: 0; padding: 28px 76px 20px; }
+    .slide:last-child { page-break-after: auto; }
+    .slide-body {
+      width: 1600px !important; height: 900px !important; max-width: none; margin: 0;
+      padding: 28px 76px 20px; transform: none !important;
+    }
     .slide--close { background: var(--ink) !important; color: #F3F7F9 !important; }
     .slide--close .slide-body { padding: 60px 76px; }
+    .slide--title .title-display { font-size: 5.1rem; }
+    .slide--title .title-grid { gap: 38px; }
+    .slide--title .title-panel { padding: 16px 18px; }
+    .slide--title .title-sub { margin-bottom: 12px; }
+    .slide--title .packet-head { padding-bottom: 7px; margin-bottom: 7px; }
+    .slide--title .packet-row { padding: 4px 0; }
+    .packet-quote, .packet-note { display: none !important; }
+    .chart-svg { height: 178px !important; }
+    .chart-panel { padding: 8px 10px 6px; }
+    .eval-stats .eval-stat { padding: 4px 7px; }
+    .eval-top { margin-bottom: 4px; }
+    .caveat-list { gap: 3px; }
+    .caveat p { font-size: 10px; line-height: 1.2; }
+    .eval-margins .mini-table th, .eval-margins .mini-table td { padding: 2px 5px; }
+    .eval-bottom { margin-top: 4px; padding-top: 5px; }
+    .eval-bottom .bullets li { font-size: 10px; margin-bottom: 2px; }
     a { color: inherit; text-decoration: none; }
     .marker { display: grid !important; }
   }
@@ -642,7 +744,7 @@
           <div class="packet-row"><span class="packet-k">Evidence records</span><span class="packet-v">126</span></div>
           <div class="packet-row"><span class="packet-k">Advisory findings / rules</span><span class="packet-v">24 / 8</span></div>
           <div class="packet-row"><span class="packet-k">Explicit dispositions</span><span class="packet-v">12</span></div>
-          <div class="packet-row"><span class="packet-k">Audit events</span><span class="packet-v">9 verified</span></div>
+          <div class="packet-row"><span class="packet-k">Audit events</span><span class="packet-v">9 seed · 11 after 2 actions</span></div>
           <div class="packet-note">Local draft. Not a quote, certification, or deployment. Official Cloud Assurance was not run.</div>
           <p class="packet-quote"><b>Every claim has evidence; every unknown has a name; every change waits for a human.</b></p>
         </aside>
@@ -679,7 +781,7 @@
         <div class="pain-list">
           <article class="pain">
             <div class="pain-tag">APD types</div>
-            <div><h3>24-character type limit → compile errors</h3><p>APD truncates long type names. The documented correction is a codegen <code>nameOverride</code> with the installed name; without it, imports fail late.</p><p class="source"><b>Guidewire docs</b> · “Correcting compile errors” · accessed 2026-11-09</p></div>
+            <div><h3>24-character type limit → compile errors</h3><p>APD limits <b>type names</b> to 24 characters. A longer name can be valid in source and still fail when endpoint generation compiles the generated code. The documented correction is a codegen <code>nameOverride</code> with the installed name.</p><p class="source"><b>Guidewire docs</b> · “Correcting compile errors” · accessed 2026-11-09</p></div>
           </article>
           <article class="pain">
             <div class="pain-tag">Patterns</div>
@@ -687,7 +789,7 @@
           </article>
           <article class="pain">
             <div class="pain-tag">SBT</div>
-            <div><h3>Standards Based Template lines cannot convert</h3><p>The Olos release note says SBT lines cannot be converted to APD-managed lines “at this time.” That is a readiness flag, not an estimate line item.</p><p class="source"><b>Guidewire release highlights</b> · Olos · accessed 2026-11-09</p></div>
+            <div><h3>Standards Based Template lines cannot convert</h3><p>The Olos release note says SBT lines cannot be converted to APD-managed lines “at this time.” That is a readiness <b>scope and estimate risk</b>: it has to be priced or explicitly excluded, not assumed away.</p><p class="source"><b>Guidewire release highlights</b> · Olos · accessed 2026-11-09</p></div>
           </article>
           <article class="pain">
             <div class="pain-tag">Handover</div>
@@ -705,28 +807,32 @@
     <div class="speaker-note" hidden>
       <p><strong>The hook.</strong> “The 6–8 week number is a vendor estimate for a typical monoline. The number is not the problem. The problem is that nobody can show you the inventory behind it.”</p>
       <p>Walk the four questions, not the tool list. “What exists? Which feature does it belong to? What is the explicit disposition? What is unknown, and who owns the question?”</p>
-      <p>Use the 24-character APD limit as the concrete example: a type name can be correct in the source and still fail later because the target truncates it. The fix is documented, but only if you find the name before the compile. Cite the docs page. Be explicit that “incomplete handover” is a premise from practice, not a measured finding in the fixture.</p>
+      <p>Use the 24-character APD limit as the concrete example: the limit applies to <strong>type names</strong>, not every name in the model. A type can be correct in the source and still fail later when endpoint generation compiles it. The documented fix is a codegen <code>nameOverride</code>, but only if you find the name before the compile. APD documents other short-name/label limits (for example 22/30 characters); do not generalise the 24-character figure. Cite the docs page. Be explicit that “incomplete handover” is a premise from practice, not a measured finding in the fixture, and that SBT is a readiness scope/estimate risk rather than a claim that it is absent from the estimate.</p>
     </div>
   </section>
 
   <!-- 3 -->
-  <section class="slide" id="slide-3" data-section="The gap" data-title="Why tools leave a gap" aria-label="Slide 3 of 16: Why existing tools leave a gap">
+  <section class="slide slide--gap" id="slide-3" data-section="The gap" data-title="Why tools leave a gap" aria-label="Slide 3 of 16: Why existing tools leave a gap">
     <div class="slide-body">
       <div class="slide-head">
         <div class="slide-head-main">
           <p class="kicker">The gap</p>
-          <h2>Existing tools each own a slice. Nobody hands you the review packet.</h2>
-          <p class="slide-lede">This is not a claim that the tools are weak. It is a claim about the hand-off: standards gates, estimates, linters, and portfolio discovery do not produce cross-artefact feature evidence with a disposition ledger and an assumption register.</p>
+          <h2>No public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet.</h2>
+          <p class="slide-lede">Guidewire CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI, Syntra ETL, and SI assessments each cover a real slice. The gap is the hand-off: a file-level, cross-artefact feature inventory with a disposition ledger, an assumption register, and a reviewable packet.</p>
+          <div class="ack-line" aria-label="Adjacent tools explicitly acknowledged">
+            <span class="tag">CUE</span><span class="tag">Cloud Assurance Services</span><span class="tag">Lighthouse</span><span class="tag">SurePath</span><span class="tag">Developer Assistants</span><span class="tag">GoQu</span><span class="tag">CAST / ADDI</span><span class="tag">Syntra ETL</span><span class="tag">SI assessments</span>
+          </div>
         </div>
         <span class="head-badge">Capability map, not a benchmark</span>
       </div>
       <table class="matrix" aria-label="Capability comparison of existing tools and PreFlight">
         <thead><tr><th scope="col">Tool / service</th><th scope="col">Inventory</th><th scope="col">Feature evidence</th><th scope="col">Disposition ledger</th><th scope="col">Assumption register</th><th scope="col">Review packet</th></tr></thead>
         <tbody>
-          <tr><td><span class="tool-name">Guidewire Cloud Assurance</span><span class="tool-sub">official standards gate</span></td><td><span class="dot half"></span><span class="dot-label">code scan</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">findings</span></td></tr>
+          <tr><td><span class="tool-name">Cloud Assurance Services</span><span class="tool-sub">official standards gate</span></td><td><span class="dot half"></span><span class="dot-label">code scan</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">findings</span></td></tr>
           <tr><td><span class="tool-name">Guidewire CUE</span><span class="tool-sub">official high-level estimate</span></td><td><span class="dot half"></span><span class="dot-label">scope</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">estimate risks</span></td><td><span class="dot half"></span><span class="dot-label">estimate</span></td></tr>
+          <tr><td><span class="tool-name">Lighthouse / SurePath / Assistants</span><span class="tool-sub">migration lab, delivery method, codegen help</span></td><td><span class="dot half"></span><span class="dot-label">lab</span></td><td><span class="dot half"></span><span class="dot-label">validated flows</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">handover</span></td></tr>
           <tr><td><span class="tool-name">SonarQube / GoQu</span><span class="tool-sub">Gosu lint and quality</span></td><td><span class="dot none"></span><span class="dot-label">code only</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">issues</span></td></tr>
-          <tr><td><span class="tool-name">CAST / ADDI / AWS</span><span class="tool-sub">portfolio and infra discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
+          <tr><td><span class="tool-name">CAST / ADDI / Syntra ETL</span><span class="tool-sub">portfolio, code, and data discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio / data</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
           <tr><td><span class="tool-name">Systems integrator</span><span class="tool-sub">services and expertise</span></td><td><span class="dot"></span><span class="dot-label">bespoke</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td></tr>
           <tr class="preflight"><td><span class="tool-name">PreFlight</span><span class="tool-sub">offline, one-feature evidence review</span></td><td><span class="dot"></span><span class="dot-label">300 files</span></td><td><span class="dot"></span><span class="dot-label">cross-artefact</span></td><td><span class="dot"></span><span class="dot-label">12 explicit</span></td><td><span class="dot"></span><span class="dot-label">impact-rated</span></td><td><span class="dot"></span><span class="dot-label">6 sections</span></td></tr>
         </tbody>
@@ -735,26 +841,20 @@
         <div class="panel tint">
           <p class="eyebrow">The actual gap</p>
           <h3>The connective tissue, not another scanner.</h3>
-          <p class="small" style="margin-bottom:0">Cross-artefact feature evidence + an explicit disposition ledger + an assumption register + a review packet. Each is adjacent to an existing tool; the integrated, reviewable chain is the missing artifact.</p>
+          <p class="small" style="margin-bottom:0">Cross-artefact feature evidence + an explicit disposition ledger + an assumption register + a review packet. Each is adjacent to an existing tool; the integrated, reviewable chain is the missing artifact. Output: feature map · disposition ledger · assumption register · review packet.</p>
         </div>
         <div class="panel">
           <p class="eyebrow">Deliberately not replaced</p>
-          <p class="small" style="margin-bottom:5px">PreFlight does not compete with the official gate or the official estimate.</p>
-          <div class="not-list"><span class="tag">Cloud Assurance</span><span class="tag">CUE</span><span class="tag">APD conversion</span><span class="tag">Cloud Retrofit</span><span class="tag">SI delivery</span></div>
-          <p class="source" style="margin:6px 0 0">Positioning from public product descriptions and documentation; not an independent product evaluation.</p>
+          <p class="small" style="margin-bottom:5px">PreFlight does not compete with the official gate, the official estimate, the migration lab, or SI delivery.</p>
+          <div class="not-list"><span class="tag">Cloud Assurance</span><span class="tag">CUE</span><span class="tag">Lighthouse</span><span class="tag">SurePath</span><span class="tag">APD conversion</span><span class="tag">Cloud Retrofit</span><span class="tag">SI delivery</span></div>
+          <p class="source" style="margin:6px 0 0"><b>Positioning, not an independent product evaluation.</b> Public product descriptions and documentation; see <span class="mono">sources.md</span> S-05, S-06, S-07, S-19–S-24.</p>
         </div>
-      </div>
-      <div class="bottom-band four" aria-label="The four review artifacts PreFlight assembles">
-        <div class="bottom-card"><b><span class="num">01</span> Feature map</b><span>8 features with cross-artefact evidence links and confidence.</span></div>
-        <div class="bottom-card"><b><span class="num">02</span> Disposition ledger</b><span>12 explicit source-to-target rows with provenance and state.</span></div>
-        <div class="bottom-card"><b><span class="num">03</span> Assumption register</b><span>3 gaps with owner, impact range, and the question to close.</span></div>
-        <div class="bottom-card"><b><span class="num">04</span> Review packet</b><span>6 sections, hashes, and an audit head a reviewer can verify.</span></div>
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance is the official standards gate. CUE is the official high-level estimate. SonarQube and GoQu own Gosu lint. CAST and ADDI do portfolio discovery. SIs bring expertise. All of that is real and useful.”</p>
-      <p>Then point at the matrix. “The gap is the hand-off. None of those artifacts is a cross-artefact feature inventory with a disposition ledger, an assumption register, and a reviewable packet. That is the connective tissue PreFlight is aimed at.”</p>
-      <p>Be careful: this is a capability map from public descriptions, not a benchmark. A SI could assemble this manually; the claim is repeatability and evidence discipline, not that no human has ever done it.</p>
+      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official high-level estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST, ADDI, and Syntra cover portfolio, code, and data discovery. SIs bring expertise. All of that is real and useful.”</p>
+      <p>Then point at the matrix. “The exact sentence is: no public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet. That is a literature and public-documentation search result, not a product benchmark. A SI could assemble this manually; the claim is repeatability and evidence discipline, not that no human has ever done it.”</p>
+      <p>This is positioning, not an independent product evaluation. Keep the footnote visible if someone challenges the comparison.</p>
     </div>
   </section>
 
@@ -882,18 +982,20 @@
             <div class="rung"><span class="lab" style="color:var(--violet)">heuristic</span><span class="cnt">3</span><span class="desc">PreFlight pattern; explicitly not a Cloud Standard.</span></div>
           </div>
           <p class="source" style="margin:9px 0 0">Counts are the 24 advisory findings in R-DEMO-001. The separate SBT readiness flag is not one of the 24.</p>
-          <div class="rule" style="margin:10px 0 7px"></div>
-          <p class="eyebrow" style="margin-bottom:3px">What the label buys you</p>
-          <table class="mini-table" aria-label="What each claim-strength label permits">
-            <thead><tr><th scope="col">Label</th><th scope="col">You may say</th><th scope="col">You may not say</th></tr></thead>
-            <tbody>
-              <tr><td><code>verified-id</code></td><td>This is standard ID/title X.</td><td>“This passes the gated rule body.”</td></tr>
-              <tr><td><code>verified-policy</code></td><td>Public policy discourages this.</td><td>“This is a Cloud Standards violation.”</td></tr>
-              <tr><td><code>verified-doc</code></td><td>The documented mechanism is X.</td><td>“The target estate behaves this way.”</td></tr>
-              <tr><td><code>secondary</code></td><td>An experience report flags this.</td><td>“This is an official rule.”</td></tr>
-              <tr><td><code>heuristic</code></td><td>PreFlight flags this pattern.</td><td>“Guidewire says this is wrong.”</td></tr>
-            </tbody>
-          </table>
+          <div class="label-buys">
+            <div class="rule" style="margin:10px 0 7px"></div>
+            <p class="eyebrow" style="margin-bottom:3px">What the label buys you</p>
+            <table class="mini-table" aria-label="What each claim-strength label permits">
+              <thead><tr><th scope="col">Label</th><th scope="col">You may say</th><th scope="col">You may not say</th></tr></thead>
+              <tbody>
+                <tr><td><code>verified-id</code></td><td>This is standard ID/title X.</td><td>“This passes the gated rule body.”</td></tr>
+                <tr><td><code>verified-policy</code></td><td>Public policy discourages this.</td><td>“This is a Cloud Standards violation.”</td></tr>
+                <tr><td><code>verified-doc</code></td><td>The documented mechanism is X.</td><td>“The target estate behaves this way.”</td></tr>
+                <tr><td><code>secondary</code></td><td>An experience report flags this.</td><td>“This is an official rule.”</td></tr>
+                <tr><td><code>heuristic</code></td><td>PreFlight flags this pattern.</td><td>“Guidewire says this is wrong.”</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div class="stack">
           <div class="panel">
@@ -920,11 +1022,10 @@
           </div>
         </div>
       </div>
-      <div class="bottom-band four" aria-label="Chain of custody">
-        <div class="bottom-card"><b><span class="num">01</span> Capture</b><span>Read-only file; excerpt and SHA-256 at capture.</span></div>
-        <div class="bottom-card"><b><span class="num">02</span> Link</b><span>Evidence ID attached to a feature, finding, or gap.</span></div>
-        <div class="bottom-card"><b><span class="num">03</span> Label</b><span>Claim strength caps what the evidence may support.</span></div>
-        <div class="bottom-card"><b><span class="num">04</span> Seal</b><span>Packet hash + audit head make the artifact reviewable.</span></div>
+      <div class="closing-line">
+        <span class="tag teal">Chain of custody</span>
+        <b>Capture → link → label → seal.</b>
+        <span>Read-only file; excerpt and SHA-256 at capture · evidence ID attached to a feature, finding, or gap · claim strength caps what may be inferred · packet hash and audit head make the artifact reviewable.</span>
       </div>
     </div>
     <div class="speaker-note" hidden>
@@ -947,12 +1048,12 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/workbench-1440x900.png" width="1440" height="900" alt="PreFlight Workbench for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
-          <span class="marker" style="left:96%;top:30.5%" aria-hidden="true">1</span>
-          <span class="marker" style="left:21.5%;top:47.5%" aria-hidden="true">2</span>
-          <span class="marker" style="left:41%;top:52%" aria-hidden="true">3</span>
-          <span class="marker amber" style="left:89%;top:90.5%" aria-hidden="true">4</span>
-          <figcaption>Live capture at 1440 × 900. Workbench summary strip, eight feature candidates, and the 18-node feature spine. The evidence drawer and grounded assistant sit below the fold.</figcaption>
+          <img src="assets/workbench-focus-1440x900.png" width="1144" height="615" alt="PreFlight Workbench focus crop for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
+          <span class="marker" style="left:6.9%;top:7.3%" aria-hidden="true">1</span>
+          <span class="marker" style="left:11.2%;top:34%" aria-hidden="true">2</span>
+          <span class="marker" style="left:31.6%;top:20.5%" aria-hidden="true">3</span>
+          <span class="marker amber" style="left:78.2%;top:7.3%" aria-hidden="true">4</span>
+          <figcaption>Live capture at 1440 × 900, cropped to the summary strip, eight feature candidates, and the 18-node spine. The evidence drawer and grounded assistant sit below the fold.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
@@ -971,6 +1072,7 @@
             <img src="assets/workbench-evidence-drawer.png" width="602" height="171" alt="Evidence drawer showing EV-0001: config/web/pcf/policy/PAVehicleDV.pcf, xpath /PCF/Screen/TypeKeyInput[1], line 4, excerpt, method xml_xpath, and excerpt hash.">
             <div class="cap"><b>Click node → EV-0001.</b> Path, xpath, line, excerpt, method, excerpt SHA-256. This is the atomic unit of the review.</div>
           </div>
+          <p class="fixture-note"><b>Fixture realism:</b> the 300 files include generated filler. PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats. Codegen and entity names match the fixture; this is not a claim of domain fidelity.</p>
         </div>
       </div>
     </div>
@@ -978,7 +1080,7 @@
       <p><strong>Open on the Workbench, not the dashboard.</strong> “This is one feature, not the whole estate: PA-VEH-01 Vehicle Information. The summary strip says what the claim rests on — 31 evidence records across 12 files, four artefact types, two tests, and 11 references.”</p>
       <p>Point at the 37 vs 24 signal. “This type is 37 characters. The APD limit is 24. Eleven references touch it. That is the kind of scope that surfaces at week five if the inventory is not done first.”</p>
       <p>Click a spine node. “Every node resolves to a file and a locator — here EV-0001, a PCF xpath at line 4, with an excerpt hash. The assistant below is retrieval-only and model off.”</p>
-      <p>Say clearly: “The three gaps are estate-wide, not three missing links in PA-VEH-01.”</p>
+      <p>Say clearly: “The three gaps are estate-wide, not three missing links in PA-VEH-01.” Add the fixture-realism caveat: “The 300 files include generated filler. The PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats; codegen and entity names match the fixture. This is a test of the evidence discipline, not a claim of domain fidelity.”</p>
     </div>
   </section>
 
@@ -995,11 +1097,11 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/manifest-excluded-1440x900.png" width="1440" height="900" alt="PreFlight Manifest filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
-          <span class="marker" style="left:96%;top:24%" aria-hidden="true">1</span>
-          <span class="marker" style="left:31%;top:42%" aria-hidden="true">2</span>
-          <span class="marker" style="left:96%;top:37.5%" aria-hidden="true">3</span>
-          <figcaption>Live capture at 1440 × 900 with the “Excluded (4)” filter applied. The four rows are 2 binary assets, 1 corrupt PCF, and 1 unsupported CSV. “Source unchanged” compares the before and after snapshot hash.</figcaption>
+          <img src="assets/manifest-focus-1440x900.png" width="1144" height="680" alt="PreFlight Manifest focus crop filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
+          <span class="marker" style="left:23.9%;top:2%" aria-hidden="true">1</span>
+          <span class="marker" style="left:15.2%;top:47.8%" aria-hidden="true">2</span>
+          <span class="marker" style="left:8.9%;top:15.8%" aria-hidden="true">3</span>
+          <figcaption>Live capture at 1440 × 900, cropped to the excluded banner, source-unchanged check, and the four excluded rows. “Excluded (4)” filter applied; 2 binary, 1 corrupt PCF, 1 unsupported CSV.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
@@ -1026,6 +1128,7 @@
       <p><strong>This is the anti-dashboard slide.</strong> “A scanner that silently drops what it cannot parse gives you a confident number with no denominator. PreFlight lists every excluded file with a reason and a hash.”</p>
       <p>Click Manifest, tick Excluded (4), Apply. “Two binary assets, one corrupt PCF, one unsupported CSV. BrokenScreen fails XML parsing at line 1. The CSV has no parser.”</p>
       <p>Point at the source-unchanged banner. “The snapshot hash is the same before and after. The hash check is in the audit trail. If the source changed, the review would be invalid.”</p>
+      <p>Fixture realism: “The 300 files include generated filler. The corrupt PCF and unsupported CSV are deliberate parser-boundary examples; the rest of the estate is a synthetic sketch, not a production Guidewire export. The manifest discipline is real; the domain fidelity is not claimed.”</p>
     </div>
   </section>
 
@@ -1042,11 +1145,10 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/reconstruction-after-decision-1440x900.png" width="1440" height="900" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted, 12 dispositions, and the _gen writes zero badge.">
-          <span class="marker" style="left:96%;top:34.5%" aria-hidden="true">1</span>
-          <span class="marker" style="left:96%;top:52.5%" aria-hidden="true">2</span>
-          <span class="marker ink" style="left:96%;top:13.5%" aria-hidden="true">3</span>
-          <span class="marker" style="left:96%;top:45.5%" aria-hidden="true">4</span>
+          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1144" height="790" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
+          <span class="marker" style="left:6.5%;top:28.1%" aria-hidden="true">1</span>
+          <span class="marker" style="left:49.7%;top:60.5%" aria-hidden="true">2</span>
+          <span class="marker ink" style="left:86.1%;top:3.9%" aria-hidden="true">3</span>
           <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The live run remains read-only.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1054,7 +1156,7 @@
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Reject M-12 → new A-DEC-04.</b> “What target should replace the rejected mapping?” Impact medium, owner unassigned, status open.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Accept is explicit and reversible in the audit.</b> M-01 row turns green only after the action; the other rows stay pending.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b><code>_gen</code> writes: 0.</b> Draft is local and non-deployable; only <code>_ext</code>, codegen, and product-access proposals are written.</div></div>
-            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>12 dispositions / 5 target changes.</b> Four exact documented codegen examples + one documented mechanism on a synthetic long type; six API conventions; one typelist convention.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>M-12 rejected, not deleted.</b> 12 dispositions / 5 target changes. Four exact documented examples + one documented 24-char mechanism on a synthetic long type; six API conventions; one typelist convention.</div></div>
           </div>
           <div class="demo-stats">
             <div class="demo-stat"><b>12</b><span>dispositions</span></div>
@@ -1062,16 +1164,24 @@
             <div class="demo-stat"><b>4</b><span>assumptions after reject</span></div>
             <div class="demo-stat"><b>0</b><span>_gen writes</span></div>
           </div>
-          <div class="panel tint" style="padding:9px 11px">
-            <p class="small" style="margin:0"><b>Provenance is per row.</b> A documented mapping is not the same claim as a PreFlight convention. The reviewer can see which is which before accepting.</p>
+          <div class="panel tint m12-shot" style="padding:8px 10px;position:relative">
+            <span class="marker danger" style="left:92%;top:48%" aria-hidden="true">4</span>
+            <dl class="m12-list" aria-label="M-12 row after rejection">
+              <dt>ID</dt><dd><code>M-12</code> · <span class="danger"><b>rejected</b></span></dd>
+              <dt>Source</dt><dd><code>VehicleType.Motorcycle_Ext</code></dd>
+              <dt>Target</dt><dd><code>schema.vehicleType.motorcycle</code></dd>
+              <dt>State</dt><dd>Stays in the ledger; A-DEC-04 carries the open question.</dd>
+            </dl>
           </div>
         </div>
       </div>
+      <p class="fixture-note scope-note"><b>Scope:</b> draft targets Cloud Retrofit <b>without APD App</b>, which Guidewire explicitly labels not the recommended process; field-level <code>nameOverride</code> applies only on that path. The <code>_ext</code> draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.</p>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>Set the frame.</strong> “This is a decision queue, not an automated rename. Twelve source-to-target dispositions for PA-VEH-01. Five are documented codegen examples, six are PreFlight API conventions, one is a typelist convention. The provenance is visible per row.”</p>
-      <p>Show the two actions. “Accept M-01: PAVehicle maps to PersonalVehicle by the documented nameOverride. Reject M-12, the Motorcycle_Ext typelist convention. The reject is not a delete. A-DEC-04 appears with impact medium, owner unassigned, and the question that would close it.”</p>
+      <p><strong>Set the frame.</strong> “This is a decision queue, not an automated rename. Twelve source-to-target dispositions for PA-VEH-01. <b>Four exact documented examples + one documented 24-char mechanism applied to a synthetic long type.</b> Six are PreFlight API conventions; one is a typelist convention. Provenance is visible per row.”</p>
+      <p>Show the two actions. “Accept M-01: PAVehicle maps to PersonalVehicle by the documented nameOverride. Reject M-12, the Motorcycle_Ext typelist convention. The reject is not a delete. A-DEC-04 appears with impact medium, owner unassigned, and the question that would close it.” The decision dialog asks for a reason; state that the rejection is because the replacement target is not agreed.</p>
       <p>Point at the header badge. “_gen writes zero. The draft is local, non-deployable, and every change starts pending. The screenshot is an isolated copy so the live demo run stays untouched.”</p>
+      <p><strong>Scope note, say it explicitly:</strong> “The draft targets Cloud Retrofit <b>without APD App</b>, which Guidewire explicitly labels not the recommended process. Field-level <code>nameOverride</code> applies only on that path. The <code>_ext</code> draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.”</p>
     </div>
   </section>
 
@@ -1088,31 +1198,35 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/findings-1440x900.png" width="1440" height="900" alt="PreFlight Findings: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and verified standard IDs, selected finding detail, and precision guards.">
-          <span class="marker" style="left:96%;top:44.5%" aria-hidden="true">1</span>
-          <span class="marker" style="left:61%;top:56%" aria-hidden="true">2</span>
-          <span class="marker" style="left:96%;top:83%" aria-hidden="true">3</span>
-          <span class="marker amber" style="left:96%;top:38.5%" aria-hidden="true">4</span>
-          <span class="marker ink" style="left:21.5%;top:91%" aria-hidden="true">5</span>
-          <figcaption>Live capture at 1440 × 900. The SBT readiness flag is separate from the 24 findings. The selected row shows ERR00-G, the claim-strength label, the evidence excerpt, and the decision controls.</figcaption>
+          <img src="assets/findings-focus-1440x900.png" width="1144" height="670" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls.">
+          <span class="marker" style="left:5.4%;top:48.5%" aria-hidden="true">1</span>
+          <span class="marker" style="left:58%;top:73.6%" aria-hidden="true">2</span>
+          <span class="marker" style="left:94%;top:60.4%" aria-hidden="true">3</span>
+          <span class="marker amber" style="left:94%;top:22.1%" aria-hidden="true">4</span>
+          <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the detail panel. The precision-guard corpus is shown separately below.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>24 findings / 8 rules.</b> 3 per rule; the guard corpus is separate: 8 rules × 3 hard negatives = 24 cases.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Claim strength on every row.</b> 12 verified-id, 3 verified-policy, 3 verified-doc, 3 secondary, 3 heuristic.</div></div>
-            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Verified IDs:</b> <code>IS-TLS-1238</code> (SQL/JDBC), <code>SEC00-G</code> (secrets), <code>IS-TLS-1191</code> (hidden package), <code>ERR00-G</code> (swallowed exception).</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Two standard families, not one.</b> Cloud Standards: <code>IS-TLS-1238</code> (SQL/JDBC), <code>IS-TLS-1191</code> (hidden package). Gosu Secure Coding: <code>SEC00-G</code> (secrets), <code>ERR00-G</code> (swallowed exception). The <code>standard_family</code> field in the data distinguishes <code>cloud-standard</code> from <code>gosu-secure-coding</code>.</div></div>
             <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>SBT is a separate readiness flag.</b> Not mixed into the 24 advisory findings or the 8 scored rules.</div></div>
             <div class="callout"><span class="callout-num">5</span><div class="callout-body"><b>24 hard negatives stay silent.</b> <code>Query.make(PersonalVehicle).select()</code> is supported access, not JDBC. Comments and strings are masked first.</div></div>
           </div>
-          <div class="panel" style="padding:9px 11px">
-            <p class="small" style="margin:0"><b>No violation claim.</b> PreFlight findings are advisory, pattern-based, and cited. They are not an official Cloud Assurance result, a pass/fail, or legal/security advice.</p>
+          <div class="guards-shot" style="max-width:300px">
+            <img src="assets/findings-guard-query-make.png" width="270" height="244" alt="Precision-guard excerpt: PF-GW-SQL-001 lists Query.make(PersonalVehicle).select() as supported data access, not direct JDBC, with driver, string, and comment near-misses.">
+            <span class="marker ink" style="left:92%;top:9%" aria-hidden="true">5</span>
+            <div class="cap"><b>Precision guard.</b> 8 rules × 3 near-misses; <code>Query.make</code> is supported access, not JDBC.</div>
+          </div>
+          <div class="panel optional-panel" style="padding:8px 10px">
+            <p class="small" style="margin:0"><b>No violation claim.</b> Advisory, pattern-based, cited. Not Cloud Assurance, a pass/fail, or legal/security advice.</p>
           </div>
         </div>
       </div>
     </div>
     <div class="speaker-note" hidden>
       <p><strong>Lead with restraint.</strong> “Generic Gosu lint belongs to SonarQube and Cloud Assurance. We only report cited, migration-specific patterns, and every row says how strong the claim is.”</p>
-      <p>Point at the selected row. “ERR00-G, verified ID, source line, excerpt, remediation. The SQL finding cites IS-TLS-1238; the secret cites SEC00-G; hidden package cites IS-TLS-1191. The bodies of some standards are gated — we only claim the public ID and title.”</p>
+      <p>Point at the selected row. “ERR00-G, verified ID, source line, excerpt, remediation. Two standard families are in play: Cloud Standards <code>IS-TLS-1238</code> and <code>IS-TLS-1191</code> have <code>standard_family=cloud-standard</code>; Gosu Secure Coding <code>SEC00-G</code> and <code>ERR00-G</code> have <code>standard_family=gosu-secure-coding</code>. They are not one ‘verified ID’ family. The bodies of some standards are gated — we only claim the public ID and title.”</p>
       <p>Then the precision guard. “Query.make is the supported database API. It must not fire as direct SQL. The 24 hard negatives are deliberate near-misses, and they stay silent. The SBT flag is separate from the 24 findings. Official Cloud Assurance was not run.”</p>
     </div>
   </section>
@@ -1171,13 +1285,16 @@
         <span class="head-badge attention">Not a benchmark</span>
       </div>
       <div class="eval-top">
-        <div class="eval-stats">
-          <div class="eval-stat"><b>8/8</b><span>M1 recall</span></div>
-          <div class="eval-stat"><b>101/101</b><span>M3 all links</span></div>
-          <div class="eval-stat"><b>12/12</b><span>M4 dispositions</span></div>
-          <div class="eval-stat"><b>6/6</b><span>M5 issues</span></div>
-          <div class="eval-stat"><b>48/48</b><span>M6 micro-F1</span></div>
-          <div class="eval-stat"><b>24/24</b><span>negatives silent</span></div>
+        <div class="eval-metric-block">
+          <div class="eval-stats" aria-label="Six headline metrics">
+            <div class="eval-stat"><b>8/8</b><span>M1 recall</span></div>
+            <div class="eval-stat"><b>8/8</b><span>M2 precision</span></div>
+            <div class="eval-stat"><b>101/101</b><span>M3 links + 30/30 sample</span></div>
+            <div class="eval-stat"><b>12/12</b><span>M4 dispositions</span></div>
+            <div class="eval-stat"><b>6/6</b><span>M5 issues · 6/8 slots</span></div>
+            <div class="eval-stat"><b>1.00</b><span>M6 F1 · 24 TP / 0 FP / 0 FN</span></div>
+          </div>
+          <p class="guard-line"><b>Guard count, not a seventh metric:</b> 24/24 hard negatives silent.</p>
         </div>
         <div class="panel holdout" style="padding:8px 10px">
           <p class="small" style="margin:0"><b>Holdout:</b> 4/4 feature recall, 95% Wilson 51.0%–100.0%, four-feature naming-shift fixture. <b>Not imported</b> into the demo or used for tuning.</p>
@@ -1207,7 +1324,7 @@
                 <text x="0" y="135">M3 links · 101/101</text>
                 <text x="0" y="176">M4 dispositions · 12/12</text>
                 <text x="0" y="217">M5 issues · 6/6</text>
-                <text x="0" y="258">M6 micro-F1 · 48/48</text>
+                <text x="0" y="258">M6 F1 · 1.00 (24/0/0)</text>
               </g>
               <g fill="#9BC6D1">
                 <line x1="408.4" y1="48" x2="700" y2="48" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
@@ -1235,26 +1352,28 @@
             <div class="mobile-ci-row"><span>M3 links</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:92.6%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">96–100</span></div>
             <div class="mobile-ci-row"><span>M4 dispositions</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:51.6%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">76–100</span></div>
             <div class="mobile-ci-row"><span>M5 issues</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:22%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">61–100</span></div>
-            <div class="mobile-ci-row"><span>M6 micro-F1</span><span class="mobile-ci-track"><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">no interval</span></div>
+            <div class="mobile-ci-row"><span>M6 F1 · 24/0/0</span><span class="mobile-ci-track"><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">no interval</span></div>
           </div>
-          <p class="tiny" style="margin:3px 0 0">Wilson score intervals from reported numerators and denominators. M6 has no interval at this n; bootstrap deferred. Demo metrics are in-sample on one synthetic fixture.</p>
-          <div class="rule" style="margin:8px 0 7px"></div>
-          <p class="eyebrow" style="margin-bottom:3px">Pre-registered margins vs baselines</p>
-          <table class="mini-table" aria-label="Pre-registered margins against selected baselines">
-            <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
-            <tbody>
-              <tr><td>M1 feature recall</td><td>PCF + grep: 87.5%</td><td>+12.5 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
-              <tr><td>M4 dispositions</td><td>Identity mapper: 50.0%</td><td>+50.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
-              <tr><td>M6 finding micro-F1</td><td>Grep-only F1: 84.0%</td><td>+16.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
-            </tbody>
-          </table>
+          <p class="tiny" style="margin:3px 0 0">Wilson score intervals from reported numerators and denominators. M6 has no interval at this n; bootstrap deferred. Demo metrics are in-sample on one synthetic fixture. 24/24 hard negatives are a separate guard count.</p>
+          <div class="eval-margins">
+            <div class="rule" style="margin:8px 0 7px"></div>
+            <p class="eyebrow" style="margin-bottom:3px">Pre-registered margins vs baselines</p>
+            <table class="mini-table" aria-label="Pre-registered margins against selected baselines">
+              <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
+              <tbody>
+                <tr><td>M1 feature recall</td><td>PCF + grep: 87.5%</td><td>+12.5 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+                <tr><td>M4 dispositions</td><td>Identity mapper: 50.0%</td><td>+50.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+                <tr><td>M6 finding micro-F1</td><td>Grep-only F1: 84.0%</td><td>+16.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
         <div class="panel eval-right">
           <p class="eyebrow">What the numbers do and do not say</p>
           <div class="caveat-list">
             <div class="caveat"><span class="mark">+</span><p><b>M3 is 101/101 all links</b> plus a 30/30 stratified sample. It checks excerpt support at the source, not semantic entailment.</p></div>
             <div class="caveat"><span class="mark">+</span><p><b>M5 is 6/6</b> but the allowance is <b>6 of 8 slots</b>. It is a fixed two-decoy top-8, not a learned ranking.</p></div>
-            <div class="caveat"><span class="mark">+</span><p><b>M6 is 48/48</b> = 24 TP / 0 FP / 0 FN. Line-level matching is deferred; the demo uses path-level matching.</p></div>
+            <div class="caveat"><span class="mark">+</span><p><b>M6 is F1 1.00 (24 TP / 0 FP / 0 FN)</b> = 48/48 micro-F1. Line-level matching is deferred; the demo uses path-level matching.</p></div>
             <div class="caveat"><span class="mark no">–</span><p><b>No human IAA.</b> The reference target is internally authored and AI-assisted, not blind and independent.</p></div>
             <div class="caveat"><span class="mark no">–</span><p><b>One synthetic fixture.</b> The four-feature holdout is naming-shift only and never imported or tuned.</p></div>
             <div class="caveat"><span class="mark no">–</span><p><b>Not a benchmark.</b> No real estate, customer code, deployment, or official Cloud Assurance run.</p></div>
@@ -1271,8 +1390,8 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>Do not celebrate the 100s.</strong> “These are in-sample synthetic measurements. They tell you the instrument can run; they do not tell you it generalises to a real estate.”</p>
-      <p>Walk the intervals. “M1 and M2 are 8/8 but the lower bound is 68%. M5 is 6/6 with a 6/8 top-8 allowance. M3 is 101/101 all links plus a 30/30 sample — support, not entailment.”</p>
+      <p><strong>Do not celebrate the 100s.</strong> “These are six headline metrics on one in-sample synthetic slice. They tell you the instrument can run; they do not tell you it generalises to a real estate. The 24/24 hard-negative result is a guard count, not a seventh metric.”</p>
+      <p>Walk the metrics. “M1 recall and M2 precision are both 8/8; the lower bound is 68%. M3 is 101/101 all links plus a 30/30 sample — support, not entailment. M4 is 12/12 dispositions. M5 is 6/6 with a 6/8 top-8 allowance. M6 is F1 1.00: 24 true positives, zero false positives, zero false negatives.”</p>
       <p>Then the honest parts. “No human IAA. The reference target is internally authored and AI-assisted. The holdout is four features and naming-shift only; it is not imported. This is not a benchmark.”</p>
     </div>
   </section>
@@ -1282,27 +1401,27 @@
     <div class="slide-body">
       <div class="slide-head">
         <div class="slide-head-main">
-          <p class="kicker">Demo 07 · Review packet</p>
+          <p class="kicker">Demo 07 · Review packet · after reviewer actions</p>
           <h2>The review artifact is the product.</h2>
-          <p class="slide-lede">Six sections, every excluded file, every assumption, every disposition, 126 evidence items, and a hash-chained audit trail. Downloadable HTML; locally verifiable; explicitly not a certification.</p>
+          <p class="slide-lede">Six sections, every excluded file, every assumption, every disposition, 126 evidence items, and a hash-chained audit trail. This capture is post-decision: 11 audit events and 4 assumptions after Accept M-01 + Reject M-12. Downloadable HTML; locally verifiable; explicitly not a certification.</p>
         </div>
-        <span class="head-badge">126 evidence · 9 audit events</span>
+        <span class="head-badge">126 evidence · 11 audit events</span>
       </div>
       <div class="packet-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/packet-1440x900.png" width="1440" height="900" alt="PreFlight Review packet page: six section cards, audit chain verified, assumption register, findings summary, and download button.">
-          <span class="marker" style="left:96%;top:18.5%" aria-hidden="true">1</span>
-          <span class="marker" style="left:21.5%;top:41%" aria-hidden="true">2</span>
-          <span class="marker" style="left:96%;top:46.5%" aria-hidden="true">3</span>
-          <span class="marker" style="left:96%;top:39.5%" aria-hidden="true">4</span>
-          <figcaption>Live capture at 1440 × 900. Six sections; “Audit chain verified: yes (9 events)” on the cover; 126 evidence items in section 06; all findings and assumptions visible for challenge.</figcaption>
+          <img src="assets/packet-focus-1440x900.png" width="1144" height="700" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button.">
+          <span class="marker" style="left:91%;top:4%" aria-hidden="true">1</span>
+          <span class="marker" style="left:16%;top:32.3%" aria-hidden="true">2</span>
+          <span class="marker" style="left:83.3%;top:57.9%" aria-hidden="true">3</span>
+          <span class="marker" style="left:16%;top:44.7%" aria-hidden="true">4</span>
+          <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; 4 assumptions are visible. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Downloadable HTML.</b> A local, self-contained review artifact — not a dashboard link that expires.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Six sections:</b> cover · executive summary · coverage and confidence · assumption register · findings (24 + 1 separate readiness flag) · evidence and audit appendix.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>126 evidence items</b> = full discovery evidence plus review evidence linked to findings. Not a 20-row sample.</div></div>
-            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 9 events.</b> Packet hash covers canonical JSON; audit head covers the event chain. Local tamper-evident, not non-repudiation.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. Packet hash covers canonical JSON; audit head covers the event chain. Local tamper-evident, not non-repudiation.</div></div>
           </div>
           <div class="section-list" aria-label="Packet sections">
             <div class="section-item"><b>01</b><span>Cover + hashes</span></div>
@@ -1312,22 +1431,22 @@
             <div class="section-item"><b>05</b><span>Findings</span></div>
             <div class="section-item"><b>06</b><span>Evidence &amp; audit</span></div>
           </div>
-          <p class="tiny" style="margin:0">12 mappings · 3 assumptions · 1 readiness flag · 4 excluded files</p>
-          <div class="hash-block" aria-label="Current packet and audit hashes">
-            <div><span class="hk">packet</span> &nbsp;<span class="hv">09fac7ee737f40f9c4d7a5223464d137c0b1063868555e42d15743e53f206a5a</span></div>
-            <div><span class="hk">audit</span> &nbsp;&nbsp;<span class="hv">2567dbf4f3ded9b51b2afe0ef3dcd4b3171785464e80e14b1799a4d0f8383a4d</span></div>
-            <div><span class="hk">snapshot</span> <span class="hv">20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404</span></div>
+          <p class="tiny" style="margin:0">12 mappings · 4 assumptions · 1 readiness flag · 4 excluded files · 11 audit events</p>
+          <div class="hash-block" aria-label="Capture-time packet and audit hashes; read live values before quoting">
+            <div><span class="hk">packet</span> &nbsp;<span class="hv">b01e901a…</span> <span class="muted">capture-time; read live</span></div>
+            <div><span class="hk">audit</span> &nbsp;&nbsp;<span class="hv">8f7090ad…</span> <span class="muted">capture-time; read live</span></div>
+            <div><span class="hk">snapshot</span> <span class="hv">20b5a25451f3…</span> <span class="muted">fixture snapshot</span></div>
           </div>
-          <div class="cmd"><span class="prompt">$</span> preflight verify-audit R-DEMO-001</div>
-          <p class="source" style="margin:0">Hashes are from this capture. Reject/accept or a packet refresh changes the packet and audit head — read them from the live screen before quoting. The bundled packet is a snapshot, not a live artifact.</p>
+          <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-audit R-DEMO-001</div>
+          <p class="source packet-source" style="margin:0">Hashes are from this post-decision capture on an isolated copy. Reject/accept or a packet refresh changes the packet and audit head — read them from the live screen before quoting. The bundled packet is a snapshot, not a live artifact.</p>
         </div>
       </div>
     </div>
     <div class="speaker-note" hidden>
       <p><strong>End on the artifact.</strong> “This is not a dashboard. It is a six-section packet you can download, mark up, challenge, and approve.”</p>
-      <p>Point at the cover. “Audit chain verified: yes, nine events. Section 06 carries 126 evidence items, not a sample. The excluded files are in the packet. The assumptions have owners and questions. The dispositions and target changes have reviewer state.”</p>
+      <p>Point at the cover. “This capture is post-decision: audit chain verified, 11 events. The seed state is 9 events; Accept M-01 and Reject M-12 add one each. The assumption register has 4 rows after the rejection. Section 06 carries 126 evidence items, not a sample. The excluded files are in the packet.”</p>
       <p>Read the hashes from the live screen, not the deck. “The packet hash covers canonical JSON; the audit head covers the hash chain. It is local and tamper-evident, not non-repudiation. Verification command: preflight verify-audit R-DEMO-001.”</p>
-      <p>Be explicit: “The bundled docs/demo packet is a frozen snapshot. Do not verify the live run against it.”</p>
+      <p>Be explicit: “The bundled docs/demo packet is a historical snapshot. Do not verify the live run against it. If you show a pre-decision packet, label it as 9 events / 3 assumptions.”</p>
     </div>
   </section>
 
@@ -1338,16 +1457,16 @@
         <div class="slide-head-main">
           <p class="kicker">Engineering rigor</p>
           <h2>The demo is the surface. The hardening is the work.</h2>
-          <p class="slide-lede">330 tests and a Playwright golden path. Frozen fixture and reference hashes. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+          <p class="slide-lede"><b>367 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
         </div>
         <span class="head-badge">Internal adversarial review</span>
       </div>
       <div class="rigor-top">
-        <span class="rigor-badge"><b>330</b> tests collected</span>
+        <span class="rigor-badge"><b>367</b> tests collected</span>
         <span class="rigor-badge"><b>1</b> Playwright golden path</span>
-        <span class="rigor-badge"><b>21/21</b> frozen hashes recompute</span>
+        <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
         <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
-        <span class="rigor-badge"><b>9</b> audit events verified</span>
+        <span class="rigor-badge"><b>9</b> seed audit events verified</span>
       </div>
       <table class="fix-table" aria-label="Flaws found by adversarial review and fixed">
         <thead><tr><th scope="col">Flaw found</th><th scope="col">Before</th><th scope="col">After / control</th></tr></thead>
@@ -1355,10 +1474,10 @@
           <tr><td>Concurrent mapping decisions</td><td class="before">Simultaneous accepts could lose writes</td><td class="after">12/12 persisted; per-run lock + transaction; 409 on conflict</td></tr>
           <tr><td>Secret leakage through evidence</td><td class="before">Parser warnings / adjacent context could store raw values</td><td class="after">Redact at capture; fingerprint only; packet and logs tested</td></tr>
           <tr><td>YAML alias bomb</td><td class="before">Recursive aliases could expand without bound</td><td class="after">Aliases rejected before expansion; depth/node caps; sub-second test</td></tr>
-          <tr><td>Evidence audit scope</td><td class="before">A 30-link stratified sample was the headline</td><td class="after">101/101 all links + 30/30 sample; fabricated excerpts fail</td></tr>
           <tr><td>Forged evidence scoring</td><td class="before">Fabricated excerpts could still match gold paths</td><td class="after">48/48 → 0/48 when excerpts are forged; locator support required</td></tr>
           <tr><td>Packet evidence completeness</td><td class="before">A 20-row discovery sample</td><td class="after">126 complete evidence items + audit appendix</td></tr>
-          <tr><td>Audit verification cost</td><td class="before">Repeated chain scans and no truncation checkpoint</td><td class="after">Single-pass walk + checkpoint head; 9 events verified</td></tr>
+          <tr class="optional-row"><td>Evidence audit scope</td><td class="before">A 30-link stratified sample was the headline</td><td class="after">101/101 all links + 30/30 sample; fabricated excerpts fail</td></tr>
+          <tr class="optional-row"><td>Audit verification cost</td><td class="before">Repeated chain scans and no truncation checkpoint</td><td class="after">Single-pass walk + checkpoint head; 9 seed events verified</td></tr>
           <tr><td>Mobile layout</td><td class="before">Horizontal overflow at 390 px</td><td class="after">Clipped overflow + responsive regression coverage</td></tr>
         </tbody>
       </table>
@@ -1367,9 +1486,9 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 330 tests, a Playwright golden path, frozen hashes, and a security contract.”</p>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 367 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
       <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
-      <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested.</p>
+      <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
     </div>
   </section>
 
@@ -1398,10 +1517,7 @@
               <tr><td>Tooling</td><td>GoQu, CAST, ADDI, Guidewire CUE</td><td>Gosu lint, portfolio discovery, official estimate.</td></tr>
             </tbody>
           </table>
-          <p class="source" style="margin:7px 0 0">Selective, not exhaustive. Citations in <span class="mono">docs/presentation/sources.md</span>. Reversa is the closest single work; PreFlight is narrower and domain-specific.</p>
-          <div class="panel tint" style="margin-top:8px;padding:8px 11px">
-            <p class="small" style="margin:0"><b>Citation discipline:</b> public IDs and titles only; gated bodies marked gated. Vendor claims labelled as vendor claims. We do not claim the absence of prior work.</p>
-          </div>
+          <p class="source" style="margin:7px 0 0">Selective, not exhaustive. Public IDs and titles only; gated bodies marked gated. Vendor claims labelled as vendor claims. We do not claim the absence of prior work. Citations in <span class="mono">docs/presentation/sources.md</span>. Reversa is the closest single work; PreFlight is narrower and domain-specific.</p>
           <div class="panel tint" style="margin-top:9px;padding:9px 11px">
             <p class="small" style="margin:0"><b>Threat to the novelty claim:</b> if Reversa adds Guidewire artefact adapters and a disposition ledger, the gap narrows quickly. The moat is not the algorithm. It is the domain evidence model, the review workflow, and the offline independence.</p>
           </div>
@@ -1450,9 +1566,9 @@
             <div class="risk"><span class="risk-dot"></span><div><b>Internally authored target</b><span>AI-assisted reference, not blind independent annotation.</span></div></div>
             <div class="risk"><span class="risk-dot"></span><div><b>No human IAA</b><span>AI-AI concordance would not be human inter-annotator agreement.</span></div></div>
             <div class="risk"><span class="risk-dot"></span><div><b>No real estate</b><span>Customer code, scale, and naming drift unproven.</span></div></div>
-            <div class="risk"><span class="risk-dot"></span><div><b>CUE is official</b><span>Free, fast, and already in the account; it owns the estimate.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>CUE is official</b><span>Formal, high-level assessment; PreFlight prepares file-level evidence before it.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>4-feature holdout</b><span>Naming-shift only; never imported or tuned.</span></div></div>
-            <div class="risk"><span class="risk-dot m"></span><div><b>Guidewire Assistants</b><span>Developer Assistants are GA and encroach on explanation.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>Vendor services and assistants</b><span>Cloud Assurance Services, Lighthouse, and Developer Assistants already own parts of the workflow.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>Gated rule corpus</b><span>Public IDs/titles; bodies and threshold are gated.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>Parser / naming shift</b><span>Custom PCF shapes and renames can break matching.</span></div></div>
             <div class="risk"><span class="risk-dot m"></span><div><b>Draft non-deployable</b><span>Local _ext draft is not compiled or tenant-validated.</span></div></div>
@@ -1480,8 +1596,8 @@
         <div class="stack">
           <div class="panel wedge">
             <p class="eyebrow">Defensible wedge</p>
-            <h3>Independent, offline, pre-CUE, file-level evidence for one LOB.</h3>
-            <p class="small" style="margin-bottom:0">Why it can survive: independence from the vendor gate, auditability, low deployment friction, and reviewer control. The buyer is an SI or an insurer’s migration lead who needs a repeatable evidence pack before the estimate is fixed.</p>
+            <h3>Vendor-independent, offline, pre-CUE, file-level evidence for one LOB.</h3>
+            <p class="small" style="margin-bottom:0">Why it can survive: independence from the vendor gate, auditability, low deployment friction, and reviewer control. “Independent” means vendor-independent, <b>not independently validated</b>: the evaluation is internal and in-sample. The buyer is an SI or an insurer’s migration lead who needs a repeatable evidence pack before CUE and Cloud Assurance Services fix the estimate and the gate.</p>
           </div>
           <div class="panel tint">
             <p class="eyebrow">Verdict</p>
@@ -1504,7 +1620,8 @@
     </div>
     <div class="speaker-note" hidden>
       <p><strong>Say the quiet part.</strong> “On the current evidence, this is a research prototype, not a product. The metrics are in-sample synthetic. The target is internally authored and AI-assisted. There is no human IAA and no real estate.”</p>
-      <p>Then the wedge. “The defensible slice is an independent, offline, pre-CUE, file-level evidence packet for one LOB, used by an SI to de-risk the estimate. It does not replace CUE or Cloud Assurance. It gives the reviewer something to challenge before the number is fixed.”</p>
+      <p>Then the wedge. “The defensible slice is vendor-independent, offline, pre-CUE, file-level evidence for one LOB, used by an SI to de-risk the estimate. CUE is an official, formal, high-level assessment; Cloud Assurance Services is the official standards service; Lighthouse is the migration lab. PreFlight prepares file-level evidence before them. It does not replace any of them.”</p>
+      <p>Say what independent means: “Vendor-independent, not independently validated. The evaluation is internal and in-sample.”</p>
       <p>Roadmap: real anonymised estate, second LOB, blind human annotation, line-level findings, performance, import/export, compile validation. “Those are the experiments that would turn this into a claim I can defend.”</p>
     </div>
   </section>
@@ -1520,18 +1637,19 @@
         <div class="ask"><b>SME annotation</b><span>Blind review by two domain experts, with disagreements adjudicated. That is the human IAA the current evaluation lacks.</span></div>
         <div class="ask"><b>Feedback</b><span>Attack the claims, the packet, and the disposition model. The fastest way to improve this is to try to break it.</span></div>
       </div>
+      <p class="pilot-ask"><b>Pilot ask:</b> one authorised estate, two blind SME annotators, hard feedback.</p>
       <div class="contact-line">
-        <span><b>Presenter</b> [name]</span>
-        <span><b>Email</b> [email]</span>
-        <span><b>Repository</b> [github / institution]</span>
+        <span><b>Saundarya Singh</b> · Independent research prototype</span>
+        <span><b>Repository</b> github.com/SaundaryaSingh/Preflight-CloudMigration</span>
+        <span><b>License</b> MIT</span>
         <span><b>Deck</b> docs/presentation/index.html</span>
       </div>
       <p class="disclaimer">PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. All fixtures are synthetic. Findings are pattern-based heuristics, not official Cloud Standards checks, and are not legal, security, or compliance advice. Impact ranges are heuristic planning ranges, not quotes. <b>Official Cloud Assurance: not run.</b></p>
     </div>
     <div class="speaker-note" hidden>
       <p><strong>Close on the standard, not the feature list.</strong> “Every claim has evidence; every unknown has a name; every change waits for a human. That is what we want a migration estimate to look like.”</p>
-      <p>Make the ask concrete: one pilot estate, two blind SME annotators, and hard feedback. “The next experiment is not another synthetic fixture.”</p>
-      <p>Replace the contact placeholders before presenting. Repeat the disclaimer: independent prototype, synthetic fixtures, not affiliated with Guidewire, official Cloud Assurance not run.</p>
+      <p>Make the ask concrete: one authorised pilot estate, two blind SME annotators, and hard feedback. “The next experiment is not another synthetic fixture.”</p>
+      <p>Close with the contact line: Saundarya Singh, independent research prototype, repository <span class="mono">github.com/SaundaryaSingh/Preflight-CloudMigration</span>, MIT licence. Repeat the disclaimer: independent prototype, synthetic fixtures, not affiliated with Guidewire, official Cloud Assurance not run.</p>
     </div>
   </section>
 </main>
@@ -1543,8 +1661,8 @@
   <div class="foot-right"><span class="foot-dot" aria-hidden="true"></span><span>Offline</span><span id="foot-slide">01 / 16</span></div>
 </footer>
 
-<aside class="notes-panel" id="notes-panel" aria-label="Speaker notes" aria-hidden="true">
-  <div class="notes-head"><h2>Speaker notes</h2><button class="notes-close" type="button" id="notes-close" aria-label="Close speaker notes">×</button></div>
+<aside class="notes-panel" id="notes-panel" aria-label="Speaker notes" aria-hidden="true" inert>
+  <div class="notes-head"><h2>Speaker notes</h2><button class="notes-close" type="button" id="notes-close" aria-label="Close speaker notes" tabindex="-1">×</button></div>
   <div class="notes-body" id="notes-body"></div>
 </aside>
 
@@ -1636,7 +1754,11 @@
         catch (err) { window.location.hash = hash; }
       }
     }
-    window.scrollTo(0, 0);
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      slides[current].scrollIntoView({ block: "start" });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }
 
   function next() { show(current + 1); }
@@ -1646,6 +1768,8 @@
     notesOpen = true;
     notesPanel.classList.add("open");
     notesPanel.setAttribute("aria-hidden", "false");
+    notesPanel.inert = false;
+    notesClose.removeAttribute("tabindex");
     notesToggle.setAttribute("aria-pressed", "true");
     renderNotes(current);
     notesClose.focus();
@@ -1654,6 +1778,8 @@
     notesOpen = false;
     notesPanel.classList.remove("open");
     notesPanel.setAttribute("aria-hidden", "true");
+    notesPanel.inert = true;
+    notesClose.setAttribute("tabindex", "-1");
     notesToggle.setAttribute("aria-pressed", "false");
     if (returnFocus) notesToggle.focus();
   }

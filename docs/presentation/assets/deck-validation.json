@@ -1,0 +1,36 @@
+{
+  "deck_validation": {
+    "viewports": {
+      "1920x1080": {
+        "failures": [],
+        "slides": 16
+      },
+      "1440x900": {
+        "failures": [],
+        "slides": 16
+      },
+      "1280x720": {
+        "failures": [],
+        "slides": 16
+      },
+      "1024x768": {
+        "failures": [],
+        "slides": 16
+      },
+      "390x844": {
+        "failures": [],
+        "slides": 16
+      }
+    },
+    "console_errors": [],
+    "external_requests": [],
+    "generated_at": "2026-11-09T15:51:41+00:00"
+  },
+  "pdf": {
+    "pdf": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo-deck/docs/presentation/PreFlight-deck.pdf",
+    "bytes": 928803,
+    "sha256": "bfb47326fe2a5842769efaf2e802c87731fb332cbefaca4dc26ac9c7c66ecb38",
+    "pages": 16,
+    "page_size": "1200 x 675.12 pts"
+  }
+}
