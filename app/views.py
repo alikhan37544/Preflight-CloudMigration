@@ -284,12 +284,55 @@ def _evidence_group(path: str) -> str:
     return "other"
 
 
+LONG_TYPE_RULE = "PF-GW-NAM-001"
+RECONSTRUCTION_FEATURE_ID = "PA-VEH-01"
+
+
+def _type_name_length(finding: dict[str, Any],
+                      evidence_by_id: dict[str, Any]) -> int | None:
+    """Return the actual type-name length, never a hard-coded demo value."""
+    match = re.search(r"APD type '([^']+)'", finding.get("message", ""))
+    if match:
+        return len(match.group(1))
+    for evidence_id in finding.get("evidence_ids", []):
+        evidence = evidence_by_id.get(evidence_id) or {}
+        match = re.search(r'<type\s+name="([^"]+)"', evidence.get("excerpt", ""))
+        if match:
+            return len(match.group(1))
+    match = re.search(r"(\d+)\s+characters", finding.get("message", ""))
+    return int(match.group(1)) if match else None
+
+
+def _finding_in_feature_scope(finding: dict[str, Any], feature_id: str,
+                              feature_evidence_ids: set[str],
+                              feature_paths: set[str],
+                              evidence_by_id: dict[str, Any],
+                              mapping_names: set[str]) -> bool:
+    evidence_ids = set(finding.get("evidence_ids", []))
+    if evidence_ids & feature_evidence_ids:
+        return True
+    if any(
+        (evidence_by_id.get(evidence_id) or {}).get("path") in feature_paths
+        for evidence_id in evidence_ids
+    ):
+        return True
+    # The reconstruction slice (PA-VEH-01) carries the documented 24-char
+    # mapping. A finding naming one of that slice's mapping types is in scope
+    # even though review evidence has its own REV-* IDs.
+    if feature_id == RECONSTRUCTION_FEATURE_ID and finding.get("rule_id") == LONG_TYPE_RULE:
+        message = finding.get("message", "")
+        return any(name and name in message for name in mapping_names)
+    return False
+
+
 def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
     """Compact first-beat metrics derived from the selected feature's real evidence."""
     feature = view.get("selected_feature")
     if not feature:
         return None
+    feature_id = feature.get("feature_id", "")
     by_id = view.get("evidence_by_id", {})
+    feature_evidence_ids = set(feature.get("evidence_ids", []))
     items = [by_id[eid] for eid in feature.get("evidence_ids", []) if eid in by_id]
     paths = {item.get("path", "") for item in items}
     groups = {_evidence_group(path) for path in paths}
@@ -297,16 +340,40 @@ def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
     if hasattr(spine, "model_dump"):
         spine = spine.model_dump(mode="json")
     edges = spine.get("edges", [])
+
+    mapping_names: set[str] = set()
+    if feature_id == RECONSTRUCTION_FEATURE_ID:
+        for mapping in view.get("mappings", []):
+            mapping_names.update(
+                name for name in (mapping.get("source_ref"), mapping.get("target_name")) if name
+            )
+
     long_type = None
+    long_type_finding = None
     for finding in view.get("findings", []):
-        if finding.get("rule_id") != "PF-GW-NAM-001":
+        if finding.get("rule_id") != LONG_TYPE_RULE:
             continue
-        match = re.search(r"(\d+)\s+characters", finding.get("message", ""))
-        if match:
-            long_type = int(match.group(1))
-            break
+        if not _finding_in_feature_scope(
+            finding, feature_id, feature_evidence_ids, paths, by_id, mapping_names
+        ):
+            continue
+        long_type = _type_name_length(finding, by_id)
+        long_type_finding = finding
+        break
+
+    gaps = view.get("gaps", [])
+    feature_gaps = [
+        gap for gap in gaps
+        if gap.get("feature_id") == feature_id
+        or feature_evidence_ids.intersection(gap.get("evidence_ids", []) or [])
+    ]
+    if feature_gaps:
+        gap_count, gap_label = len(feature_gaps), "feature gaps"
+    else:
+        gap_count, gap_label = len(gaps), "estate gaps"
+
     return {
-        "feature_id": feature.get("feature_id", ""),
+        "feature_id": feature_id,
         "feature_name": feature.get("name", ""),
         "evidence": len(items),
         "files": len(paths),
@@ -314,7 +381,9 @@ def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
         "tests": len({path for path in paths if _evidence_group(path) == "test"}),
         "references": len([edge for edge in edges if edge.get("kind") != "tested_by"]),
         "long_type": long_type,
-        "gaps": len(view.get("gaps", [])),
+        "long_type_finding": long_type_finding,
+        "gaps": gap_count,
+        "gaps_label": gap_label,
     }
 
 

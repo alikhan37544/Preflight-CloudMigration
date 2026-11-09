@@ -160,6 +160,122 @@ def test_findings_table_columns_caption_and_source_title(api, run_id) -> None:
     assert "gsrc/acme/integration/LegacyVehicleServlet.gs:3" in text
 
 
+def _summary_strip(text: str) -> str:
+    marker = 'aria-label="Selected feature summary"'
+    assert marker in text
+    return text.split(marker, 1)[1].split("</section>", 1)[0]
+
+
+def test_workbench_summary_is_scoped_to_the_selected_feature(api, run_id) -> None:
+    client, _ = api
+    response = client.get(f"/?run={run_id}&feature=PA-POL-02")
+    assert response.status_code == 200
+    summary = _summary_strip(response.text)
+    assert '<span class="summary-value">2</span><span class="summary-label">evidence records</span>' in summary
+    assert '<span class="summary-value">1</span><span class="summary-label">distinct files</span>' in summary
+    assert '<span class="summary-value">1</span><span class="summary-label">artefact types</span>' in summary
+    assert '<span class="summary-value">0</span><span class="summary-label">tests</span>' in summary
+    assert '<span class="summary-value">0</span><span class="summary-label">references</span>' in summary
+    assert "37" not in summary
+    assert "24" not in summary
+    assert "long type vs APD limit (none linked)" in summary
+    assert '<span class="summary-value">3</span><span class="summary-label">estate gaps</span>' in summary
+    # The estate-wide NAM finding must not appear as this feature's signal.
+    assert "APD type name exceeds 24 characters" not in response.text
+
+
+def test_workbench_long_type_disappears_when_nam_finding_is_removed(api, run_id) -> None:
+    client, token = api
+    summary = _summary_strip(client.get(f"/?run={run_id}&feature=PA-VEH-01").text)
+    assert '<span class="summary-value">37 <span class="summary-vs">vs</span> 24</span>' in summary
+
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    temporary_run = response.json()["run_id"]
+    store = client.app.state.store
+    try:
+        findings = store.read_artifact(temporary_run, "findings.json")
+        findings["findings"] = [
+            finding for finding in findings["findings"]
+            if finding["rule_id"] != "PF-GW-NAM-001"
+        ]
+        store.write_artifact(temporary_run, "findings.json", findings)
+
+        page = client.get(f"/?run={temporary_run}&feature=PA-VEH-01")
+        assert page.status_code == 200
+        stripped = _summary_strip(page.text)
+        assert '<span class="summary-value">—</span>' in stripped
+        assert 'long type vs APD limit (none linked)' in stripped
+        assert "37 <span class=\"summary-vs\">vs</span> 24" not in stripped
+        assert "APD type name exceeds 24 characters" not in page.text
+    finally:
+        client.post(
+            f"/api/runs/{temporary_run}/delete",
+            headers={"X-CSRF-Token": token},
+        )
+
+
+def test_empty_uploaded_run_has_honest_empty_states(api) -> None:
+    client, _ = api
+    store = client.app.state.store
+    run_id = "R-EMPTY-UPLOAD"
+    store.create_run(run_id, project_id="uploaded", snapshot_id="S-EMPTY-UPLOAD",
+                     fixture_id="uploaded")
+    store.update_status(run_id, status="succeeded", stage="complete", percent=100.0)
+    try:
+        reconstruction = client.get(f"/reconstruction?run={run_id}")
+        assert reconstruction.status_code == 200
+        assert "No dispositions were generated for this run" in reconstruction.text
+        assert "Twelve explicit dispositions" not in reconstruction.text
+        assert "12 explicit dispositions" not in reconstruction.text
+
+        evaluation = client.get(f"/evaluation?run={run_id}")
+        assert evaluation.status_code == 200
+        assert "No evaluation metrics are available for this run" in evaluation.text
+        assert "Six headline" not in evaluation.text
+        assert "No metrics yet" in evaluation.text
+
+        packet = client.get(f"/packet?run={run_id}")
+        assert packet.status_code == 200
+        assert "six-section" not in packet.text.lower()
+        assert "Packet not generated" in packet.text
+
+        findings = client.get(f"/findings?run={run_id}")
+        assert "No findings" in findings.text
+        assert "eight scored rules" not in findings.text
+    finally:
+        store.delete_run(run_id)
+
+
+def test_reconstruction_and_evaluation_intros_use_actual_counts(api, run_id) -> None:
+    client, _ = api
+    reconstruction = client.get(f"/reconstruction?run={run_id}").text
+    assert "12 explicit dispositions" in reconstruction
+    assert "Twelve explicit dispositions" not in reconstruction
+    evaluation = client.get(f"/evaluation?run={run_id}").text
+    assert "6 headline metrics" in evaluation
+    assert "Six headline metrics" not in evaluation
+
+
+def test_packet_section_count_comes_from_the_packet(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/packet?run={run_id}").text
+    assert "6-section packet" in text
+    assert "six-section" not in text
+
+
+def test_precision_guard_counts_are_corpus_totals(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/findings?run={run_id}").text
+    assert "Rule-pack corpus: 8 rules, 3 hard negatives each" in text
+    assert "(24 total)" in text
+    assert "Eight rules, three hard negatives each" not in text
+
+
 def test_workbench_direct_evidence_url_selects_node(api, run_id) -> None:
     client, _ = api
     features = client.get(f"/api/runs/{run_id}/features").json()["features"]
@@ -507,4 +623,5 @@ def test_settings_page_content(api) -> None:
     assert response.status_code == 200
     assert "Review context" in response.text
     assert "Data policy" in response.text
+    assert "rule-pack totals, estate-wide" in response.text
     assert "holdout locked" in response.text

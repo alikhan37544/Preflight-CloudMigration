@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% from "_macros.html" import claim, severity, confidence %}
+{% set guard_rule_count = view.precision_guards|length %}
+{% set guard_negative_count = view.precision_guards|map(attribute='negatives')|map('length')|sum %}
+{% set guard_negatives_per_rule = view.precision_guards[0].negatives|length if view.precision_guards else 0 %}
 
 {% block content %}
 <div class="page-head">
@@ -35,7 +38,7 @@
     <span class="pill pill-claim claim-{{ flag.claim_strength }}">{{ flag.claim_strength }}</span>
   </div>
   {% endfor %}
-  <p class="muted">Readiness flags are separate from the {{ view.findings|length }} advisory findings and the eight scored rules.</p>
+  <p class="muted">Readiness flags are separate from the {{ view.findings|length }} advisory findings and the {{ guard_rule_count }} scored rules.</p>
 </section>
 {% else %}
 <section class="panel readiness-panel" aria-label="Readiness flags">
@@ -161,10 +164,11 @@
 <section class="panel precision-panel" aria-label="Precision guards">
   <div class="panel-head">
     <h2>Precision guards</h2>
-    <span class="counter">24</span>
+    <span class="counter">{{ guard_negative_count }}</span>
   </div>
-  <p class="muted">Eight rules, three hard negatives each: deliberate near-misses that must not fire.
-  The <strong>Query.make</strong> example is the supported database API, not direct SQL access.</p>
+  <p class="muted">Rule-pack corpus: {{ guard_rule_count }} rules, {{ guard_negatives_per_rule }} hard negatives each
+  ({{ guard_negative_count }} total). These deliberate near-misses must not fire; the findings table shows
+  observed findings only. The <strong>Query.make</strong> example is the supported database API, not direct SQL access.</p>
   <div class="guard-grid">
     {% for guard in view.precision_guards %}
     <article class="guard-card">

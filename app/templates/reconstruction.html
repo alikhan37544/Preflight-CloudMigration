@@ -6,7 +6,8 @@
   <div>
     <div class="eyebrow">Decision queue</div>
     <h1>Reconstruction</h1>
-    <p class="lede">Twelve explicit dispositions for the vehicle slice. Draft files are local and
+    {% set mapping_count = view.mappings|length %}
+    <p class="lede">{% if mapping_count %}{{ mapping_count }} explicit disposition{{ '' if mapping_count == 1 else 's' }} for this review slice.{% else %}No dispositions were generated for this run; there is no mapping table to review.{% endif %} Draft files are local and
     non-deployable; <code>_gen</code> files are never edited. Every change starts pending.</p>
   </div>
   <div class="head-meta">
