@@ -19,7 +19,7 @@
     --border: #D5DEE5;
     --border-strong: #B9C7D2;
     --muted: #5B6B78;
-    --muted-2: #7B8A96;
+    --muted-2: #52636F;
     --amber: #8A5A12;
     --amber-bg: #FBF1DF;
     --amber-line: #E7C98F;
@@ -224,12 +224,13 @@
     font-size: clamp(.62rem, .67vw, .71rem);
   }
   .marker {
-    position: absolute; z-index: 3; width: clamp(21px, 1.55vw, 27px); height: clamp(21px, 1.55vw, 27px);
+    position: absolute; z-index: 3; width: clamp(18px, 1.3vw, 22px); height: clamp(18px, 1.3vw, 22px);
     display: grid; place-items: center; border-radius: 50%;
-    background: var(--teal); color: #fff; font-size: clamp(9px, .72vw, 12px); font-weight: 800;
+    background: var(--teal); color: #fff; font-size: clamp(9px, .66vw, 11px); font-weight: 800;
     border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(11,107,133,.5), 0 1px 3px rgba(0,0,0,.18);
     line-height: 1;
   }
+  .marker.middle { transform: translateY(-50%); }
   .marker.amber { background: var(--amber); }
   .marker.danger { background: var(--danger); }
   .marker.ink { background: var(--ink); }
@@ -284,8 +285,9 @@
   .m12-list dt { color: var(--muted); font-weight: 700; }
   .m12-list dd { margin: 0; overflow-wrap: anywhere; }
   .m12-list code { font-size: 10px; }
+  .matrix-wrap { min-width: 0; }
   .matrix { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--border); }
-  .matrix th, .matrix td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .matrix th, .matrix td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .matrix th { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 800; background: #EEF3F5; line-height: 1.2; }
   .matrix th:not(:first-child), .matrix td:not(:first-child) { text-align: center; width: 9.4%; }
   .matrix td { font-size: clamp(.68rem, .73vw, .78rem); line-height: 1.3; }
@@ -354,6 +356,8 @@
 
   /* Demo slides */
   .demo-grid { display: grid; grid-template-columns: minmax(0, 1.52fr) minmax(0, .88fr); gap: clamp(12px, 1.5vw, 20px); align-items: start; min-height: 0; }
+  /* Slide 9 carries the complete detail panel; give the evidence column room. */
+  .slide--findings .demo-grid { grid-template-columns: minmax(0, 1.32fr) minmax(0, 1.08fr); }
   .demo-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   .demo-side .panel { padding: 12px 14px; }
   .demo-side h3 { font-size: clamp(.86rem, .94vw, 1.01rem); }
@@ -424,6 +428,7 @@
   .hash-block { background: #13222C; color: #DCE8EE; padding: 10px 11px; font-family: var(--mono); font-size: clamp(.58rem, .62vw, .67rem); line-height: 1.55; overflow-wrap: anywhere; }
   .hash-block .hk { color: #7BC4D6; }
   .hash-block .hv { color: #E7C98F; }
+  .hash-block .muted { color: #AFC4CF; }
   .cmd { background: #13222C; color: #DCE8EE; padding: 7px 9px; font-family: var(--mono); font-size: clamp(.61rem, .65vw, .7rem); line-height: 1.4; margin-top: 7px; }
   .cmd .prompt { color: #7BC4D6; }
 
@@ -548,7 +553,7 @@
     .head-badge { display: inline-block; margin-top: 8px; }
     h2 { font-size: clamp(1.45rem, 7.2vw, 2.1rem); max-width: none; }
     .slide-lede { font-size: .92rem; }
-    .cols-2, .cols-2.wide-left, .cols-3, .demo-grid, .assistant-grid, .packet-grid, .gap-call, .eval-top, .eval-cols, .risk-cols, .title-grid { grid-template-columns: 1fr; }
+    .cols-2, .cols-2.wide-left, .cols-3, .demo-grid, .slide--findings .demo-grid, .assistant-grid, .packet-grid, .gap-call, .eval-top, .eval-cols, .risk-cols, .title-grid { grid-template-columns: 1fr; }
     .slide--title .slide-body { padding-top: 28px; }
     .title-display { font-size: clamp(2.5rem, 13.5vw, 4.2rem); max-width: 10ch; }
     .title-panel { margin-top: 18px; }
@@ -569,7 +574,9 @@
     .chart-svg { display: none; }
     .mobile-ci { display: block; }
     .stat { min-width: 45%; }
-    .matrix { display: block; overflow-x: auto; }
+    .matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .matrix-wrap:focus-visible { outline: 3px solid #E0A83B; outline-offset: 2px; }
+    .matrix { display: table; min-width: 760px; }
     .matrix th, .matrix td { min-width: 92px; }
     .assistant-strip { grid-template-columns: 1fr; }
     .risk-grid { grid-template-columns: 1fr; }
@@ -597,13 +604,14 @@
   }
 
   /* Projector legibility floor: supporting text never renders below 10px. */
-  .tag, .source, .stat-label, .dot-label, .pain-tag, .matrix th, .stage-item,
+  .tag, .source, .kicker, .stat-label, .dot-label, .pain-tag, .matrix th, .stage-item,
   .stage-item b, .pipe-num, .pipe-desc, .invariant span, .rung .desc, .chain-node,
   .demo-stat span, .evidence-mini .cap, .mini-table, .mini-table th, .mini-table code,
   .assistant-strip span, .eval-stat span, .chart-panel .chart-sub, .mobile-ci-value,
   .section-item b, .section-item span, .cmd, .rigor-badge, .fix-table th, .fix-table td,
   .prior-table th, .prior-table td, .score-note, .road, .road b, .disclaimer,
-  .foot-note, .title-meta, .marker { font-size: max(10px, 0.64vw); }
+  .foot-note, .title-meta, .marker, .bottom-card span, .claim-code, .shot figcaption,
+  .hash-block, .risk span { font-size: max(10px, 0.64vw); }
 
   /* Short projectors: compact spacing first; never hide the argument. */
   @media screen and (max-height: 840px) and (min-width: 901px) {
@@ -629,7 +637,9 @@
     .shot figcaption, .ack-line, .scope-note { display: none !important; }
     .matrix .tool-sub { display: none; }
     .matrix th, .matrix td { padding-top: 3px; padding-bottom: 3px; }
+    .gap-call { margin-top: 4px; }
     .gap-call .panel { padding: 7px 9px; }
+    .not-list { display: none !important; }
     .callout-list { gap: 4px; }
     .bottom-band { margin-top: 3px; }
     .bottom-card { padding: 6px 8px; }
@@ -644,6 +654,11 @@
     .quote-bar { margin-bottom: 8px; }
     .guards-shot { max-width: 250px !important; }
     .guard-line { margin-top: 3px; }
+    .slide--findings .demo-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr); gap: 8px; }
+  }
+  @media screen and (min-width: 1600px) {
+    .stage-item { grid-template-columns: max-content minmax(0, 1fr); column-gap: 10px; }
+    .stage-item b { white-space: nowrap; }
   }
   @media screen and (max-height: 760px) and (min-width: 901px) {
     h2 { font-size: clamp(1.35rem, 2.05vw, 2rem); }
@@ -765,7 +780,7 @@
         <div class="slide-head-main">
           <p class="kicker">The problem</p>
           <h2>A migration estimate is a promise. The inventory is the proof.</h2>
-          <p class="slide-lede">The vendor estimate is not the risk by itself. The risk is the scope hidden underneath it: files nobody classified, features nobody traced, fields nobody disposed, and questions nobody owns.</p>
+          <p class="slide-lede">The vendor estimate is not the risk by itself. The risk is the scope hidden underneath it: files that were never classified, features nobody traced, fields nobody disposed, and questions nobody owns.</p>
         </div>
         <span class="head-badge attention">Estimate-moving scope</span>
       </div>
@@ -819,13 +834,14 @@
         <div class="slide-head-main">
           <p class="kicker">The gap</p>
           <h2>No public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet.</h2>
-          <p class="slide-lede">Guidewire CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI, Syntra ETL, and SI assessments each cover a real slice. The gap is the hand-off: a file-level, cross-artefact feature inventory with a disposition ledger, an assumption register, and a reviewable packet.</p>
+          <p class="slide-lede">Guidewire CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI for portfolio and code discovery, Syntra ETL for data migration and extraction, and SI assessments each cover a real slice. The gap is the hand-off: a file-level, cross-artefact feature inventory with a disposition ledger, an assumption register, and a reviewable packet.</p>
           <div class="ack-line" aria-label="Adjacent tools explicitly acknowledged">
             <span class="tag">CUE</span><span class="tag">Cloud Assurance Services</span><span class="tag">Lighthouse</span><span class="tag">SurePath</span><span class="tag">Developer Assistants</span><span class="tag">GoQu</span><span class="tag">CAST / ADDI</span><span class="tag">Syntra ETL</span><span class="tag">SI assessments</span>
           </div>
         </div>
         <span class="head-badge">Capability map, not a benchmark</span>
       </div>
+      <div class="matrix-wrap" tabindex="0" role="region" aria-label="Capability comparison table; scroll horizontally at narrow widths">
       <table class="matrix" aria-label="Capability comparison of existing tools and PreFlight">
         <thead><tr><th scope="col">Tool / service</th><th scope="col">Inventory</th><th scope="col">Feature evidence</th><th scope="col">Disposition ledger</th><th scope="col">Assumption register</th><th scope="col">Review packet</th></tr></thead>
         <tbody>
@@ -833,11 +849,13 @@
           <tr><td><span class="tool-name">Guidewire CUE</span><span class="tool-sub">official high-level estimate</span></td><td><span class="dot half"></span><span class="dot-label">scope</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">estimate risks</span></td><td><span class="dot half"></span><span class="dot-label">estimate</span></td></tr>
           <tr><td><span class="tool-name">Lighthouse / SurePath / Assistants</span><span class="tool-sub">migration lab, delivery method, codegen help</span></td><td><span class="dot half"></span><span class="dot-label">lab</span></td><td><span class="dot half"></span><span class="dot-label">validated flows</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">handover</span></td></tr>
           <tr><td><span class="tool-name">SonarQube / GoQu</span><span class="tool-sub">Gosu lint and quality</span></td><td><span class="dot none"></span><span class="dot-label">code only</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">issues</span></td></tr>
-          <tr><td><span class="tool-name">CAST / ADDI / Syntra ETL</span><span class="tool-sub">portfolio, code, and data discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio / data</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
+          <tr><td><span class="tool-name">CAST / ADDI</span><span class="tool-sub">portfolio and code discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio / code</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
+          <tr><td><span class="tool-name">Syntra ETL</span><span class="tool-sub">data migration / extraction</span></td><td><span class="dot half"></span><span class="dot-label">data</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
           <tr><td><span class="tool-name">Systems integrator</span><span class="tool-sub">services and expertise</span></td><td><span class="dot"></span><span class="dot-label">bespoke</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td></tr>
           <tr class="preflight"><td><span class="tool-name">PreFlight</span><span class="tool-sub">offline, one-feature evidence review</span></td><td><span class="dot"></span><span class="dot-label">300 files</span></td><td><span class="dot"></span><span class="dot-label">cross-artefact</span></td><td><span class="dot"></span><span class="dot-label">12 explicit</span></td><td><span class="dot"></span><span class="dot-label">impact-rated</span></td><td><span class="dot"></span><span class="dot-label">6 sections</span></td></tr>
         </tbody>
       </table>
+      </div>
       <div class="gap-call">
         <div class="panel tint">
           <p class="eyebrow">The actual gap</p>
@@ -853,7 +871,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official high-level estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST, ADDI, and Syntra cover portfolio, code, and data discovery. SIs bring expertise. All of that is real and useful.”</p>
+      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official high-level estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST/ADDI cover portfolio and code discovery; Syntra ETL covers data migration and extraction. SIs bring expertise. All of that is real and useful.”</p>
       <p>Then point at the matrix. “The exact sentence is: no public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet. That is a literature and public-documentation search result, not a product benchmark. A SI could assemble this manually; the claim is repeatability and evidence discipline, not that no human has ever done it.”</p>
       <p>This is positioning, not an independent product evaluation. Keep the footnote visible if someone challenges the comparison.</p>
     </div>
@@ -1015,7 +1033,7 @@
             <div class="chain" aria-label="Hash-chained audit events">
               <span class="chain-node">event 1</span><span class="chain-arrow">→</span><span class="chain-node">hash 1</span><span class="chain-arrow">→</span><span class="chain-node">event 2</span><span class="chain-arrow">→</span><span class="chain-node">hash 2</span><span class="chain-arrow">→</span><span class="chain-node">…</span><span class="chain-arrow">→</span><span class="chain-node">head</span>
             </div>
-            <p class="small" style="color:#B9CCD6;margin:8px 0 0">The packet hash covers canonical packet JSON. The audit head covers the append-only event chain. Verification is local and tamper-evident — not non-repudiation.</p>
+            <p class="small" style="color:#B9CCD6;margin:8px 0 0">The packet hash covers the rendered packet HTML (hash fields normalized); <span class="mono">packet_json</span> separately covers canonical packet JSON; content digests bind findings, mappings, and evidence. The audit head covers the append-only event chain. Verification is local and tamper-evident — not non-repudiation.</p>
           </div>
           <div class="panel tint">
             <p class="eyebrow">Reviewer question</p>
@@ -1049,11 +1067,11 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/workbench-focus-1440x900.png" width="1144" height="615" alt="PreFlight Workbench focus crop for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
-          <span class="marker" style="left:6.9%;top:7.3%" aria-hidden="true">1</span>
-          <span class="marker" style="left:11.2%;top:34%" aria-hidden="true">2</span>
-          <span class="marker" style="left:31.6%;top:20.5%" aria-hidden="true">3</span>
-          <span class="marker amber" style="left:78.2%;top:7.3%" aria-hidden="true">4</span>
+          <img src="assets/workbench-focus-1440x900.png" width="1212" height="630" alt="PreFlight Workbench focus crop for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
+          <span class="marker" style="left:10%;top:0.5%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:1.7%;top:35.6%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:1.7%;top:22.4%" aria-hidden="true">3</span>
+          <span class="marker amber" style="left:78%;top:0.5%" aria-hidden="true">4</span>
           <figcaption>Live capture at 1440 × 900, cropped to the summary strip, eight feature candidates, and the 18-node spine. The evidence drawer and grounded assistant sit below the fold.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1098,17 +1116,17 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/manifest-focus-1440x900.png" width="1144" height="680" alt="PreFlight Manifest focus crop filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
-          <span class="marker" style="left:23.9%;top:2%" aria-hidden="true">1</span>
-          <span class="marker" style="left:15.2%;top:47.8%" aria-hidden="true">2</span>
-          <span class="marker" style="left:8.9%;top:15.8%" aria-hidden="true">3</span>
+          <img src="assets/manifest-focus-1440x900.png" width="1212" height="620" alt="PreFlight Manifest focus crop filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
+          <span class="marker middle" style="left:1.7%;top:5.4%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:1.7%;top:55.8%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:1.7%;top:20.6%" aria-hidden="true">3</span>
           <figcaption>Live capture at 1440 × 900, cropped to the excluded banner, source-unchanged check, and the four excluded rows. “Excluded (4)” filter applied; 2 binary, 1 corrupt PCF, 1 unsupported CSV.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>300 files; 4 excluded: 2 binary / 1 corrupt / 1 unsupported.</b> The manifest is the denominator for every later claim.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Every excluded row has a reason and a SHA-256.</b> BrokenScreen.pcf fails XML parsing at line 1; <code>vehicle_rating_inputs.csv</code> has no supported parser. The filter is part of the UI, not a footnote.</div></div>
-            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Before = after.</b> <code>20b5a25451f3</code> is identical before and after analysis; the check is recorded in the audit trail.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Before = after.</b> <code>668872420dfb</code> is identical before and after analysis; the immutable snapshot hash is also visible in the live banner. The check is recorded in the audit trail.</div></div>
           </div>
           <table class="mini-table" aria-label="Excluded files and reasons">
             <thead><tr><th scope="col">Excluded file</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
@@ -1146,11 +1164,11 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1144" height="790" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
-          <span class="marker" style="left:6.5%;top:28.1%" aria-hidden="true">1</span>
-          <span class="marker" style="left:49.7%;top:60.5%" aria-hidden="true">2</span>
-          <span class="marker ink" style="left:86.1%;top:3.9%" aria-hidden="true">3</span>
-          <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The live run remains read-only.</figcaption>
+          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="770" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
+          <span class="marker middle" style="left:1.7%;top:29.6%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:1.7%;top:63.1%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:1.7%;top:3.5%" aria-hidden="true">3</span>
+          <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The live run remains read-only. M-12 itself is below this crop and is shown schematically in panel 4.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
@@ -1166,8 +1184,9 @@
             <div class="demo-stat"><b>0</b><span>_gen writes</span></div>
           </div>
           <div class="panel tint m12-shot" style="padding:8px 10px;position:relative">
-            <span class="marker danger" style="left:92%;top:48%" aria-hidden="true">4</span>
-            <dl class="m12-list" aria-label="M-12 row after rejection">
+            <p class="eyebrow" style="margin:0 0 4px;padding-right:24px">Schematic · M-12 row below the crop</p>
+            <span class="marker danger" style="left:auto;right:6px;top:6px" aria-hidden="true">4</span>
+            <dl class="m12-list" aria-label="Schematic excerpt of the M-12 row after rejection">
               <dt>ID</dt><dd><code>M-12</code> · <span class="danger"><b>rejected</b></span></dd>
               <dt>Source</dt><dd><code>VehicleType.Motorcycle_Ext</code></dd>
               <dt>Target</dt><dd><code>schema.vehicleType.motorcycle</code></dd>
@@ -1187,7 +1206,7 @@
   </section>
 
   <!-- 9 -->
-  <section class="slide" id="slide-9" data-section="Demo · Findings" data-title="Findings: restraint by construction" aria-label="Slide 9 of 16: Demo findings">
+  <section class="slide slide--findings" id="slide-9" data-section="Demo · Findings" data-title="Findings: restraint by construction" aria-label="Slide 9 of 16: Demo findings">
     <div class="slide-body">
       <div class="slide-head">
         <div class="slide-head-main">
@@ -1199,12 +1218,12 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/findings-focus-1440x900.png" width="1144" height="670" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls.">
-          <span class="marker" style="left:5.4%;top:48.5%" aria-hidden="true">1</span>
-          <span class="marker" style="left:58%;top:73.6%" aria-hidden="true">2</span>
-          <span class="marker" style="left:94%;top:60.4%" aria-hidden="true">3</span>
-          <span class="marker amber" style="left:94%;top:22.1%" aria-hidden="true">4</span>
-          <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the detail panel. The precision-guard corpus is shown separately below.</figcaption>
+          <img src="assets/findings-focus-1440x900.png" width="1212" height="1000" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls. The complete detail panel is included.">
+          <span class="marker middle" style="left:1.7%;top:33.5%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:1.7%;top:51.3%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:70.2%;top:41.5%" aria-hidden="true">3</span>
+          <span class="marker middle amber" style="left:1.7%;top:19.8%" aria-hidden="true">4</span>
+          <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the complete detail panel. The precision-guard corpus is shown separately below.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
@@ -1216,7 +1235,7 @@
           </div>
           <div class="guards-shot" style="max-width:300px">
             <img src="assets/findings-guard-query-make.png" width="270" height="244" alt="Precision-guard excerpt: PF-GW-SQL-001 lists Query.make(PersonalVehicle).select() as supported data access, not direct JDBC, with driver, string, and comment near-misses.">
-            <span class="marker ink" style="left:92%;top:9%" aria-hidden="true">5</span>
+            <span class="marker ink" style="left:auto;right:5px;top:5px" aria-hidden="true">5</span>
             <div class="cap"><b>Precision guard.</b> 8 rules × 3 near-misses; <code>Query.make</code> is supported access, not JDBC.</div>
           </div>
           <div class="panel optional-panel" style="padding:8px 10px">
@@ -1343,7 +1362,7 @@
                 <text x="748" y="52">68–100</text><text x="748" y="93">68–100</text><text x="748" y="134">96–100</text>
                 <text x="748" y="175">76–100</text><text x="748" y="216">61–100</text><text x="748" y="257">no interval</text>
               </g>
-              <g fill="#8A5A12" font-size="9.5">
+              <g fill="#8A5A12" font-size="10">
                 <text x="349" y="232">6/8 top-8 allowance</text>
               </g>
             </g>
@@ -1411,19 +1430,19 @@
       </div>
       <div class="packet-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/packet-focus-1440x900.png" width="1144" height="700" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button.">
-          <span class="marker" style="left:91%;top:4%" aria-hidden="true">1</span>
-          <span class="marker" style="left:16%;top:32.3%" aria-hidden="true">2</span>
-          <span class="marker" style="left:83.3%;top:57.9%" aria-hidden="true">3</span>
-          <span class="marker" style="left:16%;top:44.7%" aria-hidden="true">4</span>
-          <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; 4 assumptions are visible. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
+          <img src="assets/packet-focus-1440x900.png" width="1212" height="772" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
+          <span class="marker middle" style="left:1.7%;top:5.5%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:1.7%;top:31.2%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:1.7%;top:54.5%" aria-hidden="true">3</span>
+          <span class="marker middle" style="left:1.7%;top:42.6%" aria-hidden="true">4</span>
+          <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; the crop shows the assumption-register summary (A-01), while the live register has four rows including A-DEC-04. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Downloadable HTML.</b> A local, self-contained review artifact — not a dashboard link that expires.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Six sections:</b> cover · executive summary · coverage and confidence · assumption register · findings (24 + 1 separate readiness flag) · evidence and audit appendix.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>126 evidence items</b> = full discovery evidence plus review evidence linked to findings. Not a 20-row sample.</div></div>
-            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. Packet hash covers canonical JSON; audit head covers the event chain. Local tamper-evident, not non-repudiation.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. The packet hash seals the rendered packet HTML; <span class="mono">packet_json</span> seals canonical JSON; content digests bind findings, mappings, and evidence; the audit head seals the event chain. Local tamper-evident, not non-repudiation.</div></div>
           </div>
           <div class="section-list" aria-label="Packet sections">
             <div class="section-item"><b>01</b><span>Cover + hashes</span></div>
@@ -1434,20 +1453,21 @@
             <div class="section-item"><b>06</b><span>Evidence &amp; audit</span></div>
           </div>
           <p class="tiny" style="margin:0">12 mappings · 4 assumptions · 1 readiness flag · 4 excluded files · 11 audit events</p>
-          <div class="hash-block" aria-label="Capture-time packet and audit hashes; read live values before quoting">
-            <div><span class="hk">packet</span> &nbsp;<span class="hv">b01e901a…</span> <span class="muted">capture-time; read live</span></div>
-            <div><span class="hk">audit</span> &nbsp;&nbsp;<span class="hv">8f7090ad…</span> <span class="muted">capture-time; read live</span></div>
-            <div><span class="hk">snapshot</span> <span class="hv">20b5a25451f3…</span> <span class="muted">fixture snapshot</span></div>
+          <div class="hash-block" aria-label="Hash labels: packet and audit values must be read live; only the fixture snapshot is stable">
+            <div><span class="hk">packet</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="hv">read live</span> <span class="muted">rendered packet HTML</span></div>
+            <div><span class="hk">packet_json</span> <span class="hv">read live</span> <span class="muted">canonical JSON</span></div>
+            <div><span class="hk">audit head</span> <span class="hv">read live</span> <span class="muted">event-chain head</span></div>
+            <div><span class="hk">snapshot</span> &nbsp;&nbsp;&nbsp;<span class="hv">668872420dfb…</span> <span class="muted">fixture; stable</span></div>
           </div>
           <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-audit R-DEMO-001</div>
-          <p class="source packet-source" style="margin:0">Hashes are from this post-decision capture on an isolated copy. Reject/accept or a packet refresh changes the packet and audit head — read them from the live screen before quoting. The bundled packet is a snapshot, not a live artifact.</p>
+          <p class="source packet-source" style="margin:0">Content digests bind findings, mappings, and evidence. Packet, packet_json, and audit-head values change with reviewer actions and packet refreshes — read them from the live screen. The bundled packet is a capture-time example, not a live artifact.</p>
         </div>
       </div>
     </div>
     <div class="speaker-note" hidden>
       <p><strong>End on the artifact.</strong> “This is not a dashboard. It is a six-section packet you can download, mark up, challenge, and approve.”</p>
       <p>Point at the cover. “This capture is post-decision: audit chain verified, 11 events. The seed state is 9 events; Accept M-01 and Reject M-12 add one each. The assumption register has 4 rows after the rejection. Section 06 carries 126 evidence items, not a sample. The excluded files are in the packet.”</p>
-      <p>Read the hashes from the live screen, not the deck. “The packet hash covers canonical JSON; the audit head covers the hash chain. It is local and tamper-evident, not non-repudiation. Verification command: preflight verify-audit R-DEMO-001.”</p>
+      <p>Read the hashes from the live screen, not the deck. “The packet hash seals the rendered packet HTML; packet_json seals canonical packet JSON; findings, mappings, and evidence digests bind those payloads; the audit head covers the hash chain. Packet and audit values change with reviewer actions and packet refresh. It is local and tamper-evident, not non-repudiation. Verification command: preflight verify-audit R-DEMO-001.”</p>
       <p>Be explicit: “The bundled docs/demo packet is a historical snapshot. Do not verify the live run against it. If you show a pre-decision packet, label it as 9 events / 3 assumptions.”</p>
     </div>
   </section>

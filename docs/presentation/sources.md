@@ -71,7 +71,7 @@ These are cited by name in the deck. Bibliographic details are provided to make 
 
 ## 5. Deck asset provenance
 
-The screenshots in `docs/presentation/assets/` were captured from the running application at `http://127.0.0.1:8000/?run=R-DEMO-001` on 2026-11-09 using `scripts/capture_demo.py`. The deck uses content crops (`workbench-focus`, `manifest-focus`, `findings-focus`, `packet-focus`, `reconstruction-after-decision-focus`) so the relevant text is legible on a projector; the full-viewport captures remain in the package.
+The screenshots in `docs/presentation/assets/` were captured from the running application at `http://127.0.0.1:8000/?run=R-DEMO-001` on 2026-11-09 using `scripts/capture_demo.py`. The deck uses content crops (`workbench-focus`, `manifest-focus`, `findings-focus`, `packet-focus`, `reconstruction-after-decision-focus`) so the relevant text is legible on a projector; the full-viewport captures remain in the package. Focus crops keep a 50 px left gutter so numbered markers sit beside, not on, the text; the capture script validates each crop’s section boundaries and required labels against the live DOM and records the proof in `capture-manifest.json`.
 
 The reconstruction and packet “after reviewer actions” captures were taken from an isolated copy of the same run and build: temporary `PREFLIGHT_DATA_DIR`, second loopback Uvicorn, Accept M-01 then Reject M-12. That produces **11 audit events / 4 assumptions / A-DEC-04**; the live demo run remains at 12 pending / 3 assumptions / 9 events. The script deletes the copy and stops the second server.
 

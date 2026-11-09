@@ -47,7 +47,8 @@ make demo-fg
 ### Browser setup
 
 - Open `http://127.0.0.1:8000/?run=R-DEMO-001&feature=PA-VEH-01`.
-- Use 1440 × 900 or 1280 × 720/900 at 100% zoom. The Findings page is now supported at 1280; use 1440 when you want the detail panel and table side by side.
+- Use 1440 × 900 or 1280 × 720/900 at 100% zoom. The Findings page is supported at 1280; use 1440 when you want the detail panel and table side by side.
+- Reconstruction at 1280 × 720 keeps every column but the mapping table is horizontally scrollable; use 1440 × 900 if you want the decision column and M-12 fully visible without scrolling. M-12 is below the fold even at 1440.
 - Hide bookmarks/devtools/notifications. Use full screen.
 - Keep the deck open in a second tab: `http://127.0.0.1:8090/index.html`.
 - Start with **12 pending mappings, 3 assumptions, and 9 audit events**. `make demo` resets them. Do not accept/reject before the talk unless you are rehearsing on a throwaway copy.
@@ -141,6 +142,10 @@ Optional: click **View assumption register** or open the assumptions tab. The 3 
 
 After both actions the run has **11 audit events** and **4 assumptions**. The packet download and `/packet` page refresh to that state; the seed packet is 9 events / 3 assumptions.
 
+At **1280 × 720**, the mapping table is horizontally scrollable and the decision column may need a small side-scroll; use 1440 × 900 when you want M-01 through M-04 and the decision buttons side by side. M-12 is below the fold at both sizes — scroll to it, then return to the header for the A-DEC-04 notice.
+
+Say the boundary explicitly: “The draft targets Cloud Retrofit **without APD App**, which Guidewire labels not the recommended process; field-level `nameOverride` applies only on that path. The `_ext` draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.”
+
 **Exact IDs in this queue**
 
 | Object | IDs |
@@ -188,11 +193,11 @@ Click **Motorcycle_Ext?**:
 
 **Open:** `http://127.0.0.1:8000/evaluation?run=R-DEMO-001`
 
-Point at the summary strip and the interval chart (scroll to the chart if needed):
+Point at the **summary strip labels** first — left to right they read **6/6 estimate-moving issues**, **48/48 finding F1**, **4/4 holdout recall (not imported)**, **6/8 top-8 allowance**, and **24/24 hard negatives silent**:
 
-> “M1 and M2 8/8, M3 101/101 all links plus a 30/30 sample, M4 12/12, M5 6/6 with a 6/8 top-8 allowance, M6 F1 1.00 — 24 TP / 0 FP / 0 FN. The 24/24 hard negatives are a separate guard count, not a seventh metric.”
+> “Those five labels are the denominator check. The six metric cards below repeat the same evidence as M1–M6: M1 and M2 8/8, M3 101/101 all links plus a 30/30 sample, M4 12/12, M5 6/6 with the 6/8 top-8 allowance, M6 F1 1.00 — 24 TP / 0 FP / 0 FN. The 24/24 hard negatives are a separate guard count, not a seventh metric.”
 
-Then immediately:
+Then scroll to the interval chart and say immediately:
 
 > “These are in-sample synthetic measurements. The lower bounds are 61–96%. No human IAA. The reference target is internally authored and AI-assisted. The four-feature holdout is naming-shift only and is not imported. This is not a benchmark.”
 
@@ -208,7 +213,7 @@ Point at the six section cards:
 
 Point at the audit line:
 
-> “Audit chain verified: yes, eleven events in this post-decision view. The seed state is nine events; Accept M-01 + Reject M-12 add one each. The assumption register now has four rows. The packet hash covers canonical JSON; the audit head covers the chain. This is local and tamper-evident, not non-repudiation.”
+> “Audit chain verified: yes, eleven events in this post-decision view. The seed state is nine events; Accept M-01 + Reject M-12 add one each. The assumption register now has four rows. The main packet hash covers the rendered packet HTML; `packet_json` separately covers canonical packet JSON; the findings, mappings, and evidence digests bind those payloads; the audit head covers the event chain. This is local and tamper-evident, not non-repudiation.”
 
 Click **Download packet HTML** only if the browser download folder is predictable. Otherwise use the URL:
 
@@ -241,7 +246,7 @@ If time is short, skip the optional packet download and end on the audit line.
 3. If port 8000 is occupied, run `make stop`, then `make demo`.
 4. If the tmux session is gone, `make demo` recreates it.
 5. If Uvicorn died mid-talk, do **not** keep clicking; switch to the deck’s demo slides 6–12 and the captures in `docs/presentation/assets/`. Say: “These are captures from the same build and run; the live server is unavailable.”
-6. If you must restart, expect the seed state again: 12 pending / 3 assumptions / 9 audit events. The earlier demo decisions are not replayed.
+6. If the wrapper auto-restarts Uvicorn, the run and its reviewer decisions are **not** reseeded: they persist on disk, and the stable demo secret keeps the reviewer session/CSRF continuity. `make demo` is the command that reseeds to 12 pending / 3 assumptions / 9 audit events. If you deliberately run `make demo`, say so.
 
 ### The packet download fails
 
@@ -329,6 +334,8 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 | “M6 is just 48/48” | “M6 F1 1.00 = 24 TP / 0 FP / 0 FN.” |
 | Any `IS-*` ID not in `docs/claims-ledger.json` | Use only verified IDs/titles, or label `verified-policy` / `heuristic`. |
 | “The packet verifies against the bundled snapshot” | “The bundled packet is historical; verify only the live run.” |
+| “The packet hash covers canonical JSON” | “The packet hash covers rendered packet HTML; `packet_json` covers canonical JSON; content digests bind findings/mappings/evidence.” |
+| “The packet hash is the audit head” | “The audit head is the chain head; it is a separate value from the packet hash.” |
 
 ---
 
@@ -345,7 +352,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - Findings use two standard families: Cloud Standards (`IS-*`) and Gosu Secure Coding (`*-G`); they are not interchangeable.
 - Draft is local and non-deployable; not compiled or tenant-validated. It targets Cloud Retrofit without APD App.
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
-- Packet/audit hashes change with reviewer decisions and packet refreshes; read the live screen. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
+- Packet (`packet`/`packet_json`), content digests, and audit head change with reviewer decisions and packet refreshes; read the live screen. The snapshot hash is the stable fixture hash. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
 - Tests: 393 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
@@ -360,7 +367,7 @@ WORKBENCH     ?run=R-DEMO-001&feature=PA-VEH-01
 
 MANIFEST      /manifest?run=R-DEMO-001&excluded=1
               4 excluded: 2 binary · 1 corrupt · 1 unsupported
-              before = after 20b5a25451f3
+              before = after 668872420dfb (immutable fixture snapshot)
 
 RECON         /reconstruction?run=R-DEMO-001
               seed: 12 pending · 3 assumptions · 9 audit events
@@ -389,6 +396,8 @@ PACKET        /packet?run=R-DEMO-001
               seed packet: 9 events / 3 assumptions; label it if shown
               download: /packet/export?run=R-DEMO-001
               verify: preflight verify-audit R-DEMO-001
+              packet hash = rendered HTML; packet_json = canonical JSON
+              content digests bind findings/mappings/evidence; audit head = chain
               static docs/demo packet = historical, not hash-verifiable
 
 BUILD         393 tests · 18/18 freeze hashes · 9 seed audit events

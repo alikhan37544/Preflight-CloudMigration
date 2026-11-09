@@ -58,14 +58,86 @@ DECK_VIEWPORTS = (
     ("1024x768", MID),
     ("390x844", MOBILE),
 )
-# Content crops used by the deck. Keeping the app chrome out of the crop makes
-# the text legible on a projector and keeps annotation coordinates stable.
+# Content crops used by the deck. The app content starts at x=268 on a 1440 px
+# viewport, so every crop keeps a 38 px left margin. That margin is also where
+# the numbered markers sit: they must not cover the text they explain. Crops
+# end at section boundaries (never in the app footer) and stay inside the
+# page content width.
 FOCUS_CLIPS = {
-    "workbench": {"x": 272, "y": 285, "width": 1144, "height": 615},
-    "manifest": {"x": 272, "y": 220, "width": 1144, "height": 680},
-    "reconstruction": {"x": 272, "y": 110, "width": 1144, "height": 790},
-    "findings": {"x": 272, "y": 230, "width": 1144, "height": 670},
-    "packet": {"x": 272, "y": 110, "width": 1144, "height": 700},
+    # Summary strip, feature list, and the top of the spine.
+    "workbench": {"x": 218, "y": 270, "width": 1212, "height": 630},
+    # Excluded banner through pagination; the app footer is outside the crop.
+    "manifest": {"x": 218, "y": 200, "width": 1212, "height": 620},
+    # Page heading, decision notice, tabs, and M-01..M-04 (post-decision).
+    "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 770},
+    # Banner, SBT flag, finding table, and the complete detail panel.
+    "findings": {"x": 218, "y": 220, "width": 1212, "height": 1000},
+    # Page heading, six section cards, and the first assumption row (A-01).
+    "packet": {"x": 218, "y": 95, "width": 1212, "height": 772},
+}
+
+# Each crop is checked against the live DOM before it is written. ``full``
+# elements must be wholly inside the crop; ``partial`` elements must start
+# inside it (their content continues below the crop by design). ``text`` keeps
+# the proof honest: if a label moves out of the crop, validation fails.
+CROP_SPECS = {
+    "workbench": {
+        "clip": FOCUS_CLIPS["workbench"],
+        "full": [".summary-strip"],
+        "partial": [".feature-list", ".spine-panel"],
+        "text": {".summary-strip": "EVIDENCE RECORDS", ".feature-list": "PA-VEH-01"},
+    },
+    "manifest": {
+        "clip": FOCUS_CLIPS["manifest"],
+        "full": [".banner-warning", ".manifest-table", ".pagination"],
+        "text": {
+            ".banner-warning": "excluded files",
+            ".banner-info": "Source unchanged",
+            ".manifest-table": "SHA-256",
+        },
+    },
+    "reconstruction": {
+        "clip": FOCUS_CLIPS["reconstruction"],
+        "full": [
+            ".page-head .eyebrow",
+            ".page-head h1",
+            "[data-gen-writes]",
+            ".banner-info",
+            ".tabs",
+            '[data-mapping-row="M-01"]',
+            '[data-mapping-row="M-04"]',
+        ],
+        "partial": [".mapping-table"],
+        "text": {
+            ".page-head .eyebrow": "DECISION QUEUE",
+            "[data-gen-writes]": "draft is local",
+            ".tabs": "Mappings",
+        },
+    },
+    "findings": {
+        "clip": FOCUS_CLIPS["findings"],
+        "full": [
+            ".readiness-panel",
+            ".rule-summary-item",
+            ".findings-table tr.selected",
+            ".detail-panel",
+        ],
+        "text": {
+            ".readiness-panel": "SBT readiness flag",
+            ".findings-table tr.selected": "F-002",
+            ".detail-panel": "Finding F-002",
+        },
+    },
+    "packet": {
+        "clip": FOCUS_CLIPS["packet"],
+        "full": [".packet-sections", '.packet-assumptions-table tbody tr:first-child'],
+        "bottom_before": '.packet-assumptions-table tbody tr:nth-child(2)',
+        "text": {
+            ".page-head .eyebrow": "REVIEW ARTIFACT",
+            ".page-head .lede": "6-section packet",
+            ".packet-assumptions-table": "A-01",
+        },
+    },
 }
 
 
@@ -166,6 +238,9 @@ class Capture:
         self.timeout = timeout
         self.blocked = blocked
         self.written: list[dict] = []
+        self.crop_checks: list[dict] = []
+        self.crop_failures: list[dict] = []
+        self.facts: dict = {}
 
     def url(self, path: str) -> str:
         joiner = "&" if "?" in path else "?"
@@ -178,18 +253,32 @@ class Capture:
     def open(self, path: str) -> None:
         self.page.goto(self.url(path), wait_until="networkidle", timeout=self.timeout)
         self.page.wait_for_timeout(250)
+        self.page.evaluate("window.scrollTo(0, 0)")
+
+    def wait_for_no_toast(self) -> None:
+        """Wait out the app's transient decision toast before any screenshot."""
+        self.page.wait_for_function(
+            """() => {
+                const toast = document.querySelector('[data-toast]');
+                return !toast || !toast.classList.contains('visible');
+            }""",
+            timeout=8_000,
+        )
 
     def shot(self, name: str, *, full_page: bool = False,
              locator: str | None = None,
              clip: dict | None = None) -> None:
         target = self.out / name
+        self.wait_for_no_toast()
         if locator:
             element = self.page.locator(locator).first
             element.wait_for(state="visible", timeout=self.timeout)
             element.scroll_into_view_if_needed()
             element.screenshot(path=str(target), animations="disabled")
         elif clip:
-            self.page.screenshot(path=str(target), clip=clip, animations="disabled")
+            # A document-relative clip lets a crop extend below the viewport.
+            self.page.screenshot(path=str(target), clip=clip, full_page=True,
+                                 animations="disabled")
         else:
             self.page.screenshot(path=str(target), full_page=full_page,
                                  animations="disabled")
@@ -216,14 +305,99 @@ class Capture:
         self.page.locator(".assistant").scroll_into_view_if_needed()
         self.page.wait_for_timeout(200)
 
-    def hint(self, label: str, selector: str, clip: dict) -> None:
+    def check_crop(self, name: str, *, full: tuple[str, ...] = (),
+                   partial: tuple[str, ...] = (), text: dict[str, str] | None = None,
+                   bottom_before: str | None = None) -> None:
+        """Validate a hand-picked crop against the live DOM.
+
+        This is deliberately structural rather than OCR: required elements and
+        labels must be inside the crop, while ``partial`` elements are allowed
+        to continue below it. It catches a moved section, a footer slice, and a
+        left edge that starts inside the content column.
+        """
+        spec = CROP_SPECS[name]
+        clip = spec["clip"]
+        self.page.evaluate("window.scrollTo(0, 0)")
+        self.page.wait_for_timeout(50)
+        scroll_y = self.page.evaluate("window.scrollY")
+        errors: list[str] = []
+
+        def box(selector: str) -> dict | None:
+            locator = self.page.locator(selector).first
+            if not locator.count():
+                return None
+            found = locator.bounding_box()
+            if not found:
+                return None
+            return {**found, "y": found["y"] + scroll_y}
+
+        footer = box("footer")
+        if footer and clip["y"] + clip["height"] > footer["y"] + 1:
+            errors.append(f"crop extends into app footer at y={footer['y']:.0f}")
+
+        for selector in full:
+            found = box(selector)
+            if not found:
+                errors.append(f"missing full element: {selector}")
+                continue
+            if (found["x"] < clip["x"] - 1
+                    or found["y"] < clip["y"] - 1
+                    or found["x"] + found["width"] > clip["x"] + clip["width"] + 1
+                    or found["y"] + found["height"] > clip["y"] + clip["height"] + 1):
+                errors.append(f"element clipped: {selector} {found}")
+
+        for selector in partial:
+            found = box(selector)
+            if not found:
+                errors.append(f"missing partial element: {selector}")
+                continue
+            if (found["x"] < clip["x"] - 1 or found["y"] < clip["y"] - 1
+                    or found["x"] + found["width"] > clip["x"] + clip["width"] + 1):
+                errors.append(f"partial element starts outside crop: {selector} {found}")
+
+        for selector, needle in (text or {}).items():
+            locator = self.page.locator(selector).first
+            if not locator.count() or needle not in locator.inner_text():
+                errors.append(f"label {needle!r} missing from {selector}")
+
+        if bottom_before:
+            found = box(bottom_before)
+            if not found:
+                errors.append(f"missing boundary element: {bottom_before}")
+            elif clip["y"] + clip["height"] > found["y"] + 2:
+                errors.append(
+                    f"crop crosses into next section: bottom={clip['y'] + clip['height']:.0f} "
+                    f"{bottom_before} top={found['y']:.0f}"
+                )
+
+        result = {
+            "name": name,
+            "clip": clip,
+            "full": list(full),
+            "partial": list(partial),
+            "bottom_before": bottom_before,
+            "ok": not errors,
+            "errors": errors,
+        }
+        self.crop_checks.append(result)
+        if errors:
+            self.crop_failures.append(result)
+            print(f"  crop validation failed: {name}: {errors}")
+
+    def hint(self, label: str, selector: str, clip: dict, *,
+             left: float | None = None, top: float | None = None) -> None:
         box = self.page.locator(selector).first.bounding_box()
         if not box:
             return
         scroll_y = self.page.evaluate("window.scrollY")
+        # Default: a 20 px margin marker centred in the 38 px left gutter.
+        margin_center = clip["x"] + 20
         self.hints[label] = {
-            "left": round((box["x"] + box["width"] / 2 - clip["x"]) / clip["width"] * 100, 1),
-            "top": round((box["y"] + scroll_y + box["height"] / 2 - clip["y"]) / clip["height"] * 100, 1),
+            "left": round(left if left is not None
+                          else (margin_center - clip["x"]) / clip["width"] * 100, 1),
+            "top": round(top if top is not None
+                         else (box["y"] + scroll_y + box["height"] / 2 - clip["y"])
+                         / clip["height"] * 100, 1),
             "selector": selector,
         }
 
@@ -233,12 +407,15 @@ class Capture:
         print("Workbench")
         self.open("/?feature=PA-VEH-01")
         self.shot("workbench-1440x900.png")
+        self.check_crop("workbench")
         self.shot("workbench-focus-1440x900.png", clip=FOCUS_CLIPS["workbench"])
         self.shot("workbench-full-1440.png", full_page=True)
-        self.hint("slide6.marker1", ".summary-stat", FOCUS_CLIPS["workbench"])
+        # Markers 1 and 4 sit in the thin gap above the summary strip; 2 and 3
+        # sit in the left gutter at the row they explain.
+        self.hint("slide6.marker1", ".summary-stat", FOCUS_CLIPS["workbench"], left=10, top=0.5)
         self.hint("slide6.marker2", ".feature-row.selected .feature-id", FOCUS_CLIPS["workbench"])
         self.hint("slide6.marker3", ".spine-panel h2", FOCUS_CLIPS["workbench"])
-        self.hint("slide6.marker4", ".summary-stat.summary-signal", FOCUS_CLIPS["workbench"])
+        self.hint("slide6.marker4", ".summary-stat.summary-signal", FOCUS_CLIPS["workbench"], left=78, top=0.5)
         self.page.set_viewport_size(NARROW)
         self.open("/?feature=PA-VEH-01")
         self.shot("workbench-1280x900.png")
@@ -256,7 +433,19 @@ class Capture:
         print("Manifest excluded filter")
         self.open("/manifest?excluded=1")
         self.shot("manifest-excluded-1440x900.png")
+        self.check_crop("manifest")
         self.shot("manifest-focus-1440x900.png", clip=FOCUS_CLIPS["manifest"])
+        hash_code = self.page.locator(".panel .banner-info code.hash").first
+        short_hash = hash_code.inner_text().strip()
+        self.facts["snapshot_short"] = short_hash
+        # The banner only prints the short form; the API holds the full digest.
+        try:
+            with urllib.request.urlopen(
+                f"{self.base_url}/api/runs/{self.run_id}/manifest", timeout=5
+            ) as response:
+                self.facts["snapshot_hash"] = json.load(response)["snapshot_hash"]
+        except Exception:
+            self.facts["snapshot_hash"] = short_hash
         self.hint("slide7.marker1", ".banner-warning strong", FOCUS_CLIPS["manifest"])
         self.hint("slide7.marker2", ".manifest-table tbody td:first-child", FOCUS_CLIPS["manifest"])
         self.hint("slide7.marker3", ".panel .banner-info strong", FOCUS_CLIPS["manifest"])
@@ -268,17 +457,20 @@ class Capture:
         print("Reconstruction (seed, pre-decision)")
         self.open("/reconstruction")
         self.shot("reconstruction-1440x900.png")
+        self.check_crop("reconstruction", bottom_before='[data-mapping-row="M-06"]')
         self.shot("reconstruction-focus-1440x900.png", clip=FOCUS_CLIPS["reconstruction"])
         self.shot("reconstruction-full-1440.png", full_page=True)
 
         print("Findings")
         self.open("/findings")
         self.shot("findings-1440x900.png")
+        self.check_crop("findings")
         self.shot("findings-focus-1440x900.png", clip=FOCUS_CLIPS["findings"])
         self.hint("slide9.marker1", ".rule-summary-item", FOCUS_CLIPS["findings"])
         self.hint("slide9.marker2", ".findings-table tr.selected", FOCUS_CLIPS["findings"])
-        self.hint("slide9.marker3", ".detail-panel h2", FOCUS_CLIPS["findings"])
-        self.hint("slide9.marker4", ".readiness-row strong", FOCUS_CLIPS["findings"])
+        # Marker 3 sits in the 33 px gutter between the table and detail panel.
+        self.hint("slide9.marker3", ".detail-panel h2", FOCUS_CLIPS["findings"], left=70.2)
+        self.hint("slide9.marker4", ".readiness-panel", FOCUS_CLIPS["findings"])
         self.shot("findings-guards-1440.png", locator=".precision-panel")
         self.shot("findings-guard-query-make.png", locator=".precision-panel .guard-card")
         self.shot("findings-full-1440.png", full_page=True)
@@ -350,7 +542,18 @@ class Capture:
             "() => document.querySelector('[data-assumption-notice]')?.innerText.includes('A-DEC-04')",
             timeout=self.timeout,
         )
-        self.page.wait_for_timeout(2500)
+        # The toast lasts 4.2 s; wait it out instead of racing it into the crop.
+        self.wait_for_no_toast()
+        self.page.wait_for_timeout(250)
+        self.page.evaluate("window.scrollTo(0, 0)")
+        self.check_crop(
+            "reconstruction",
+            full=(*CROP_SPECS["reconstruction"]["full"], "[data-assumption-notice]"),
+            partial=(".mapping-table",),
+            text={**CROP_SPECS["reconstruction"]["text"],
+                  "[data-assumption-notice]": "A-DEC-04"},
+            bottom_before='[data-mapping-row="M-05"]',
+        )
         self.shot("reconstruction-after-decision-1440x900.png")
         self.shot("reconstruction-after-decision-focus-1440x900.png",
                   clip=FOCUS_CLIPS["reconstruction"])
@@ -365,6 +568,16 @@ class Capture:
         print("Review packet (isolated copy, post-decision)")
         self.open("/packet")
         self.page.wait_for_timeout(400)
+        self.check_crop(
+            "packet",
+            full=CROP_SPECS["packet"]["full"],
+            text=CROP_SPECS["packet"]["text"],
+            bottom_before=CROP_SPECS["packet"]["bottom_before"],
+        )
+        cover_codes = self.page.locator(".packet-card:first-child code")
+        if cover_codes.count() >= 2:
+            self.facts["packet_cover_snapshot"] = cover_codes.nth(0).inner_text().strip()
+            self.facts["packet_cover_packet"] = cover_codes.nth(1).inner_text().strip()
         self.shot("packet-1440x900.png")
         self.shot("packet-focus-1440x900.png", clip=FOCUS_CLIPS["packet"])
         self.hint("slide12.marker1", "a.btn-primary", FOCUS_CLIPS["packet"])
@@ -417,6 +630,7 @@ def after_decision_facts(temp_root: Path, run_id: str) -> dict:
     return {
         "audit_events": audit_lines,
         "assumptions": len(assumptions.get("assumptions", [])),
+        "snapshot_hash": packet.get("hashes", {}).get("snapshot"),
         "audit_head": packet.get("audit_head"),
         "packet_hash": packet.get("packet_sha256"),
         "packet_hash_scope": packet.get("hash_scope"),
@@ -495,6 +709,48 @@ def deck_validation(page: Page, deck_url: str, out: Path) -> dict:
                     failures.append({"slide": index, "reason": "horizontal", **active})
         results["viewports"][label] = {"failures": failures, "slides": 16}
 
+        if viewport == FULL_HD:
+            # The stage-label column is fixed at 82 px on smaller screens; at
+            # 1920 the label floor grows and can collide with the wrapped text.
+            page.goto(f"{deck_url}/index.html#slide-4", wait_until="networkidle")
+            page.wait_for_timeout(80)
+            overlaps = page.evaluate(
+                """() => Array.from(document.querySelectorAll('#slide-4 .stage-item')).map((item) => {
+                    const label = item.querySelector('b').getBoundingClientRect();
+                    const text = item.querySelector('span').getBoundingClientRect();
+                    return {label: item.querySelector('b').innerText,
+                            overlap: Math.round(label.right - text.left)};
+                }).filter((row) => row.overlap > 1)"""
+            )
+            results.setdefault("layout_checks", {})["stage_labels_1920"] = {
+                "overlaps": overlaps,
+                "ok": not overlaps,
+            }
+            if overlaps:
+                failures.append({"slide": 4, "reason": "stage-label-overlap", "overlaps": overlaps})
+
+        if viewport == MOBILE:
+            page.goto(f"{deck_url}/index.html#slide-3", wait_until="networkidle")
+            page.wait_for_timeout(80)
+            matrix = page.evaluate(
+                """() => {
+                    const region = document.querySelector('.matrix-wrap');
+                    if (!region) return null;
+                    return {
+                        tabindex: region.getAttribute('tabindex'),
+                        role: region.getAttribute('role'),
+                        label: region.getAttribute('aria-label'),
+                        scrollWidth: region.scrollWidth,
+                        clientWidth: region.clientWidth,
+                    };
+                }"""
+            )
+            results.setdefault("accessibility", {})["mobile_matrix"] = matrix
+            if (not matrix or matrix.get("tabindex") != "0"
+                    or matrix.get("role") != "region"
+                    or matrix.get("scrollWidth", 0) <= matrix.get("clientWidth", 0)):
+                failures.append({"slide": 3, "reason": "mobile-matrix-not-focusable", "matrix": matrix})
+
         if viewport in (FOLD, COMPACT):
             for index in range(1, 17):
                 page.goto(f"{deck_url}/index.html#slide-{index}", wait_until="networkidle")
@@ -534,6 +790,83 @@ def render_pdf(page: Page, deck_url: str, out: Path) -> dict:
     except Exception as exc:  # pragma: no cover - operational path
         info["pdfinfo_error"] = str(exc)
     return info
+
+
+def validate_deck_content(deck_path: Path, facts: dict) -> dict:
+    """Keep visible deck hashes and hash-scope language aligned with the run.
+
+    Slide 7 keeps one visible value: the fixture snapshot hash. It is stable
+    across reviewer actions and appears in the immutability banner. Slide 12
+    must not quote the packet or audit head, because both change per capture;
+    it may show only the snapshot hash and must label the rest "read live".
+    """
+    html = deck_path.read_text(encoding="utf-8")
+    failures: list[str] = []
+
+    def section(number: int) -> str:
+        start = html.find(f'id="slide-{number}"')
+        end = html.find(f'id="slide-{number + 1}"') if number < 16 else len(html)
+        if start < 0 or end < 0:
+            failures.append(f"slide-{number}: section not found")
+            return ""
+        return html[start:end]
+
+    snapshot = str(facts.get("snapshot_hash") or "").strip()
+    snapshot_short = str(facts.get("snapshot_short") or snapshot[:12]).strip()
+    if len(snapshot) < 12:
+        failures.append("snapshot hash was not captured from the manifest")
+    slide7 = section(7)
+    slide12 = section(12)
+    slide5 = section(5)
+
+    if snapshot_short and snapshot_short not in slide7:
+        failures.append(
+            f"slide-7 snapshot prefix {snapshot_short!r} does not match the captured manifest hash"
+        )
+
+    # Slide 7 keeps one immutable snapshot value and must not retain a stale
+    # fixture hash from an earlier capture.
+    stale_hashes = {"20b5a25451f3"}
+    for stale in stale_hashes:
+        if stale in slide7:
+            failures.append(f"slide-7 retains stale snapshot hash {stale}")
+
+    # Slide 12 may not hard-code packet/audit values. Only the stable snapshot
+    # digest is allowed to appear there; all other values are "read live".
+    hex_values = set(re.findall(r"\b[0-9a-f]{12,64}\b", slide12))
+    allowed = {snapshot_short, snapshot}
+    unexpected = sorted(value for value in hex_values if value not in allowed)
+    if unexpected:
+        failures.append(f"slide-12 hard-codes capture-time hash value(s): {unexpected}")
+    if slide12.count("read live") < 2:
+        failures.append("slide-12 does not label packet/audit values as read live")
+    if "rendered packet HTML" not in slide12:
+        failures.append("slide-12 does not state that the packet hash covers rendered HTML")
+    if "packet_json" not in slide12:
+        failures.append("slide-12 does not distinguish the packet_json digest")
+    if "content digests" not in slide12.lower():
+        failures.append("slide-12 does not mention content digests")
+    if "audit head" not in slide12.lower():
+        failures.append("slide-12 does not mention the audit head")
+    if "reviewer actions" not in slide12.lower():
+        failures.append("slide-12 does not warn that hashes change with reviewer actions")
+    if "rendered packet HTML" not in slide5:
+        failures.append("slide-5 does not state that the packet hash covers rendered HTML")
+    if "packet_json" not in slide5:
+        failures.append("slide-5 does not distinguish the packet_json digest")
+    if "content digests" not in slide5.lower():
+        failures.append("slide-5 does not mention content digests")
+
+    try:
+        source = str(deck_path.relative_to(REPO))
+    except ValueError:
+        source = str(deck_path)
+    return {
+        "ok": not failures,
+        "failures": failures,
+        "snapshot_short": snapshot_short,
+        "source": source,
+    }
 
 
 def main() -> int:
@@ -598,6 +931,9 @@ def main() -> int:
                 validation = deck_validation(page, deck_url, out)
                 summary["deck_validation"] = validation
                 summary["pdf"] = render_pdf(page, deck_url, out)
+                summary["content_validation"] = validate_deck_content(
+                    REPO / "docs" / "presentation" / "index.html", capture.facts
+                )
             if args.video:
                 capture.record_video()
                 video = page.video
@@ -622,6 +958,9 @@ def main() -> int:
                           "mid": MID, "mobile": MOBILE},
             "blocked_external_requests": blocked,
             "after_decision": after_facts,
+            "content_facts": capture.facts,
+            "crop_checks": capture.crop_checks,
+            "crop_failures": capture.crop_failures,
             "artifacts": capture.written,
         }
         (out / "capture-manifest.json").write_text(
@@ -635,8 +974,34 @@ def main() -> int:
         if args.deck:
             print(f"deck validation -> {out / 'deck-validation.json'}")
             print(f"pdf -> {summary.get('pdf')}")
+        failures: list[str] = []
+        if capture.crop_failures:
+            failures.append(f"{len(capture.crop_failures)} crop validation failure(s)")
+        if args.deck:
+            viewport_failures = {
+                label: len(result["failures"])
+                for label, result in summary["deck_validation"]["viewports"].items()
+                if result["failures"]
+            }
+            if viewport_failures:
+                failures.append(f"deck viewport failures: {viewport_failures}")
+            if summary["deck_validation"]["console_errors"]:
+                failures.append("deck console errors")
+            if summary["deck_validation"]["external_requests"]:
+                failures.append("deck external requests")
+            content = summary.get("content_validation", {})
+            if content.get("failures"):
+                failures.append(f"deck content validation: {content['failures']}")
+            pdf = summary.get("pdf", {})
+            if pdf.get("pages") != 16:
+                failures.append(f"PDF page count is {pdf.get('pages')}, expected 16")
+            if pdf.get("page_size") and not pdf["page_size"].startswith("1200 x 675"):
+                failures.append(f"PDF page size is {pdf['page_size']}, expected 1200 x 675")
         if blocked:
-            print(f"blocked {len(blocked)} external request(s): {blocked}", file=sys.stderr)
+            failures.append(f"blocked {len(blocked)} external request(s): {blocked}")
+        if failures:
+            for failure in failures:
+                print(f"validation failure: {failure}", file=sys.stderr)
             return 1
         return 0
     finally:

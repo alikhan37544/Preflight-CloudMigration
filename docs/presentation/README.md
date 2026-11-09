@@ -105,7 +105,7 @@ The stylesheet sets `@page { size: 1600px 900px; margin: 0; }` and prints every 
 | `assets/marker-hints.json` | Measured marker positions for the annotated screenshots. |
 | `assets/.gitignore` | Keeps generated `.webm` walkthroughs local. |
 
-All application screenshots are from run `R-DEMO-001` (`demo-slice-300`) on 2026-11-09. The main set is live from `http://127.0.0.1:8000`; the after-decision set uses an isolated temporary copy so the demo run stays at 12 pending dispositions. Post-decision state: **11 audit events, 4 assumptions, A-DEC-04**. The packet/audit hashes shown on slide 12 are capture-time examples; re-read them from the live screen before quoting, because reviewer decisions and packet refresh change them.
+All application screenshots are from run `R-DEMO-001` (`demo-slice-300`) on 2026-11-09. The main set is live from `http://127.0.0.1:8000`; the after-decision set uses an isolated temporary copy so the demo run stays at 12 pending dispositions. Post-decision state: **11 audit events, 4 assumptions, A-DEC-04**. Slide 12 deliberately shows no packet or audit-head value: both change with reviewer decisions and packet refresh, so the deck says “read live.” The only visible digest is the stable fixture snapshot hash (`668872420dfb…`). The main packet hash covers rendered packet HTML; `packet_json` covers canonical JSON; content digests bind findings, mappings, and evidence; the audit head covers the chain.
 
 ## Refresh the screenshots
 
@@ -152,7 +152,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 |---:|---|---|
 | 1 | Title | Evidence before the estimate; boundaries and packet preview. |
 | 2 | The problem | Estimate vs inventory, four questions, four sourced pain points. |
-| 3 | Why tools leave a gap | Capability map across CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI/Syntra, SIs; positioning footnote. |
+| 3 | Why tools leave a gap | Capability map across CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI (portfolio/code discovery), Syntra ETL (data migration/extraction), SIs; positioning footnote. |
 | 4 | Solution | Nine-stage pipeline, invariants, run facts, artifact writes. |
 | 5 | Evidence model | Claim anatomy, claim-strength ladder, assumption register, hash chain. |
 | 6 | Demo: Workbench | 31/12/4/2/11, 37 vs 24, 3 estate gaps, click node → evidence; synthetic-fixture note. |
@@ -161,7 +161,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 | 9 | Demo: Findings | 24 findings / 8 rules; two standard families; precision guard (Query.make) shown; 24 hard negatives silent. |
 | 10 | Demo: Assistant | Territory refusal; Motorcycle_Ext citation; retrieval-only, model off. |
 | 11 | Demo: Evaluation | Six metrics M1–M6; M6 F1 1.00 (24 TP / 0 FP / 0 FN); 24/24 guard count separate; intervals, baselines, holdout, limitations. |
-| 12 | Demo: Packet | 126 evidence, post-decision 11 audit events / 4 assumptions; capture-time hash prefixes; verify command. |
+| 12 | Demo: Packet | 126 evidence, post-decision 11 audit events / 4 assumptions; packet/audit hashes labelled read live; snapshot hash stable; verify command. |
 | 13 | Engineering rigor | 393 tests, Playwright, 18/18 freeze hashes, 9 seed audit events, security, flaws found and fixed. |
 | 14 | Novelty & prior art | Feature location, traceability, Reversa, GSN, honest scorecard. |
 | 15 | Viability | Kill risks, vendor-independent wedge (not independently validated), acceptance tests, roadmap. |
@@ -171,10 +171,11 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 
 - Semantic `h1`/`h2` headings, labelled slide regions, skip link, visible focus rings, `aria-live` slide announcements, and reduced-motion support.
 - Keyboard navigation works without a mouse; the help dialog traps focus while open and returns focus on close. The closed speaker-notes panel is `inert` and not tabbable.
-- Screenshots have descriptive `alt` text; numbered callouts are supplemented by a text legend, not colour alone. Marker positions for slides 6, 9, and 12 were measured against the captured image, not guessed.
-- Supporting text has a 10px floor on screen and in print. Dense slides compact at short projector heights; secondary detail moves to speaker notes rather than clipping.
+- Screenshots have descriptive `alt` text; numbered callouts are supplemented by a text legend, not colour alone. Markers on slides 6, 7, 8, 9, and 12 sit in the image margin (or a known gutter) at the measured row, so they do not cover the text they explain. The capture script validates each crop against the live DOM and records the proof in `assets/capture-manifest.json`.
+- Supporting text has a 10px floor on screen and in print; title metadata, dot labels, pipeline numbers, and slide-12 dark labels meet 4.5:1 against their backgrounds. Dense slides compact at short projector heights; secondary detail moves to speaker notes rather than clipping.
+- At 390 px the capability matrix is a labelled, keyboard-focusable scroll region (`tabindex="0"`, `role="region"`). At 1920 px the stage-label column sizes to content so “RECONSTRUCT” cannot collide with the mapped text.
 - Charts are inline SVG with a text caption and equivalent numbers in the surrounding slide.
-- Validation was run with Playwright at **1920 × 1080, 1440 × 900, 1280 × 720, 1024 × 768, and 390 × 844**: all 16 slides navigated, zero console errors, zero external requests, zero clipping/overflow at desktop viewports, zero horizontal overflow at 390. Print produced **16 pages at 1200 × 675 pt**. See `assets/deck-validation.json` and `evidence.json`.
+- Validation was run with Playwright at **1920 × 1080, 1440 × 900, 1280 × 720, 1024 × 768, and 390 × 844**: all 16 slides navigated, zero console errors, zero external requests, zero clipping/overflow at desktop viewports, zero horizontal overflow at 390, zero stage-label overlaps at 1920, and a focusable mobile matrix. The capture script also validates every focus crop against the live DOM (no footer slices, no section crossing) and checks that slide 7’s visible snapshot hash matches the immutability banner. Print produced **16 pages at 1200 × 675 pt**. See `assets/deck-validation.json`, `assets/capture-manifest.json`, and `evidence.json`.
 - Repository checks on 2026-11-09: `pytest -q` — **393 passed**; `scripts/claims_lint.py` — **OK**; `preflight verify-audit R-DEMO-001` — **OK (9 seed events; 11 after the two runbook actions)**; freeze manifest — **18/18 recorded hashes recompute**.
 
 ## Boundaries
