@@ -59,9 +59,12 @@ def test_demo_tier_counts(evaluation) -> None:
     *_, result = evaluation
     by_id = {m.metric_id: m for m in result.metrics}
     assert (by_id["M1"].numerator, by_id["M1"].denominator) == (8, 8)
+    assert (by_id["M2"].numerator, by_id["M2"].denominator) == (8, 8)
+    assert (by_id["M3"].numerator, by_id["M3"].denominator) == (30, 30)
     assert (by_id["M4"].numerator, by_id["M4"].denominator) == (12, 12)
     assert (by_id["M5"].numerator, by_id["M5"].denominator) == (6, 6)
     assert by_id["M6"].value == pytest.approx(1.0)
+    assert (by_id["M6"].numerator, by_id["M6"].denominator) == (48, 48)
 
 
 def test_silent_omission_is_zero(evaluation) -> None:

@@ -6,6 +6,7 @@ pipeline. All numbers are for the controlled synthetic fixture.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -13,9 +14,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from app.models import Manifest, Metric
+from lxml import etree
+
+from app.models import LocatorKind, Manifest, Metric
 from app.services.compare import CompareResult
 from app.services.discovery import DiscoveryResult
+from app.services.parsers._xml import safe_parser
 from app.services.reconstruction import ReconstructionResult
 from app.services.review import ReviewResult, load_rules
 
@@ -50,9 +54,10 @@ def _metric(metric_id: str, label: str, numerator: int, denominator: int, *,
             fixture_id: str, tier: str, primary: bool, caveat: str = CAVEAT,
             interval: bool = True) -> Metric:
     safe_den = max(1, denominator)
-    low, high = wilson_interval(min(numerator, safe_den), safe_den) if interval else (None, None)
+    safe_num = max(0, min(numerator, safe_den))
+    low, high = wilson_interval(safe_num, safe_den) if interval else (None, None)
     return Metric(
-        metric_id=metric_id, label=label, numerator=numerator, denominator=safe_den,
+        metric_id=metric_id, label=label, numerator=safe_num, denominator=safe_den,
         caveat=caveat, fixture_id=fixture_id, tier=tier, primary=primary,
         interval_low=low, interval_high=high,
     )
@@ -62,23 +67,150 @@ def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _excerpt_digest(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _line_window_supports(lines: list[str], line: int | None, excerpt: str,
+                          pad: int = 2) -> bool:
+    """Require the excerpt inside a small window around the declared line."""
+    if line is None or not 1 <= line <= len(lines):
+        return False
+    wanted = _norm(excerpt)
+    excerpt_lines = [item for item in (excerpt or "").strip().splitlines() if _norm(item)]
+    if not wanted or not excerpt_lines:
+        return False
+    span = max(1, len(excerpt_lines))
+    start = max(0, line - 1 - pad)
+    end = min(len(lines), line - 1 + span + pad)
+    if wanted not in _norm("\n".join(lines[start:end])):
+        return False
+    first = _norm(excerpt_lines[0])
+    near_start = max(0, line - 1 - pad)
+    near_end = min(len(lines), line + pad)
+    return bool(first) and first in _norm("\n".join(lines[near_start:near_end]))
+
+
+def _strip_namespaces(tree: etree._ElementTree) -> None:
+    for element in tree.iter():
+        if isinstance(element.tag, str) and element.tag.startswith("{"):
+            element.tag = etree.QName(element).localname
+    etree.cleanup_namespaces(tree)
+
+
+def _xpath_supports(path: Path, xpath: str, excerpt: str) -> bool | None:
+    """Resolve the XPath; ``None`` means resolution was impossible."""
+    try:
+        tree = etree.parse(str(path), safe_parser())
+        _strip_namespaces(tree)
+    except Exception:
+        return None
+    stripped = re.sub(r"(?<![:\w-])([A-Za-z_][\w.-]*):(?=[A-Za-z_*])", "", xpath)
+    candidates = [xpath] if stripped == xpath else [xpath, stripped]
+    elements = None
+    evaluated = False
+    for expression in candidates:
+        try:
+            found = tree.xpath(expression)
+        except Exception:
+            continue
+        evaluated = True
+        if found:
+            elements = found
+            break
+    if elements is None:
+        # A syntactically valid expression with no hit is a wrong locator; only
+        # an expression we could not evaluate at all may use the line fallback.
+        return False if evaluated else None
+    wanted = _norm(excerpt)
+    for element in elements:
+        if isinstance(element, etree._Element):
+            try:
+                serialized = etree.tostring(element, encoding="unicode", with_tail=True)
+            except Exception:
+                serialized = ""
+            values = (serialized, element.text or "", element.tail or "")
+        else:
+            values = (str(element),)
+        if any(wanted in _norm(value) for value in values):
+            return True
+    return False
+
+
 def audit_evidence_support(root: Path, evidence) -> bool:
-    """Check that a sample link resolves and the excerpt appears at the source."""
+    """Check that a sample link resolves and the excerpt appears at the locator."""
+    excerpt = evidence.excerpt or ""
+    if not _norm(excerpt):
+        return False
+    digest = _excerpt_digest(excerpt)
+    if evidence.excerpt_sha != digest:
+        return False
+    if evidence.locator.excerpt_sha and evidence.locator.excerpt_sha != digest:
+        return False
     path = root / evidence.path
     if not path.is_file():
         return False
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
-    if evidence.locator.line and evidence.locator.line > len(lines):
+    if evidence.locator.kind is LocatorKind.XPATH:
+        resolved = _xpath_supports(path, evidence.locator.value, excerpt)
+        if resolved is not None:
+            return resolved
+    return _line_window_supports(lines, evidence.locator.line, excerpt)
+
+
+def _mapping_grounding_text(root: Path, manifest: Manifest,
+                            discovery: DiscoveryResult) -> str:
+    """Evidence text that can ground a mapping on a non-empty snapshot."""
+    if manifest.file_count <= 0:
+        return ""
+    parts = [item.excerpt for item in discovery.evidence if item.excerpt]
+    parts.extend(manifest.unsupported_paths)
+    for artifact in manifest.artifacts:
+        parts.append(artifact.path)
+        if artifact.status.value not in {"parsed", "partial"}:
+            continue
+        path = root / artifact.path
+        try:
+            parts.append(path.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue
+    return _norm(" ".join(parts)).lower()
+
+
+def _mapping_grounded(mapping, grounding_text: str, manifest: Manifest) -> bool:
+    if manifest.file_count <= 0 or not grounding_text:
         return False
-    excerpt = _norm(evidence.excerpt or "")
-    if not excerpt:
-        return False
-    if excerpt in _norm(text):
-        return True
-    # XML serialization may reorder self-closing boundaries; support the first symbol.
-    first_line = _norm((evidence.excerpt or "").splitlines()[0]) if evidence.excerpt else ""
-    return bool(first_line) and first_line in _norm(text)
+    return any(
+        token and token.lower() in grounding_text
+        for token in (mapping.source_ref, mapping.source_name)
+    )
+
+
+def _explicit_issue_anchors(issue: dict) -> set[str]:
+    for key in ("anchors", "anchor", "evidence_paths", "evidence", "paths", "path"):
+        value = issue.get(key)
+        if isinstance(value, str) and value:
+            return {value}
+        if isinstance(value, list):
+            anchors = {str(item) for item in value if item}
+            if anchors:
+                return anchors
+    return set()
+
+
+def _issue_anchors(issue: dict, gold_findings: dict, gold_mappings: list[dict]) -> set[str]:
+    explicit = _explicit_issue_anchors(issue)
+    if explicit:
+        return explicit
+    kind = issue.get("signal_type")
+    signal = issue.get("signal")
+    if kind == "finding_rule":
+        cases = gold_findings.get(signal, {})
+        return {path.split("#", 1)[0] for path in cases.get("positives", [])}
+    if kind == "mapping_rule":
+        return {mapping["source_ref"] for mapping in gold_mappings if mapping.get("rule_id") == signal}
+    return set()
 
 
 def _stratified_sample(evidence: list, sample_size: int = 30) -> list:
@@ -133,28 +265,29 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         for f in discovery.features
     }
 
-    # M1/M2: require the capability and at least one gold anchor path.
+    # M1/M2: require the capability and at least one gold anchor path. Each gold
+    # feature can consume at most one emitted feature, so duplicates become FP.
     matched_gold = 0
+    used_features: set[int] = set()
     for gold in gold_features:
         anchors = set(gold.get("anchors", []))
-        if any(
-            f.capability == gold["capability"] and feature_paths.get(f.feature_id, set()) & anchors
-            for f in discovery.features
-        ):
-            matched_gold += 1
-    emitted_correct = sum(
-        1 for f in discovery.features
-        if f.capability in {g["capability"] for g in gold_features}
-        and feature_paths.get(f.feature_id, set()) & {
-            anchor for g in gold_features if g["capability"] == f.capability for anchor in g.get("anchors", [])
-        }
-    )
+        for index, feature in enumerate(discovery.features):
+            if index in used_features:
+                continue
+            if (feature.capability == gold["capability"]
+                    and feature_paths.get(feature.feature_id, set()) & anchors):
+                matched_gold += 1
+                used_features.add(index)
+                break
+    emitted_correct = len(used_features)
 
     # M3: stratified 30-link audit, excerpt must appear at the source.
     sample = _stratified_sample(discovery.evidence, 30)
     evidence_good = sum(1 for item in sample if audit_evidence_support(resolved_root, item))
 
-    # M4: source, target, and disposition must all match; extra mappings are penalised.
+    # M4: source, target, and disposition must all match; the mapping must also
+    # be grounded by snapshot evidence, not merely restate the static rule pack.
+    grounding_text = _mapping_grounding_text(resolved_root, manifest, discovery)
     used_tool: set[int] = set()
     mapping_correct = 0
     for gold in gold_mappings:
@@ -166,48 +299,67 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                     and tool.source_layer == gold["source_layer"]
                     and tool.target_path == gold["target_path"]
                     and tool.target_name == gold["target_name"]
-                    and tool.disposition.value == gold["disposition"]):
+                    and tool.disposition.value == gold["disposition"]
+                    and _mapping_grounded(tool, grounding_text, manifest)):
                 mapping_correct += 1
                 used_tool.add(index)
                 break
     extra_mappings = len(reconstruction.mappings) - len(used_tool)
     mapping_denominator = len(gold_mappings) + extra_mappings
 
-    # M5: planted estimate-moving issues, ranked top-8 precision guard.
+    # M5: planted estimate-moving issues, ranked top-8 precision guard. A rule ID
+    # alone is insufficient: the expected finding path or mapping anchor must be
+    # present in the output.
     issues_path = root / "estimate_moving_issues.json"
     issues_payload = json.loads(issues_path.read_text(encoding="utf-8")) if issues_path.is_file() else {"issues": [], "decoys": []}
-    finding_rules = {f.rule_id for f in review.findings}
-    mapping_rules = {m.rule_id for m in reconstruction.mappings}
-    detected_issues: set[str] = set()
-    for issue in issues_payload.get("issues", []):
-        kind = issue.get("signal_type")
-        signal = issue.get("signal")
-        if kind == "finding_rule" and signal in finding_rules:
-            detected_issues.add(issue["id"])
-        elif kind == "mapping_rule" and signal in mapping_rules:
-            detected_issues.add(issue["id"])
-    issue_ids = {issue["id"] for issue in issues_payload.get("issues", [])}
-    m5_recall_num = len(detected_issues & issue_ids)
-    decoys = issues_payload.get("decoys", [])
-    top8_slots = min(8, len(detected_issues & issue_ids) + len(decoys))
-    m5_precision = (len(detected_issues & issue_ids) / top8_slots) if top8_slots else 0.0
-
-    # M6: micro-F1 over labelled positives/negatives; per-rule macro reported separately.
+    manifest_paths = {artifact.path for artifact in manifest.artifacts}
+    review_evidence_by_id = {item.evidence_id: item for item in review.evidence}
     finding_paths: dict[str, set[str]] = defaultdict(set)
     for finding in review.findings:
         for evidence_id in finding.evidence_ids:
-            ev = next((e for e in review.evidence if e.evidence_id == evidence_id), None)
+            ev = review_evidence_by_id.get(evidence_id)
             if ev:
                 finding_paths[finding.rule_id].add(ev.path)
+    mapping_outputs: dict[str, set[str]] = defaultdict(set)
+    for mapping in reconstruction.mappings:
+        if not _mapping_grounded(mapping, grounding_text, manifest):
+            continue
+        mapping_outputs[mapping.rule_id].update(
+            {mapping.source_ref, mapping.target_path, mapping.target_name}
+        )
+    detected_issues: set[str] = set()
+    issues = issues_payload.get("issues", [])
+    for issue in issues:
+        kind = issue.get("signal_type")
+        signal = issue.get("signal")
+        anchors = _issue_anchors(issue, gold_findings, gold_mappings)
+        if not anchors:
+            continue
+        if kind == "finding_rule":
+            found_paths = finding_paths.get(signal, set()) & manifest_paths
+            if found_paths & anchors:
+                detected_issues.add(issue["id"])
+        elif kind == "mapping_rule":
+            if mapping_outputs.get(signal, set()) & anchors:
+                detected_issues.add(issue["id"])
+    issue_ids = {issue["id"] for issue in issues}
+    m5_recall_num = len(detected_issues & issue_ids)
+    decoys = issues_payload.get("decoys", [])
+    top8_slots = min(8, len(issue_ids) + len(decoys))
+    m5_top8_num = min(m5_recall_num, top8_slots)
+    m5_precision = (m5_top8_num / top8_slots) if top8_slots else 0.0
+
+    # M6: micro-F1 over labelled positives/negatives; per-rule macro reported separately.
+    # Any found path that is not a labelled positive is a false positive, including
+    # findings on files that the gold set does not label at all.
     per_rule: dict[str, dict[str, int]] = {}
     tp_total = fp_total = fn_total = 0
     f1_scores: list[float] = []
     for rule_id, cases in gold_findings.items():
         positives = {p.split("#", 1)[0] for p in cases.get("positives", [])}
-        negatives = {p.split("#", 1)[0] for p in cases.get("negatives", [])}
         found = finding_paths.get(rule_id, set())
         tp = len(found & positives)
-        fp = len(found & negatives)
+        fp = len(found - positives)
         fn = len(positives - found)
         per_rule[rule_id] = {"tp": tp, "fp": fp, "fn": fn}
         tp_total += tp
@@ -230,7 +382,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 fixture_id=fixture_id, tier=tier, primary=True, caveat=CAVEAT + " " + DEMO_NOTE),
         _metric("M5", "Estimate-moving issue recall", m5_recall_num, len(issue_ids),
                 fixture_id=fixture_id, tier=tier, primary=True,
-                caveat=CAVEAT + f" Top-8 allowance: {m5_recall_num} TP / {top8_slots} slots. " + DEMO_NOTE),
+                caveat=CAVEAT + f" Top-8 allowance: {m5_top8_num} TP / {top8_slots} slots. " + DEMO_NOTE),
         _metric("M6", "Finding micro-F1 (2TP / (2TP+FP+FN))", 2 * tp_total, f1_den,
                 fixture_id=fixture_id, tier=tier, primary=True,
                 caveat=CAVEAT + f" {tp_total} TP / {fp_total} FP / {fn_total} FN across 8 rules; fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. " + DEMO_NOTE,
@@ -240,12 +392,15 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     reference_rows = len(comparison.rows) or 1
     silent_den = len(gold_mappings)
     supporting = [
-        _metric("M5-TOP8", "M5 top-8 allowance (TP / slots)", m5_recall_num, top8_slots,
+        _metric("M5-TOP8", "M5 top-8 allowance (TP / slots)", m5_top8_num, top8_slots,
                 fixture_id=fixture_id, tier=tier, primary=False,
-                caveat="Six planted issues plus two fixed decoy allowances; not a full ranking of all tool output."),
+                caveat=(
+                    f"{len(issue_ids)} planted issues plus {len(decoys)} fixed decoy allowances; "
+                    "stable top-8 denominator, not a full ranking of all tool output."
+                )),
         _metric("M6-MACRO", "Finding macro-F1 (sum of per-rule F1 / rules)", int(round(macro_f1 * len(f1_scores))), len(f1_scores),
                 fixture_id=fixture_id, tier=tier, primary=False,
-                caveat="Macro average across rules; demo corpus n=3 positives + 3 negatives per rule.", interval=False),
+                caveat="Macro average across rules; scaled proportion, not a count; demo corpus n=3 positives + 3 negatives per rule.", interval=False),
         _metric("SILENT-OMISSION", "Silent omission rate", len(reconstruction.silent_omissions),
                 silent_den, fixture_id=fixture_id, tier=tier, primary=False),
         _metric("NON-UNRESOLVED", "Non-unresolved disposition rate",
@@ -256,7 +411,8 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 len(reconstruction.changes), fixture_id=fixture_id, tier=tier, primary=False),
         _metric("REFERENCE-F1", "Reference-target macro-F1 (scaled to rows)",
                 int(round(comparison.macro_f1 * reference_rows)), reference_rows,
-                fixture_id=fixture_id, tier=tier, primary=False, interval=False),
+                fixture_id=fixture_id, tier=tier, primary=False, interval=False,
+                caveat=CAVEAT + " Scaled proportion, not a count."),
     ]
 
     holdout_path = root / "holdout_metrics.json"
