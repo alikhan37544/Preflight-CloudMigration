@@ -117,8 +117,12 @@ def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
     types = data["types"]
     assert types["PAVehicle"]["nameOverride"] == "PersonalVehicle"
     assert types["PAVehicle"]["fields"]["Year"]["nameOverride"] == "ModelYear"
-    assert types["PAVehicle"]["fields"]["GarageLocation_Ext"]["requiredForCreate"] is False
-    assert "GarageLocation" not in types["PAVehicle"]["fields"]
+    # The APD template field is GarageLocation; the installed extension column
+    # is GarageLocation_Ext. nameOverride bridges the two names.
+    garage = types["PAVehicle"]["fields"]["GarageLocation"]
+    assert garage["nameOverride"] == "GarageLocation_Ext"
+    assert garage["requiredForCreate"] is False
+    assert "GarageLocation_Ext" not in types["PAVehicle"]["fields"]
     assert types["PADriver"]["nameOverride"] == "VehicleDriver"
     assert types["PALine"]["nameOverride"] == "PersonalAutoLine"
     assert types["PersonalAutoRatingFactor"]["nameOverride"] == "PersonalAutoRatingFactorConfiguration"
@@ -132,6 +136,32 @@ def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
     assert updater["create"]["vehicleType"] == "VehicleType"
 
 
+def test_codegen_schema_and_updater_agree_on_garage_location(reconstruction) -> None:
+    import json
+    import yaml
+
+    codegen = yaml.safe_load((
+        reconstruction.draft_root / "config/integration/apis/installedlobs/"
+        "pa_codegen_config_ext-1.0.yaml"
+    ).read_text(encoding="utf-8"))
+    schema = json.loads((
+        reconstruction.draft_root / "config/integration/schemas/ext/policyperiod/v1/"
+        "policyperiod_pa_ext-1.0.schema.json"
+    ).read_text(encoding="utf-8"))
+    updater = json.loads((
+        reconstruction.draft_root / "config/integration/updaters/ext/policyperiod/v1/"
+        "policyperiod_pa_ext-1.0.updater.json"
+    ).read_text(encoding="utf-8"))
+
+    garage = codegen["types"]["PAVehicle"]["fields"]["GarageLocation"]
+    assert garage["nameOverride"] == updater["create"]["garageLocation"]
+    assert garage["nameOverride"] == updater["update"]["garageLocation"]
+    # requiredForCreate false => the API property is optional in the schema.
+    assert garage["requiredForCreate"] is False
+    assert "garageLocation" not in schema["required"]
+    assert "garageLocation" in schema["properties"]
+
+
 def test_schema_draft_has_expected_properties(reconstruction) -> None:
     import json
 
@@ -140,6 +170,10 @@ def test_schema_draft_has_expected_properties(reconstruction) -> None:
     assert schema["$id"] == "preflight-target-v1"
     assert set(schema["properties"]) >= {
         "modelYear", "make", "vin", "usage", "vehicleType", "garageLocation"
+    }
+    assert "garageLocation" not in schema["required"]
+    assert set(schema["required"]) == {
+        "modelYear", "make", "vin", "usage", "vehicleType"
     }
     assert "motorcycle" in schema["properties"]["vehicleType"]["enum"]
 

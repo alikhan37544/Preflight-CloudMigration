@@ -347,19 +347,22 @@ def _refresh_packet(store: RunStore, run_id: str,
         )
         if outputs_exist:
             # Never trust a cached packet merely because its input mtimes look
-            # unchanged: verify the rendered HTML digest and the packet JSON
-            # digest before reuse.
+            # unchanged: verify the rendered HTML digest, the packet JSON
+            # digest, the content digests, and the live audit chain before
+            # reuse. The page route uses this path too, so a packet whose
+            # content digests no longer match the persisted artifacts is never
+            # presented as verified (and its Download action is hidden).
             self_ok, self_reason = verify_packet_artifacts(
                 store, run_id, include_audit=False
             )
             if not self_ok:
                 return False, f"packet integrity check failed: {self_reason}", False
             if store.packet_cache_hit(run_id, fingerprint):
-                audit_ok, audit_reason = verify_packet_artifacts(
-                    store, run_id, include_audit=True
+                cached_ok, cached_reason = verify_packet_artifacts(
+                    store, run_id, include_content=True, include_audit=True
                 )
-                if not audit_ok:
-                    return False, f"packet integrity check failed: {audit_reason}", False
+                if not cached_ok:
+                    return False, f"packet integrity check failed: {cached_reason}", False
                 return True, None, False
         elif store.packet_cache_hit(run_id, fingerprint):
             # A cache entry without both outputs is not a usable hit.

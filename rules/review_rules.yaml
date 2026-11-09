@@ -87,13 +87,14 @@ rules:
         - '@WebServlet'
   - rule_id: PF-GW-NAM-001
     version: "1.0"
-    title: APD type name exceeds 24 characters
+    title: APD truncates product-template type names over 24 characters
     severity: error
     claim_strength: verified-doc
     standard_family: none
     standard_url: https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
     access: public
-    remediation: Add a codegen nameOverride that maps the truncated type back to the full installed name.
+    message: APD truncates product-template type names over 24 characters on import; endpoint generation then fails to compile.
+    remediation: Add a codegen nameOverride that maps the truncated visualized name to the installed name; validate generated endpoints compile.
     detection:
       kind: long_type_name
   - rule_id: PF-GW-GUNIT-001

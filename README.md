@@ -110,7 +110,9 @@ Open:
 
 **http://127.0.0.1:8000/?run=R-DEMO-001**
 
-The demo server auto-restarts if it is stopped inside tmux. Leave it in the background:
+The demo server auto-restarts if it is stopped inside tmux. The launcher pins a local-only
+`PREFLIGHT_SECRET_KEY` so an already-open page keeps its CSRF token across those restarts;
+normal production runs still use the random per-process fallback. Leave it in the background:
 
 ```text
 Ctrl+b, then d
