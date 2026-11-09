@@ -4,6 +4,12 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# Local demo only: a stable key keeps an already-open page's CSRF token valid
+# when tmux restarts Uvicorn. Never use this value outside the local demo; the
+# application still generates a random per-process fallback when the variable
+# is unset (for example in production or tests).
+export PREFLIGHT_SECRET_KEY="${PREFLIGHT_SECRET_KEY:-preflight-local-demo-only-not-for-production}"
+
 while true; do
   echo "[preflight] starting uvicorn..."
   .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000

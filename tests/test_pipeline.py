@@ -72,6 +72,25 @@ def test_packet_has_six_pages_and_disclaimers(run) -> None:
     assert "not affiliated" in html.lower()
     assert "Synthetic" in html
     assert "sk-live-9f3a7c2b6d1e" not in html
+    expected_boundary = (
+        "Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; "
+        "local, non-deployable draft; field-level nameOverride only applies on this path."
+    )
+    assert expected_boundary in html
+    assert "Scope boundary" in html
+    assert "Cloud Retrofit boundary." in html
+
+
+def test_codegen_draft_keeps_garage_location_names_coherent(run) -> None:
+    import yaml
+
+    store, _ = run
+    draft = store.run_dir("R-PIPE") / "draft"
+    codegen = yaml.safe_load((
+        draft / "config/integration/apis/installedlobs/pa_codegen_config_ext-1.0.yaml"
+    ).read_text(encoding="utf-8"))
+    garage = codegen["types"]["PAVehicle"]["fields"]["GarageLocation"]
+    assert garage == {"nameOverride": "GarageLocation_Ext", "requiredForCreate": False}
 
 
 def test_audit_chain_verifies(run) -> None:
@@ -244,12 +263,20 @@ SECRET_LITERALS = (
 
 def test_persisted_artifacts_never_contain_fixture_secrets(run) -> None:
     store, _ = run
-    for name in ("evidence.json", "review_evidence.json", "findings.json",
-                 "packet.html", "packet.json"):
-        text = (store.run_dir("R-PIPE") / name).read_text(encoding="utf-8")
+    run_dir = store.run_dir("R-PIPE")
+    names = (
+        "evidence.json", "review_evidence.json", "findings.json",
+        "mappings.json", "changes.json", "assumptions.json",
+        "decisions.json", "audit.jsonl", "packet.html", "packet.json",
+    )
+    for name in names:
+        path = run_dir / name
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
         for secret in SECRET_LITERALS:
             assert secret not in text, (name, secret)
-    packet_html = (store.run_dir("R-PIPE") / "packet.html").read_text(encoding="utf-8")
+    packet_html = (run_dir / "packet.html").read_text(encoding="utf-8")
     assert "REDACTED" in packet_html
     findings = store.read_artifact("R-PIPE", "findings.json")
     assert any("Value redacted (fingerprint " in finding["message"]

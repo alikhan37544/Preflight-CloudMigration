@@ -106,6 +106,27 @@ def test_names_rule_is_error_and_only_long_types(review) -> None:
     assert "PersonalAutoRatingFactorConfiguration" in messages
     assert "PersonalAutoUnderwritingConfiguration" in messages
     assert "PersonalAutoEligibilityConfiguration" in messages
+    # Product-template type -> APD truncates on import -> endpoint compile
+    # failure -> nameOverride maps the truncated visualized name to installed.
+    assert "product-template type" in messages
+    assert "truncates type names over 24" in messages
+    assert "fails to compile" in messages
+    assert "truncated visualized name" in messages
+    assert "installed name" in messages
+    assert "avoid truncation" not in messages
+    for finding in nam:
+        assert "avoid truncation" not in finding.remediation.lower()
+
+
+def test_names_rule_metadata_uses_corrected_wording() -> None:
+    from app.services.review import load_rules
+
+    rule = next(r for r in load_rules() if r["rule_id"] == "PF-GW-NAM-001")
+    assert "truncates product-template type names" in rule["title"].lower()
+    assert "24" in rule["message"]
+    assert "nameOverride" in rule["remediation"]
+    assert "truncated visualized name" in rule["remediation"]
+    assert "installed name" in rule["remediation"]
 
 
 def test_claim_strength_and_standard_family(review) -> None:

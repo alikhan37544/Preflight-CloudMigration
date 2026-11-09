@@ -327,8 +327,11 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                                        method="xml_xpath", confidence=Confidence.LINKED)
                     emit("PF-GW-NAM-001", evidence=ev,
                          message=(
-                             f"APD type '{type_doc.name}' is {len(type_doc.name)} characters; "
-                             "the APD limit is 24. Add a codegen nameOverride to avoid truncation. Synthetic fixture type."
+                             f"APD type '{type_doc.name}' is a {len(type_doc.name)}-character "
+                             "product-template type. APD truncates type names over 24 characters "
+                             "on import, so endpoint generation fails to compile. A codegen "
+                             "nameOverride maps the truncated visualized name to the installed "
+                             "name. Synthetic fixture type."
                          ), bucket=findings)
 
         elif kind == "product_xml" and "PF-GW-SBT-001" in rules:

@@ -163,6 +163,18 @@ def test_findings_table_columns_caption_and_source_title(api, run_id) -> None:
     assert "gsrc/acme/integration/LegacyVehicleServlet.gs:3" in text
 
 
+def test_findings_page_uses_corrected_apd_wording(api, run_id) -> None:
+    client, _ = api
+    findings = client.get(f"/api/runs/{run_id}/findings").json()["findings"]
+    nam = next(f for f in findings if f["rule_id"] == "PF-GW-NAM-001")
+    page = client.get(f"/findings?run={run_id}&selected={nam['finding_id']}").text
+    assert "product-template type" in page
+    assert "truncates type names over 24" in page
+    assert "fails to compile" in page
+    assert "truncated visualized name" in page
+    assert "avoid truncation" not in page
+
+
 def _summary_strip(text: str) -> str:
     marker = 'aria-label="Selected feature summary"'
     assert marker in text
@@ -416,6 +428,17 @@ def test_csrf_is_required(api, run_id) -> None:
         json={"object_type": "mapping", "object_id": "M-01", "action": "accept", "reason": "x"},
     )
     assert response.status_code == 403
+
+
+def test_demo_launcher_sets_a_stable_local_only_secret() -> None:
+    script = (REPO / "scripts" / "run_demo_server.sh").read_text(encoding="utf-8")
+    assert "PREFLIGHT_SECRET_KEY" in script
+    assert "local demo" in script.lower()
+    assert "preflight-local-demo-only-not-for-production" in script
+    # Production defaults must stay random-per-process when the env var is unset.
+    from app.config import _FALLBACK_SECRET
+
+    assert "preflight-local-demo-only-not-for-production" != _FALLBACK_SECRET
 
 
 def test_assistant_refuses_without_evidence(api, run_id) -> None:
@@ -784,6 +807,44 @@ def test_packet_export_rejects_tampered_packet_json(api, run_id) -> None:
     assert client.get(f"/api/runs/{run_id}/packet").status_code == 200
 
 
+def test_packet_page_rejects_a_self_consistent_but_false_content_digest(api, run_id) -> None:
+    client, _ = api
+    store: RunStore = client.app.state.store
+    # Prime the cache so packet.json is not in the input fingerprint.
+    assert client.get(f"/packet?run={run_id}").status_code == 200
+    original = store.read_artifact(run_id, "packet.json")
+    try:
+        tampered = __import__("copy").deepcopy(original)
+        # Change a content digest and repair the packet JSON self-hash so only
+        # the live-artifact comparison can notice the lie.
+        tampered["hashes"]["findings"] = "0" * 64
+        from app.services.packet import packet_content_hash
+
+        tampered["hashes"]["packet_json"] = packet_content_hash(tampered)
+        # Write directly: store.write_artifact() intentionally clears the packet
+        # cache, which would force a clean rebuild before the page verifies it.
+        import json
+
+        (store.run_dir(run_id) / "packet.json").write_text(
+            json.dumps(tampered), encoding="utf-8"
+        )
+
+        page = client.get(f"/packet?run={run_id}")
+        assert page.status_code == 200
+        assert "Packet refresh failed; this artifact may be stale" in page.text
+        # The banner is HTML-escaped; the export JSON below keeps raw quotes.
+        assert "content digest" in page.text and "findings" in page.text
+        assert "Download packet HTML" not in page.text
+
+        export = client.get(f"/packet/export?run={run_id}")
+        assert export.status_code == 409, export.text
+        assert "content digest 'findings'" in export.json()["detail"]
+    finally:
+        store.write_artifact(run_id, "packet.json", original)
+        store.clear_packet_cache(run_id)
+    assert client.get(f"/packet/export?run={run_id}").status_code == 200
+
+
 def test_tampered_audit_never_reports_verified(api, run_id, tmp_path) -> None:
     import json
 
@@ -943,6 +1004,84 @@ def test_reviewer_reason_and_edit_value_are_redacted_before_persistence(api) -> 
             ):
                 assert secret not in text, (name, secret)
             assert "REDACTED" in text, name
+        assert store.verify_audit(run_id) is True
+    finally:
+        client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})
+
+
+def test_reviewer_redaction_covers_xml_cdata_yaml_blocks_and_typed_gosu(api) -> None:
+    client, token = api
+    store: RunStore = client.app.state.store
+    response = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    run_id = response.json()["run_id"]
+    secrets = (
+        "yaml-block-secret-123",
+        "xml-element-secret-456",
+        "cdata-secret-789",
+        "typed-gosu-secret-999",
+    )
+    try:
+        reject = _post_decision(
+            client, token, run_id, "mapping", "M-01", "reject",
+            reason=(
+                "Reviewer note: password: |\n"
+                f"  {secrets[0]}\n"
+                "tokenUrl=https://example.test/token "
+                "passwordPolicy=standard-policy"
+            ),
+        )
+        assert reject.status_code == 200, reject.text
+        edit_mapping = _post_decision(
+            client, token, run_id, "mapping", "M-02", "edit",
+            edited_value=f"<password>{secrets[1]}</password>",
+            reason=f"<secret><![CDATA[{secrets[2]}]]></secret>",
+        )
+        assert edit_mapping.status_code == 200, edit_mapping.text
+        edit_change = _post_decision(
+            client, token, run_id, "change", "C-04", "edit",
+            edited_value=f'var secret : String = "{secrets[3]}"',
+            reason='<field name="Password" type="String"/>',
+        )
+        assert edit_change.status_code == 200, edit_change.text
+        edit_finding = _post_decision(
+            client, token, run_id, "finding", "F-002", "edit",
+            edited_value=f"<credential><apiKey>{secrets[1]}</apiKey></credential>",
+            reason="keeping the corrected classification",
+        )
+        assert edit_finding.status_code == 200, edit_finding.text
+        assert client.get(f"/packet?run={run_id}").status_code == 200
+
+        run_dir = store.run_dir(run_id)
+        names = (
+            "mappings.json", "changes.json", "assumptions.json", "decisions.json",
+            "audit.jsonl", "packet.json", "packet.html", "evidence.json",
+            "review_evidence.json", "findings.json",
+        )
+        for name in names:
+            text = (run_dir / name).read_text(encoding="utf-8")
+            for secret in secrets:
+                assert secret not in text, (name, secret)
+        for name in (
+            "mappings.json", "changes.json", "assumptions.json", "decisions.json",
+            "audit.jsonl", "packet.html", "review_evidence.json",
+        ):
+            assert "REDACTED" in (run_dir / name).read_text(encoding="utf-8"), name
+
+        changes = store.read_artifact(run_id, "changes.json")["changes"]
+        edited = next(item for item in changes if item["change_id"] == "C-04")
+        assert "String" in edited["edited_value"]
+        assert "var secret : String" in edited["edited_value"]
+
+        decisions = store.read_artifact(run_id, "decisions.json")["decisions"]
+        reasons = "\n".join(decision["reason"] for decision in decisions)
+        assert "tokenUrl=https://example.test/token" in reasons
+        assert "passwordPolicy=standard-policy" in reasons
+        assert '<field name="Password" type="String"/>' in reasons
         assert store.verify_audit(run_id) is True
     finally:
         client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})

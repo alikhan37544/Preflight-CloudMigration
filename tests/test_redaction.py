@@ -119,6 +119,66 @@ def test_yaml_redaction_is_idempotent_for_all_quote_styles() -> None:
     assert twice == once
 
 
+def test_xml_elements_and_cdata_secrets_are_redacted() -> None:
+    text = (
+        '<credential><password>hunter2</password></credential>\n'
+        '<secret><![CDATA[sk-live-cdata1234]]></secret>\n'
+        '<token attr="plain">tok-live-element1234</token>'
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "sk-live-cdata1234" not in redacted
+    assert "tok-live-element1234" not in redacted
+    assert "<password>[REDACTED:" in redacted
+    assert "<![CDATA[[REDACTED:" in redacted
+    assert "<token attr=\"plain\">[REDACTED:" in redacted
+    twice, again = redact_excerpt(redacted)
+    assert again is False
+    assert twice == redacted
+
+
+def test_xml_safe_elements_attributes_and_type_names_are_left_alone() -> None:
+    text = (
+        '<passwordPolicy>standard-policy</passwordPolicy>\n'
+        '<tokenUrl>https://example.test/token</tokenUrl>\n'
+        '<field name="Password" type="String"/>\n'
+        '<column name="TokenCount" type="Integer"/>'
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is False
+    assert redacted == text
+
+
+def test_typed_declaration_redacts_only_the_value_not_the_type() -> None:
+    redacted, changed = redact_excerpt('var secret : String = "hunter2"')
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert 'var secret : String = "[REDACTED:' in redacted
+    # The type name must not be mistaken for an unquoted value.
+    assert "String" in redacted
+    assert "[REDACTED:b2ef230e]" not in redacted
+
+
+def test_yaml_block_scalar_after_prose_is_redacted() -> None:
+    text = (
+        "Reviewer note: password: |\n"
+        "  hunter2\n"
+        "  second-secret\n"
+        "  tokenUrl: https://example.test/token\n"
+        "next: safe\n"
+    )
+    redacted, changed = redact_excerpt(text)
+    assert changed is True
+    assert "hunter2" not in redacted
+    assert "second-secret" not in redacted
+    assert "Reviewer note: password: |" in redacted
+    assert "next: safe" in redacted
+    twice, again = redact_excerpt(redacted)
+    assert again is False
+    assert twice == redacted
+
+
 def test_xml_attributes_are_redacted_without_touching_bindings() -> None:
     text = (
         '<column name="PasswordHash" default="hunter2" type="Text"/>\n'

@@ -28,13 +28,15 @@ SINGLE_QUOTED_SECRET_KEYS = re.compile(
 )
 # Unquoted assignment/colon form used by reviewer notes and malformed config
 # errors (``password=hunter2`` or ``token: abc123``). The value stops at obvious
-# delimiters so surrounding prose and punctuation survive.
+# delimiters so surrounding prose and punctuation survive. The value is matched
+# possessively and rejected when an assignment follows it, so a typed Gosu
+# declaration (``var secret : String = "..."``) cannot redact its type name.
 UNQUOTED_SECRET_KEYS = re.compile(
     r"""(?ix)
     \b(?P<key>[A-Za-z_][A-Za-z0-9_]*)
     [ \t]*(?::[ \t]*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?
     [ \t]*(?:=|:)[ \t]*
-    (?P<value>[^\s,;)\]}"']+)
+    (?P<value>[^\s,;)\]}"']++)(?![ \t]*=(?!=))
     """
 )
 # A sensitive label followed by a quoted value without an explicit assignment
@@ -63,6 +65,34 @@ XML_SECRET_ATTRIBUTE = re.compile(
     """
 )
 XML_SENSITIVE_NAMES = {"default"}
+# XML element bodies, including CDATA sections:
+# ``<password>hunter2</password>`` and
+# ``<secret><![CDATA[hunter2]]></secret>``. Only element names in the shared
+# sensitive-name taxonomy are redacted; ordinary elements such as
+# ``<tokenUrl>``, ``<passwordPolicy>`` and normal type attributes are untouched.
+XML_ELEMENT_SECRET = re.compile(
+    r"""(?isx)
+    <(?P<tag>[A-Za-z_][A-Za-z0-9_.:-]*)(?:\s[^>]*)?>
+    (?:
+        <!\[CDATA\[(?P<cdata>.*?)\]\]>
+        |
+        (?P<text>[^<]*)
+    )
+    </(?P=tag)>
+    """
+)
+# YAML block-scalar indicator anywhere on a line. Reviewer notes sometimes put
+# the sensitive key after prose (``Reviewer note: password: |``), so the block
+# body cannot be found by only anchoring at the start of the line.
+YAML_BLOCK_SCALAR = re.compile(
+    r"""(?ix)
+    (?:^|[ \t])
+    (?P<key>["']?[A-Za-z_][A-Za-z0-9_.-]*["']?)
+    [ \t]*:[ \t]*
+    (?P<indicator>[|>][+-]?)
+    [ \t]*(?:\#.*)?$
+    """
+)
 # JSON object form, including single-line documents where the YAML line matcher
 # cannot see the key at the start of a line.
 JSON_SECRET_KEY = re.compile(
@@ -186,6 +216,31 @@ def _redact_json(match: re.Match[str]) -> str:
 
 def _redact_xml(match: re.Match[str]) -> str:
     return _redact_quoted_value("xml", match)
+
+
+def _redact_xml_element(match: re.Match[str]) -> str:
+    """Redact a sensitive XML element body while preserving its tags.
+
+    Plain text and CDATA bodies are fingerprinted as a unit. Leading and
+    trailing whitespace is preserved so the surrounding document stays legible.
+    """
+    tag = match.group("tag").rsplit(":", 1)[-1]
+    if not (is_sensitive_secret_key(tag) or tag.lower() in XML_SENSITIVE_NAMES):
+        return match.group(0)
+    cdata = match.group("cdata")
+    if cdata is not None:
+        value = cdata
+        start, end = match.start("cdata"), match.end("cdata")
+    else:
+        value = match.group("text") or ""
+        start, end = match.start("text"), match.end("text")
+    stripped = value.strip()
+    if not stripped or REDACTED_VALUE.match(stripped):
+        return match.group(0)
+    leading = value[:len(value) - len(value.lstrip())]
+    trailing = value[len(value.rstrip()):]
+    replacement = leading + _marker(stripped) + trailing
+    return match.group(0)[:start - match.start()] + replacement + match.group(0)[end - match.start():]
 
 
 def _redact_labelled(match: re.Match[str]) -> str:
@@ -327,17 +382,17 @@ def _redact_yaml_lines(text: str) -> str:
 
 
 def _block_scalar_indent(line: str) -> int | None:
-    """Indentation of a sensitive YAML key whose value is a block scalar."""
-    match = YAML_SECRET_LINE.match(line)
-    if match is None:
-        return None
-    key = match.group("key").strip("\"'")
-    if not is_sensitive_secret_key(key):
-        return None
-    rhs = match.group("rhs").strip()
-    if not re.fullmatch(r"[|>][+-]?(?:\s*#.*)?", rhs):
-        return None
-    return len(line) - len(line.lstrip(" \t"))
+    """Indentation of a sensitive YAML key whose value is a block scalar.
+
+    The key may follow prose on the same line (``Reviewer note: password: |``);
+    the block body is still indented deeper than that line, so its indentation
+    is used to delimit the scalar.
+    """
+    for match in YAML_BLOCK_SCALAR.finditer(line):
+        key = match.group("key").strip("\"'")
+        if is_sensitive_secret_key(key):
+            return len(line) - len(line.lstrip(" \t"))
+    return None
 
 
 def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
@@ -358,6 +413,7 @@ def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
             text = text.replace(value, _marker(value))
     text = _redact_yaml_lines(text)
     text = JSON_SECRET_KEY.sub(_redact_json, text)
+    text = XML_ELEMENT_SECRET.sub(_redact_xml_element, text)
     text = XML_SECRET_ATTRIBUTE.sub(_redact_xml, text)
     text = SECRET_KEYS.sub(_redact_assignment, text)
     text = SINGLE_QUOTED_SECRET_KEYS.sub(_redact_single_assignment, text)

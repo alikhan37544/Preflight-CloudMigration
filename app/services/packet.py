@@ -1,10 +1,13 @@
 """Six-page review packet (JSON + standalone HTML).
 
-The packet is an evidence-complete, self-verifying artifact: the rendered HTML
-hash and a canonical JSON hash are captured at generation time, content digests
-bind the packet to the persisted findings/mappings/evidence, and the audit chain
-is verified before the packet is written. A broken audit chain fails the build
-rather than producing a packet that merely looks complete.
+The packet is an evidence-complete, self-verifying artifact. ``packet_sha256``
+(also stored as ``hashes.packet`` and ``hashes.packet_html``) is the SHA-256 of
+the complete rendered HTML after normalizing the packet's own hash fields.
+``hashes.packet_json`` separately covers the canonical packet JSON. Neither
+digest is a digest of the other format. Content digests bind the packet to the
+persisted findings/mappings/evidence, and the audit chain is verified before the
+packet is written. A broken audit chain fails the build rather than producing a
+packet that merely looks complete.
 """
 
 from __future__ import annotations
@@ -48,6 +51,11 @@ PAGES = [
     "Findings",
     "Evidence and audit appendix",
 ]
+
+CLOUD_RETROFIT_BOUNDARY = (
+    "Cloud Retrofit without APD App; not Guidewire's recommended process; local, "
+    "non-deployable draft; field-level nameOverride only applies on this path."
+)
 
 PACKET_HASH_PLACEHOLDER = "__PACKET_SHA256__"
 
@@ -496,6 +504,7 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         change_count=change_count,
         executive_summary=executive_summary,
         coverage_summary=coverage_summary,
+        scope_boundary=CLOUD_RETROFIT_BOUNDARY,
         metrics=metrics,
         assumptions=assumptions,
         findings=findings,

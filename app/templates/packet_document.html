@@ -89,6 +89,7 @@
     <tr><th>Estate</th><td>{{ project_id }}</td></tr>
     <tr><th>Fixture</th><td>{{ fixture_id }}</td></tr>
     <tr><th>Release context</th><td>{{ release_context }}</td></tr>
+    <tr><th>Scope boundary</th><td>{{ scope_boundary }}</td></tr>
     <tr><th>Snapshot hash</th><td class="hash">{{ snapshot_hash }}</td></tr>
     <tr><th>Files</th><td>{{ file_count }} ({{ unsupported_count }} unsupported/corrupt, listed)</td></tr>
     <tr><th>Audit head</th><td class="hash">{{ audit_head }}</td></tr>
@@ -104,6 +105,9 @@
     <div class="kpi"><div class="n">{{ mapping_count }}</div><div class="l">explicit dispositions</div></div>
   </div>
   <p>{{ executive_summary }}</p>
+  <div class="callout warning">
+    <strong>Cloud Retrofit boundary.</strong> {{ scope_boundary }}
+  </div>
   <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
   productivity claims.</p>
   <table>
