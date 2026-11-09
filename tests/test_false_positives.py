@@ -11,7 +11,9 @@ import pytest
 
 from app.services.discovery import DiscoveryResult
 from app.services.intake import build_manifest
+from app.services.pipeline import execute_run
 from app.services.review import run_review
+from app.store import RunStore
 
 
 def review_files(tmp_path: Path, files: dict[str, str]):
@@ -443,6 +445,70 @@ class ParamSecret {
 ''',
     })
     assert "gsrc/gate/ParamSecret.gs" in paths_for(review, "PF-GW-SEC-001")
+
+
+def test_non_sec_finding_excerpt_redacts_adjacent_secret_in_persisted_artifacts(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "snapshot"
+
+    def write(rel: str, text: str) -> None:
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    write(
+        "config/web/pcf/policy/PAVehicleDV.pcf",
+        '<?xml version="1.0"?>\n'
+        '<PCF name="PAVehicleDV"><Screen>'
+        '<TypeKeyInput id="VehicleType" value="VehicleType"/>'
+        "</Screen></PCF>\n",
+    )
+    write(
+        "config/metadata/entity/PersonalVehicle.eti",
+        '<?xml version="1.0"?>\n'
+        '<entity name="PersonalVehicle"><column name="VIN" type="Text"/></entity>\n',
+    )
+    # The class-line discovery excerpt contains hunter2. The SQL finding's
+    # three-line review excerpt contains the adjacent apiKey assignment.
+    write(
+        "gsrc/acme/PersonalVehicleValidation.gs",
+        """package acme
+class PersonalVehicleValidation {
+  var password = "hunter2"
+  function find() {
+    DriverManager.getConnection("jdbc:acme")
+    var apiKey = "sk-live-LEAK123"
+  }
+}
+""",
+    )
+
+    store = RunStore(tmp_path / "data")
+    store.create_run("R-LEAK", project_id="test", snapshot_id="S-LEAK")
+    result = execute_run(
+        root, store, "R-LEAK", project_id="test", fixture_id="uploaded", tier="demo",
+    )
+    assert any(f.rule_id == "PF-GW-SQL-001" for f in result.review.findings)
+
+    raw_secrets = ("hunter2", "sk-live-LEAK123")
+    for name in ("evidence.json", "review_evidence.json", "findings.json",
+                 "packet.json", "packet.html"):
+        text = (store.run_dir("R-LEAK") / name).read_text(encoding="utf-8")
+        for secret in raw_secrets:
+            assert secret not in text, (name, secret)
+
+    review_evidence = store.read_artifact("R-LEAK", "review_evidence.json")["evidence"]
+    sql_finding = next(
+        finding for finding in store.read_artifact("R-LEAK", "findings.json")["findings"]
+        if finding["rule_id"] == "PF-GW-SQL-001"
+    )
+    sql_evidence = next(
+        item for item in review_evidence if item["evidence_id"] == sql_finding["evidence_ids"][0]
+    )
+    assert sql_evidence["locator"]["line"] == 5
+    assert "[REDACTED:" in sql_evidence["excerpt"]
+    assert "[REDACTED:" in (store.run_dir("R-LEAK") / "packet.html").read_text(encoding="utf-8")
 
 
 def test_adjacent_comment_and_escaped_quote_values_are_redacted(tmp_path: Path) -> None:

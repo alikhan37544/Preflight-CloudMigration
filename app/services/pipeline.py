@@ -9,14 +9,14 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.models import Evidence, Manifest
+from app.models import Manifest
 from app.services.compare import CompareResult, compare_feature
 from app.services.discovery import DiscoveryResult, run_discovery
 from app.services.evaluate import EvaluationResult, evaluate_run
 from app.services.intake import build_manifest, snapshot_hash
 from app.services.packet import build_packet
 from app.services.reconstruction import ReconstructionResult, reconstruct
-from app.services.redaction import redact_excerpt
+from app.services.redaction import redact_evidence
 from app.services.review import ReviewResult, run_review
 
 GROUND_TRUTH = Path(__file__).resolve().parents[2] / "ground_truth"
@@ -40,21 +40,6 @@ class PipelineResult:
 
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _redacted_evidence(items: list[Evidence]) -> list[Evidence]:
-    """Return evidence copies safe to persist; locators and IDs are untouched."""
-    redacted: list[Evidence] = []
-    for item in items:
-        excerpt, changed = redact_excerpt(item.excerpt)
-        if changed:
-            item = item.model_copy(update={
-                "excerpt": excerpt,
-                "excerpt_sha": hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
-                "redacted": True,
-            })
-        redacted.append(item)
-    return redacted
 
 
 STAGE_WEIGHTS = {
@@ -101,7 +86,7 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
 
         mark("parse", completed + 2, files_done=0, files_total=manifest.file_count)
         discovery = run_discovery(root, manifest)
-        durable_evidence = _redacted_evidence(discovery.evidence)
+        durable_evidence = redact_evidence(discovery.evidence)
         store.write_artifact(run_id, "features.json", {
             "schema_version": "1.0",
             "features": [f.model_dump(mode="json") for f in discovery.features],
@@ -127,7 +112,7 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
             "findings": [f.model_dump(mode="json") for f in review.findings],
             "readiness": [f.model_dump(mode="json") for f in review.readiness],
         })
-        durable_review_evidence = _redacted_evidence(review.evidence)
+        durable_review_evidence = redact_evidence(review.evidence)
         store.write_artifact(run_id, "review_evidence.json", {
             "schema_version": "1.0",
             "evidence": [e.model_dump(mode="json") for e in durable_review_evidence],
