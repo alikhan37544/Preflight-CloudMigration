@@ -13,6 +13,15 @@ import pytest
 from app.store import RunStore, StoreError
 
 
+def _append_audit_worker(base_dir: str, run_id: str, index: int, start) -> None:
+    """Top-level target so the spawn start method can import it."""
+    start.wait()
+    RunStore(base_dir).append_audit(
+        run_id, action="mapping.reviewed", object_type="mapping",
+        object_id=f"M-{index}",
+    )
+
+
 @pytest.fixture()
 def store(tmp_path: Path) -> RunStore:
     return RunStore(tmp_path / "data")
@@ -305,3 +314,84 @@ def test_corrupt_decisions_raise_store_error(store: RunStore) -> None:
             "R-1", object_type="mapping", object_id="M-1", action="accept",
             actor="reviewer", reason="test",
         )
+
+
+# -- cross-process locking, deletion tombstones and id bounds --------------
+
+def test_locked_is_reentrant_across_store_helpers(store: RunStore) -> None:
+    store.create_run("R-1")
+    with store.locked("R-1"):
+        with store.locked("R-1"):
+            store.append_audit(
+                "R-1", action="mapping.reviewed", object_type="mapping",
+                object_id="M-1",
+            )
+            store.record_decision(
+                "R-1", object_type="mapping", object_id="M-2", action="accept",
+                actor="reviewer", reason="nested lock",
+            )
+    assert store.verify_audit("R-1") is True
+    assert len(store.read_audit("R-1")) == 2
+
+
+def test_multiprocess_audit_appends_are_serialized(tmp_path: Path) -> None:
+    import multiprocessing
+
+    store = RunStore(tmp_path / "mp-data")
+    store.create_run("R-MP")
+    process_count = 24
+    context = multiprocessing.get_context("spawn")
+    start = context.Barrier(process_count)
+    processes = [
+        context.Process(
+            target=_append_audit_worker,
+            args=(str(store.base_dir), "R-MP", index, start),
+        )
+        for index in range(process_count)
+    ]
+    try:
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(60)
+        assert [p.exitcode for p in processes] == [0] * process_count
+    finally:
+        for process in processes:
+            if process.is_alive():
+                process.terminate()
+                process.join(5)
+
+    events = store.read_audit("R-MP")
+    assert len(events) == process_count
+    assert [event["seq"] for event in events] == list(range(process_count))
+    assert len({event["prev_hash"] for event in events}) == process_count
+    assert len({event["event_id"] for event in events}) == process_count
+    assert store.verify_audit("R-MP") is True
+
+
+def test_deleted_run_rejects_late_writes_and_can_be_recreated(store: RunStore) -> None:
+    store.create_run("R-1")
+    store.write_artifact("R-1", "features.json", {"features": []})
+    store.delete_run("R-1")
+    with pytest.raises(StoreError) as excinfo:
+        store.write_artifact("R-1", "features.json", {"features": ["late"]})
+    assert excinfo.value.code == "RUN_DELETED"
+    assert not store.run_dir("R-1").exists()
+
+    # An explicit create is a new generation and clears the tombstone.
+    store.create_run("R-1")
+    store.write_artifact("R-1", "features.json", {"features": []})
+    assert store.read_artifact("R-1", "features.json") == {"features": []}
+
+
+def test_overlong_run_id_raises_store_error_not_oserror(store: RunStore) -> None:
+    long_id = "R-" + "a" * 300
+    for action in (
+        lambda: store.run_dir(long_id),
+        lambda: store.create_run(long_id),
+        lambda: store.read_status(long_id),
+    ):
+        with pytest.raises(StoreError) as excinfo:
+            action()
+        assert excinfo.value.code == "INVALID_RUN_ID"
+    assert long_id not in store.list_runs()

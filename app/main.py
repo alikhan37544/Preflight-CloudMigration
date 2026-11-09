@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import logging
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,6 +78,144 @@ class DecisionRequest(BaseModel):
     edited_value: str | None = None
 
 
+# Artifacts load_run_view expects to parse when they are present. Missing
+# optional files still default (uploaded runs may have no metrics/packet), but
+# malformed JSON in any of these is corruption, not an empty run.
+_CORE_ARTIFACTS = (
+    "manifest.json", "features.json", "evidence.json", "review_evidence.json",
+    "gaps.json", "spine.json", "findings.json", "mappings.json", "changes.json",
+    "assumptions.json", "comparison.json", "metrics.json", "packet.json",
+    "decisions.json", "immutability.json",
+)
+_ARTIFACT_LISTS = {
+    "manifest.json": "artifacts",
+    "features.json": "features",
+    "evidence.json": "evidence",
+    "review_evidence.json": "evidence",
+    "gaps.json": "gaps",
+    "findings.json": "findings",
+    "mappings.json": "mappings",
+    "changes.json": "changes",
+    "assumptions.json": "assumptions",
+    "comparison.json": "rows",
+    "metrics.json": "metrics",
+    "packet.json": "pages",
+    "decisions.json": "decisions",
+}
+_ARTIFACT_DICTS = {
+    "spine.json": "spines",
+}
+_ARTIFACT_EXTRA_LISTS = {
+    "findings.json": ("readiness",),
+    "metrics.json": ("supporting",),
+}
+
+_ACTION_STATE = {
+    "accept": "accepted",
+    "reject": "rejected",
+    "defer": "deferred",
+    "edit": "edited",
+}
+_PENDING_STATES = {"pending", "open"}
+
+
+def _read(store: RunStore, run_id: str, name: str, default: Any) -> Any:
+    """Read an optional artifact; only a genuinely missing file uses ``default``."""
+    try:
+        return store.read_artifact(run_id, name)
+    except StoreError as exc:
+        if exc.code == "NOT_FOUND":
+            return default
+        raise
+
+
+def _payload_list(store: RunStore, run_id: str, name: str, key: str,
+                  default: dict[str, Any]) -> dict[str, Any]:
+    payload = _read(store, run_id, name, default)
+    if not isinstance(payload, dict) or not isinstance(payload.get(key), list):
+        raise StoreError(
+            f"artifact {name!r} is corrupt: expected a {key!r} list",
+            code="CORRUPT_ARTIFACT",
+        )
+    return payload
+
+
+def _assert_core_artifacts(store: RunStore, run_id: str) -> None:
+    """Parse present core artifacts so page routes surface corruption as 500."""
+    for name in _CORE_ARTIFACTS:
+        if not store.exists(run_id, name):
+            continue
+        payload = store.read_artifact(run_id, name)
+        if not isinstance(payload, dict):
+            raise StoreError(
+                f"artifact {name!r} is corrupt: expected a JSON object",
+                code="CORRUPT_ARTIFACT",
+            )
+        list_key = _ARTIFACT_LISTS.get(name)
+        if list_key is not None and not isinstance(payload.get(list_key), list):
+            raise StoreError(
+                f"artifact {name!r} is corrupt: expected a {list_key!r} list",
+                code="CORRUPT_ARTIFACT",
+            )
+        dict_key = _ARTIFACT_DICTS.get(name)
+        if dict_key is not None and not isinstance(payload.get(dict_key), dict):
+            raise StoreError(
+                f"artifact {name!r} is corrupt: expected a {dict_key!r} object",
+                code="CORRUPT_ARTIFACT",
+            )
+        for extra_key in _ARTIFACT_EXTRA_LISTS.get(name, ()):
+            if not isinstance(payload.get(extra_key, []), list):
+                raise StoreError(
+                    f"artifact {name!r} is corrupt: expected a {extra_key!r} list",
+                    code="CORRUPT_ARTIFACT",
+                )
+
+
+def _load_view(store: RunStore, run_id: str) -> dict[str, Any]:
+    _assert_core_artifacts(store, run_id)
+    return load_run_view(store, run_id)
+
+
+def _effective_state(object_type: str, obj: dict[str, Any],
+                     previous: dict[str, Any] | None) -> str:
+    """Return the reviewer-visible state, including logical defer/edit states.
+
+    ``Change.approval_state`` has no deferred value and ``Finding.decision`` has
+    no edited value, so those two logical states are reconstructed from the last
+    decision for the object.
+    """
+    if object_type == "mapping":
+        return str(obj.get("reviewer_state", "pending"))
+    if object_type == "change":
+        state = str(obj.get("approval_state", "pending"))
+        if state == "pending" and previous and previous.get("action") == "defer":
+            return "deferred"
+        return state
+    state = str(obj.get("decision", "open"))
+    if state == "accepted" and previous and previous.get("action") == "edit":
+        return "edited"
+    return state
+
+
+def _last_decision(decisions: list[dict[str, Any]], object_type: str,
+                   object_id: str) -> dict[str, Any] | None:
+    for decision in reversed(decisions):
+        if (decision.get("object_type") == object_type
+                and decision.get("object_id") == object_id):
+            return decision
+    return None
+
+
+def _conflict(object_type: str, object_id: str, current: str, action: str) -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail=(
+            f"{object_type} {object_id} is already {current!r}; "
+            f"cannot apply {action!r} from a terminal state"
+        ),
+    )
+
+
 class AssistantRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     feature_id: str | None = None
@@ -93,8 +233,10 @@ def _fixture_path(settings: Settings, fixture_id: str) -> Path:
 def _status_or_404(store: RunStore, run_id: str) -> dict[str, Any]:
     try:
         return store.read_status(run_id)
-    except StoreError:
-        raise HTTPException(status_code=404, detail="run not found")
+    except StoreError as exc:
+        if exc.code == "CORRUPT_ARTIFACT":
+            raise
+        raise HTTPException(status_code=404, detail="run not found") from exc
 
 
 def _latest_run(store: RunStore, fixture_id: str | None = None) -> str | None:
@@ -111,24 +253,32 @@ def _latest_run(store: RunStore, fixture_id: str | None = None) -> str | None:
     return None
 
 
-def _read(store: RunStore, run_id: str, name: str, default: Any) -> Any:
-    try:
-        return store.read_artifact(run_id, name)
-    except StoreError:
-        return default
-
-
 def _assistant_context(store: RunStore, run_id: str):
-    feature_payload = _read(store, run_id, "features.json", {"features": []})["features"]
-    evidence_payload = _read(store, run_id, "evidence.json", {"evidence": []})["evidence"]
-    gaps_payload = _read(store, run_id, "gaps.json", {"gaps": []})["gaps"]
-    review_evidence = _read(store, run_id, "review_evidence.json", {"evidence": []})["evidence"]
-    findings_payload = _read(
-        store, run_id, "findings.json", {"findings": [], "readiness": []}
+    feature_payload = _payload_list(
+        store, run_id, "features.json", "features", {"features": []}
+    )["features"]
+    evidence_payload = _payload_list(
+        store, run_id, "evidence.json", "evidence", {"evidence": []}
+    )["evidence"]
+    gaps_payload = _payload_list(
+        store, run_id, "gaps.json", "gaps", {"gaps": []}
+    )["gaps"]
+    review_evidence = _payload_list(
+        store, run_id, "review_evidence.json", "evidence", {"evidence": []}
+    )["evidence"]
+    findings_payload = _payload_list(
+        store, run_id, "findings.json", "findings",
+        {"findings": [], "readiness": []},
     )
-    mappings_payload = _read(store, run_id, "mappings.json", {"mappings": []})["mappings"]
-    changes_payload = _read(store, run_id, "changes.json", {"changes": []})["changes"]
-    assumptions_payload = _read(store, run_id, "assumptions.json", {"assumptions": []})["assumptions"]
+    mappings_payload = _payload_list(
+        store, run_id, "mappings.json", "mappings", {"mappings": []}
+    )["mappings"]
+    changes_payload = _payload_list(
+        store, run_id, "changes.json", "changes", {"changes": []}
+    )["changes"]
+    assumptions_payload = _payload_list(
+        store, run_id, "assumptions.json", "assumptions", {"assumptions": []}
+    )["assumptions"]
 
     features = [Feature.model_validate(item) for item in feature_payload]
     evidence = [Evidence.model_validate(item) for item in evidence_payload]
@@ -213,12 +363,50 @@ def _refresh_packet(store: RunStore, run_id: str,
         return False, f"{type(exc).__name__}: {exc}"
 
 
+def _reconcile_interrupted_runs(store: RunStore) -> None:
+    """Cancel runs left queued/running by a previous process.
+
+    The worker that owned these runs no longer exists after a restart, so
+    leaving them ``running`` forever would also block every decision (which
+    requires ``succeeded``).  Mark them cancelled with an explicit audit reason.
+    """
+    for run_id in store.list_runs():
+        try:
+            status = store.read_status(run_id)
+            if status.get("status") not in {"queued", "running"}:
+                continue
+            with store.locked(run_id):
+                status = store.read_status(run_id)
+                if status.get("status") not in {"queued", "running"}:
+                    continue
+                reason = (
+                    "marked cancelled at startup: no worker survived the restart "
+                    f"(previous status {status.get('status')!r}, stage {status.get('stage')!r})"
+                )
+                store.update_status(
+                    run_id, status="cancelled", stage="cancelled", percent=0.0,
+                    error={
+                        "code": "RunInterrupted",
+                        "message": "Server restarted before this run finished; marked cancelled at startup.",
+                        "retryable": True,
+                    },
+                )
+                store.append_audit(
+                    run_id, action="run.cancelled", object_type="run",
+                    object_id=run_id, actor="system", reason=reason,
+                )
+        except StoreError as exc:
+            logger.warning("startup reconciliation failed for %s: %s", run_id, exc)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     app = FastAPI(title="PreFlight", version="0.1.0", docs_url=None, redoc_url=None)
     app.state.settings = settings
     app.state.store = RunStore(settings.data_dir)
     app.state.cancel_events = {}
+    app.state.run_workers = {}
+    _reconcile_interrupted_runs(app.state.store)
 
     app.add_middleware(
         SecurityMiddleware,
@@ -249,6 +437,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             },
         )
 
+    @app.exception_handler(StoreError)
+    async def store_error(request: Request, exc: StoreError):
+        code = getattr(exc, "code", "STORE_ERROR")
+        if code == "NOT_FOUND":
+            status_code = 404
+        elif code in {"INVALID_RUN_ID", "INVALID_ARTIFACT"}:
+            status_code = 400
+        else:
+            status_code = 500
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "error": {"code": code, "message": str(exc),
+                          "detail": str(exc), "retryable": False},
+                "detail": str(exc),
+            },
+        )
+
     templates = Jinja2Templates(directory=str(TEMPLATES))
     templates.env.globals["disclaimer"] = DISCLAIMER
     templates.env.globals["release_context"] = settings.release_context
@@ -276,8 +482,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def guard(request: Request, run_id: str, title: str):
         try:
-            view = load_run_view(app.state.store, run_id)
-        except StoreError:
+            view = _load_view(app.state.store, run_id)
+        except StoreError as exc:
+            if exc.code == "CORRUPT_ARTIFACT":
+                raise
             return None, templates.TemplateResponse(
                 request=request, name="error.html",
                 context=context(request, run_id, None, title, error="This run no longer exists."),
@@ -309,8 +517,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 context=context(request, None, None, "Workbench"),
             )
         try:
-            view = load_run_view(app.state.store, run_id)
-        except StoreError:
+            view = _load_view(app.state.store, run_id)
+        except StoreError as exc:
+            if exc.code == "CORRUPT_ARTIFACT":
+                raise
             return templates.TemplateResponse(
                 request=request, name="error.html",
                 context=context(request, run_id, None, "Run not found", error="This run no longer exists."),
@@ -442,7 +652,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if response:
             return response
         refreshed, refresh_error = _refresh_packet(app.state.store, run_id, settings)
-        view = load_run_view(app.state.store, run_id)
+        view = _load_view(app.state.store, run_id)
         return templates.TemplateResponse(
             request=request, name="packet.html",
             context=context(request, run_id, view, "Packet",
@@ -455,8 +665,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         status = _status_or_404(store, run)
         if status.get("status") != "succeeded":
             raise HTTPException(
-                status_code=503,
-                detail=f"packet is unavailable for run status {status.get('status')!r}",
+                status_code=409,
+                detail=f"packet refresh requires a succeeded run; status is {status.get('status')!r}",
             )
         refreshed, refresh_error = _refresh_packet(store, run, settings)
         if not refreshed:
@@ -564,11 +774,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 return
             finally:
                 app.state.cancel_events.pop(run_id, None)
+                app.state.run_workers.pop(run_id, None)
 
         if settings.sync_runs:
             target()
         else:
-            threading.Thread(target=target, daemon=True, name=f"preflight-{run_id}").start()
+            worker = threading.Thread(target=target, daemon=True, name=f"preflight-{run_id}")
+            app.state.run_workers[run_id] = worker
+            worker.start()
         status = store.read_status(run_id)
         return {"run_id": run_id, "status": status["status"],
                 "progress": status.get("progress", {})}
@@ -616,11 +829,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 return
             finally:
                 app.state.cancel_events.pop(run_id, None)
+                app.state.run_workers.pop(run_id, None)
 
         if settings.sync_runs:
             target_upload()
         else:
-            threading.Thread(target=target_upload, daemon=True, name=f"preflight-{run_id}").start()
+            worker = threading.Thread(
+                target=target_upload, daemon=True, name=f"preflight-{run_id}"
+            )
+            app.state.run_workers[run_id] = worker
+            worker.start()
         status = store.read_status(run_id)
         return {"run_id": run_id, "status": status["status"]}
 
@@ -635,16 +853,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         event = app.state.cancel_events.get(run_id)
         if event:
             event.set()
-        if status.get("status") == "queued":
-            store.update_status(run_id, status="cancelled", stage="cancelled", percent=0.0)
-            store.append_audit(run_id, action="run.cancelled", object_type="run", object_id=run_id)
-        return {"run_id": run_id, "cancelling": True}
+        active = status.get("status") in {"queued", "running"}
+        if active:
+            with store.locked(run_id):
+                current = _status_or_404(store, run_id)
+                if current.get("status") in {"queued", "running"}:
+                    store.update_status(
+                        run_id, status="cancelled", stage="cancelled", percent=0.0,
+                        error={
+                            "code": "RunCancelled",
+                            "message": "Run cancelled by reviewer.",
+                            "retryable": True,
+                        },
+                    )
+                    store.append_audit(
+                        run_id, action="run.cancelled", object_type="run",
+                        object_id=run_id, actor="reviewer",
+                        reason="cancelled by reviewer via API",
+                    )
+        return {"run_id": run_id, "cancelling": active}
 
     @app.get("/api/runs/{run_id}/manifest")
     def manifest_api(run_id: str, page: int = Query(default=1, ge=1),
                      size: int = Query(default=100, ge=1, le=500)):
         _status_or_404(app.state.store, run_id)
-        view = load_run_view(app.state.store, run_id)
+        view = _load_view(app.state.store, run_id)
         artifacts = view["manifest"].get("artifacts", [])
         start = (page - 1) * size
         return {
@@ -657,61 +890,96 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/runs/{run_id}/features")
     def features_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return {"features": _read(app.state.store, run_id, "features.json", {"features": []})["features"]}
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        return _payload_list(store, run_id, "features.json", "features",
+                             {"features": []})
 
     @app.get("/api/runs/{run_id}/features/{feature_id}")
     def feature_api(run_id: str, feature_id: str):
         store: RunStore = app.state.store
         _status_or_404(store, run_id)
-        features = _read(store, run_id, "features.json", {"features": []})["features"]
+        features = _payload_list(store, run_id, "features.json", "features",
+                                 {"features": []})["features"]
         feature = next((f for f in features if f["feature_id"] == feature_id), None)
         if not feature:
             raise HTTPException(status_code=404, detail="feature not found")
-        evidence = _read(store, run_id, "evidence.json", {"evidence": []})["evidence"]
+        evidence = _payload_list(store, run_id, "evidence.json", "evidence",
+                                 {"evidence": []})["evidence"]
         by_id = {e["evidence_id"]: e for e in evidence}
         return {"feature": feature, "evidence": [by_id[e] for e in feature["evidence_ids"] if e in by_id]}
 
     @app.get("/api/runs/{run_id}/spine")
     def spine_api(run_id: str):
         _status_or_404(app.state.store, run_id)
-        view = load_run_view(app.state.store, run_id)
+        view = _load_view(app.state.store, run_id)
         return {"schema_version": "1.0", "spines": view["spines"]}
 
     @app.get("/api/runs/{run_id}/findings")
     def findings_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "findings.json", {"findings": [], "readiness": []})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        return _payload_list(store, run_id, "findings.json", "findings",
+                             {"findings": [], "readiness": []})
 
     @app.get("/api/runs/{run_id}/mappings")
     def mappings_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "mappings.json", {"mappings": []})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        return _payload_list(store, run_id, "mappings.json", "mappings",
+                             {"mappings": []})
 
     @app.get("/api/runs/{run_id}/assumptions")
     def assumptions_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "assumptions.json", {"assumptions": []})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        return _payload_list(store, run_id, "assumptions.json", "assumptions",
+                             {"assumptions": []})
 
     @app.get("/api/runs/{run_id}/gaps")
     def gaps_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "gaps.json", {"gaps": []})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        return _payload_list(store, run_id, "gaps.json", "gaps", {"gaps": []})
 
     @app.get("/api/runs/{run_id}/comparison")
     def comparison_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "comparison.json", {"rows": [], "macro_f1": 0.0})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        payload = _read(store, run_id, "comparison.json",
+                        {"rows": [], "macro_f1": 0.0})
+        if not isinstance(payload, dict) or not isinstance(payload.get("rows", []), list):
+            raise StoreError(
+                "artifact 'comparison.json' is corrupt: expected a 'rows' list",
+                code="CORRUPT_ARTIFACT",
+            )
+        return payload
 
     @app.get("/api/runs/{run_id}/metrics")
     def metrics_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        return _read(app.state.store, run_id, "metrics.json", {"metrics": [], "supporting": []})
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        payload = _read(store, run_id, "metrics.json",
+                        {"metrics": [], "supporting": []})
+        if (not isinstance(payload, dict)
+                or not isinstance(payload.get("metrics", []), list)
+                or not isinstance(payload.get("supporting", []), list)):
+            raise StoreError(
+                "artifact 'metrics.json' is corrupt: expected metric lists",
+                code="CORRUPT_ARTIFACT",
+            )
+        return payload
 
     @app.get("/api/runs/{run_id}/packet")
     def packet_api(run_id: str):
-        _status_or_404(app.state.store, run_id)
-        refreshed, refresh_error = _refresh_packet(app.state.store, run_id, settings)
+        store: RunStore = app.state.store
+        status = _status_or_404(store, run_id)
+        if status.get("status") != "succeeded":
+            raise HTTPException(
+                status_code=409,
+                detail=f"packet refresh requires a succeeded run; status is {status.get('status')!r}",
+            )
+        refreshed, refresh_error = _refresh_packet(store, run_id, settings)
         if not refreshed:
             raise HTTPException(
                 status_code=503,
@@ -748,73 +1016,188 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/runs/{run_id}/decisions", dependencies=[Depends(require_csrf)])
     def decision_api(run_id: str, body: DecisionRequest):
         store: RunStore = app.state.store
-        _status_or_404(store, run_id)
-        if body.action not in {"accept", "reject", "edit", "defer"}:
+        if body.action not in _ACTION_STATE:
             raise HTTPException(status_code=400, detail="unknown action")
-        created_assumption: dict[str, Any] | None = None
-        if body.object_type == "mapping":
-            payload = _read(store, run_id, "mappings.json", {"mappings": []})
-            obj = next((m for m in payload["mappings"] if m["mapping_id"] == body.object_id), None)
-            if not obj:
-                raise HTTPException(status_code=404, detail="mapping not found")
-            before = _json_hash(obj)
-            state = {"accept": "accepted", "reject": "rejected", "defer": "deferred", "edit": "edited"}[body.action]
-            obj["reviewer_state"] = state
-            if body.action == "edit":
-                if not body.edited_value:
-                    raise HTTPException(status_code=400, detail="edit requires edited_value")
-                obj["target_name"] = body.edited_value
-            store.write_artifact(run_id, "mappings.json", payload)
-            after = _json_hash(obj)
-            if body.action == "reject":
-                assumptions = _read(store, run_id, "assumptions.json", {"assumptions": []})
-                next_id = f"A-DEC-{len(assumptions['assumptions']) + 1:02d}"
-                created_assumption = {
-                    "schema_version": "1.0", "assumption_id": next_id,
-                    "statement": f"Mapping {body.object_id} was rejected by a reviewer: {body.reason}",
-                    "impact": "medium", "impact_range_days": [1.0, 2.0],
-                    "impact_basis": "Reviewer rejection of one mapping; rework and re-review.",
-                    "impact_confidence": "low",
-                    "impact_caveat": "Heuristic planning range; not a quote.",
-                    "status": "open", "owner": "unassigned",
-                    "question_to_ask": "What target should replace the rejected mapping?",
-                    "related_mapping_id": body.object_id, "gap_id": None,
-                }
-                assumptions["assumptions"].append(created_assumption)
-                store.write_artifact(run_id, "assumptions.json", assumptions)
-        elif body.object_type == "change":
-            payload = _read(store, run_id, "changes.json", {"changes": []})
-            obj = next((c for c in payload["changes"] if c["change_id"] == body.object_id), None)
-            if not obj:
-                raise HTTPException(status_code=404, detail="change not found")
-            before = _json_hash(obj)
-            obj["approval_state"] = {"accept": "accepted", "reject": "rejected", "defer": "pending", "edit": "edited"}[body.action]
-            obj["reviewer"] = "reviewer"
-            obj["reviewed_at"] = _now()
-            if body.action == "edit":
-                obj["edited_value"] = body.edited_value
-                obj["edit_reason"] = body.reason
-            store.write_artifact(run_id, "changes.json", payload)
-            after = _json_hash(obj)
-        elif body.object_type == "finding":
-            payload = _read(store, run_id, "findings.json", {"findings": [], "readiness": []})
-            obj = next((f for f in payload["findings"] if f["finding_id"] == body.object_id), None)
-            if not obj:
-                raise HTTPException(status_code=404, detail="finding not found")
-            before = _json_hash(obj)
-            obj["decision"] = {"accept": "accepted", "reject": "rejected", "defer": "deferred", "edit": "accepted"}[body.action]
-            store.write_artifact(run_id, "findings.json", payload)
-            after = _json_hash(obj)
-        else:
+        if body.object_type not in {"mapping", "change", "finding"}:
             raise HTTPException(status_code=400, detail="unsupported object_type")
+        if body.action == "edit" and not body.edited_value:
+            raise HTTPException(status_code=400, detail="edit requires edited_value")
+        _status_or_404(store, run_id)
 
-        decision = store.record_decision(
-            run_id, object_type=body.object_type, object_id=body.object_id,
-            action=body.action, actor="reviewer", reason=body.reason,
-            before_hash=before, after_hash=after,
-        )
-        _refresh_packet(store, run_id, settings)
-        return {"decision": decision, "object": obj, "assumption": created_assumption}
+        response: dict[str, Any] | None = None
+        with store.locked(run_id):
+            # Re-read status under the transaction lock: a run may have been
+            # cancelled or deleted after the cheap 404 check above.
+            status = _status_or_404(store, run_id)
+            if status.get("status") != "succeeded":
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        f"run {run_id} is {status.get('status')!r}; "
+                        "review decisions require a succeeded run"
+                    ),
+                )
+            # Refuse to mutate a run whose core evidence is unreadable; a
+            # decision must never be based on silently substituted empties.
+            _assert_core_artifacts(store, run_id)
+
+            decisions_payload = _payload_list(
+                store, run_id, "decisions.json", "decisions", {"decisions": []}
+            )
+            previous = _last_decision(
+                decisions_payload["decisions"], body.object_type, body.object_id
+            )
+            target_state = _ACTION_STATE[body.action]
+            created_assumption: dict[str, Any] | None = None
+            rollback: dict[str, Any] = {}
+            decision_reason = body.reason
+            before = after = None
+
+            if body.object_type == "mapping":
+                payload = _payload_list(
+                    store, run_id, "mappings.json", "mappings", {"mappings": []}
+                )
+                obj = next((m for m in payload["mappings"]
+                            if m.get("mapping_id") == body.object_id), None)
+                if not obj:
+                    raise HTTPException(status_code=404, detail="mapping not found")
+                current = _effective_state("mapping", obj, previous)
+                if current == target_state:
+                    assumptions = _payload_list(
+                        store, run_id, "assumptions.json", "assumptions",
+                        {"assumptions": []},
+                    )
+                    existing = next(
+                        (a for a in assumptions["assumptions"]
+                         if a.get("related_mapping_id") == body.object_id),
+                        None,
+                    )
+                    response = {"decision": previous, "object": obj,
+                                "assumption": existing, "idempotent": True}
+                else:
+                    if current not in _PENDING_STATES:
+                        raise _conflict(body.object_type, body.object_id, current, body.action)
+                    rollback["mappings.json"] = copy.deepcopy(payload)
+                    before = _json_hash(obj)
+                    obj["reviewer_state"] = target_state
+                    if body.action == "edit":
+                        obj["target_name"] = body.edited_value
+                    if body.action == "reject":
+                        assumptions = _payload_list(
+                            store, run_id, "assumptions.json", "assumptions",
+                            {"assumptions": []},
+                        )
+                        existing = next(
+                            (a for a in assumptions["assumptions"]
+                             if a.get("related_mapping_id") == body.object_id),
+                            None,
+                        )
+                        if existing is not None:
+                            created_assumption = existing
+                        else:
+                            rollback["assumptions.json"] = copy.deepcopy(assumptions)
+                            used = {a.get("assumption_id") for a in assumptions["assumptions"]}
+                            number = len(assumptions["assumptions"]) + 1
+                            while f"A-DEC-{number:02d}" in used:
+                                number += 1
+                            created_assumption = {
+                                "schema_version": "1.0",
+                                "assumption_id": f"A-DEC-{number:02d}",
+                                "statement": (
+                                    f"Mapping {body.object_id} was rejected by a reviewer: "
+                                    f"{body.reason}"
+                                ),
+                                "impact": "medium", "impact_range_days": [1.0, 2.0],
+                                "impact_basis": "Reviewer rejection of one mapping; rework and re-review.",
+                                "impact_confidence": "low",
+                                "impact_caveat": "Heuristic planning range; not a quote.",
+                                "status": "open", "owner": "unassigned",
+                                "question_to_ask": "What target should replace the rejected mapping?",
+                                "related_mapping_id": body.object_id, "gap_id": None,
+                            }
+                            assumptions["assumptions"].append(created_assumption)
+                            store.write_artifact(run_id, "assumptions.json", assumptions)
+                    store.write_artifact(run_id, "mappings.json", payload)
+                    after = _json_hash(obj)
+            elif body.object_type == "change":
+                payload = _payload_list(
+                    store, run_id, "changes.json", "changes", {"changes": []}
+                )
+                obj = next((c for c in payload["changes"]
+                            if c.get("change_id") == body.object_id), None)
+                if not obj:
+                    raise HTTPException(status_code=404, detail="change not found")
+                current = _effective_state("change", obj, previous)
+                if current == target_state:
+                    response = {"decision": previous, "object": obj,
+                                "assumption": None, "idempotent": True}
+                else:
+                    if current not in _PENDING_STATES:
+                        raise _conflict(body.object_type, body.object_id, current, body.action)
+                    rollback["changes.json"] = copy.deepcopy(payload)
+                    before = _json_hash(obj)
+                    # Change has no persisted deferred state; the decision log
+                    # carries the logical defer while approval_state stays pending.
+                    obj["approval_state"] = "pending" if body.action == "defer" else target_state
+                    obj["reviewer"] = "reviewer"
+                    obj["reviewed_at"] = _now()
+                    if body.action == "edit":
+                        obj["edited_value"] = body.edited_value
+                        obj["edit_reason"] = body.reason
+                    store.write_artifact(run_id, "changes.json", payload)
+                    after = _json_hash(obj)
+            else:  # finding
+                payload = _payload_list(
+                    store, run_id, "findings.json", "findings",
+                    {"findings": [], "readiness": []},
+                )
+                obj = next((f for f in payload["findings"]
+                            if f.get("finding_id") == body.object_id), None)
+                if not obj:
+                    raise HTTPException(status_code=404, detail="finding not found")
+                current = _effective_state("finding", obj, previous)
+                if current == target_state:
+                    response = {"decision": previous, "object": obj,
+                                "assumption": None, "idempotent": True}
+                else:
+                    if current not in _PENDING_STATES:
+                        raise _conflict(body.object_type, body.object_id, current, body.action)
+                    rollback["findings.json"] = copy.deepcopy(payload)
+                    before = _json_hash(obj)
+                    # Finding.decision has no edited value; editing retains the
+                    # accepted disposition and records the value in the decision.
+                    obj["decision"] = "accepted" if body.action == "edit" else target_state
+                    if body.action == "edit":
+                        decision_reason = (
+                            f"{body.reason} (edited value: {body.edited_value})"
+                        )
+                    store.write_artifact(run_id, "findings.json", payload)
+                    after = _json_hash(obj)
+
+            if response is None:
+                try:
+                    decision = store.record_decision(
+                        run_id, object_type=body.object_type,
+                        object_id=body.object_id, action=body.action,
+                        actor="reviewer", reason=decision_reason,
+                        before_hash=before, after_hash=after,
+                    )
+                except BaseException:
+                    # Best-effort rollback keeps the artifact state consistent
+                    # with the audit/decision chain if the commit fails.
+                    for name, data in rollback.items():
+                        try:
+                            store.write_artifact(run_id, name, data)
+                        except Exception:
+                            pass
+                    raise
+                response = {"decision": decision, "object": obj,
+                            "assumption": created_assumption}
+
+        if not response.get("idempotent"):
+            # Packet rendering is slow and must not hold the transaction lock.
+            _refresh_packet(store, run_id, settings)
+        return response
 
     @app.post("/api/runs/{run_id}/assistant", dependencies=[Depends(require_csrf)])
     def assistant_api(run_id: str, body: AssistantRequest):
@@ -829,8 +1212,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/runs/{run_id}/delete", dependencies=[Depends(require_csrf)])
     def delete_run(run_id: str):
         store: RunStore = app.state.store
-        _status_or_404(store, run_id)
+        status = _status_or_404(store, run_id)
+        active = status.get("status") in {"queued", "running"}
+        event = app.state.cancel_events.get(run_id)
+        if event is not None:
+            event.set()
+        if active:
+            with store.locked(run_id):
+                try:
+                    current = store.read_status(run_id)
+                except StoreError:
+                    current = None
+                if current and current.get("status") in {"queued", "running"}:
+                    store.update_status(
+                        run_id, status="cancelled", stage="cancelled", percent=0.0,
+                        error={
+                            "code": "RunCancelled",
+                            "message": "Run cancelled because the reviewer deleted it.",
+                            "retryable": False,
+                        },
+                    )
+                    store.append_audit(
+                        run_id, action="run.cancelled", object_type="run",
+                        object_id=run_id, actor="reviewer",
+                        reason="run deleted by reviewer while queued or running",
+                    )
+            # Give the worker a brief chance to unwind before removing the
+            # directory. If it is still mid-stage, the deletion tombstone makes
+            # every later store write fail instead of recreating the run.
+            worker = app.state.run_workers.get(run_id)
+            if worker is not None and worker is not threading.current_thread():
+                worker.join(2.0)
+            deadline = time.monotonic() + 2.0
+            while (run_id in app.state.cancel_events
+                   and time.monotonic() < deadline):
+                time.sleep(0.01)
         app.state.cancel_events.pop(run_id, None)
+        app.state.run_workers.pop(run_id, None)
         store.delete_run(run_id)
         return {"deleted": True, "run_id": run_id}
 
