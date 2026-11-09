@@ -1,6 +1,6 @@
-# Demo Snapshot — v1.0.0
+# Demo Snapshot — current demo build
 
-This directory contains the frozen demo artifact for the public snapshot.
+This directory contains a capture-time demo artifact generated from the current `R-DEMO-001` seed. It is a historical snapshot, not a live verifiable run: packet and audit hashes change after reviewer decisions or a packet refresh. Regenerate it from a fresh `make demo` with `/packet/export?run=R-DEMO-001`.
 
 | File | Purpose |
 |---|---|

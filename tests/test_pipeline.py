@@ -79,6 +79,11 @@ def test_packet_has_six_pages_and_disclaimers(run) -> None:
     assert expected_boundary in html
     assert "Scope boundary" in html
     assert "Cloud Retrofit boundary." in html
+    assert "<main class=\"page\">" in html
+    assert html.count("<thead>") >= 10
+    assert html.count("<caption>") >= 10
+    assert 'scope="col"' in html
+    assert 'scope="row"' in html
 
 
 def test_codegen_draft_keeps_garage_location_names_coherent(run) -> None:

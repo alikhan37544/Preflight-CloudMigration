@@ -747,6 +747,7 @@
   });
   if (decisionDialog) {
     decisionDialog.addEventListener("click", (event) => {
+      if (event.detail > 1) return;
       if (event.target === decisionDialog) closeDecisionDialog();
     });
     decisionDialog.addEventListener("close", () => {

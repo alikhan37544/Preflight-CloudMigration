@@ -4,31 +4,64 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PreFlight Review Packet - R-DEMO-001</title>
+<meta name="packet-sha256" content="e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a">
+<meta name="packet-hash-scope" content="sha256-of-normalized-rendered-html">
 <style>
   :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
   * { box-sizing: border-box; }
   body { margin:0; background:#f6f8fa; color:var(--ink); font:14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
-  .page { max-width: 980px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
+  .page { max-width: 1120px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
   h1,h2,h3 { margin:0 0 8px; line-height:1.2; }
-  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; }
+  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; margin-top:22px; }
   .brandbar { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:20px; }
   .mark { font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; color:var(--brand); }
   .badge { display:inline-block; border:1px solid var(--line); border-radius:3px; padding:2px 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
   .badge.synthetic { color:var(--warn); border-color:#e3c08e; background:#fdf7ec; }
+  .badge.ok { color:#1c6b3a; border-color:#b5d7c2; background:#f0f8f3; }
+  .badge.bad { color:var(--danger); border-color:#e6b5b1; background:#fdf1f0; }
   .muted { color:var(--muted); }
-  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin:14px 0; }
+  .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin:14px 0; }
   .kpi { border:1px solid var(--line); padding:12px 14px; }
   .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
-  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:13px; }
-  th,td { text-align:left; border-bottom:1px solid var(--line); padding:7px 8px; vertical-align:top; }
-  th { background:#f1f4f7; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:12px; }
+  th,td { text-align:left; border-bottom:1px solid var(--line); padding:6px 7px; vertical-align:top; }
+  th { background:#f1f4f7; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
   .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
   .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
   .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
-  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; word-break:break-all; }
+  .callout.warning { border-left-color:var(--warn); background:#fdf7ec; }
+  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:10px; word-break:break-all; }
+  .excerpt { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; white-space:pre-wrap; word-break:break-word; margin:2px 0; }
+  .group { margin:18px 0 6px; }
   footer { margin-top:36px; border-top:1px solid var(--line); padding-top:12px; font-size:11px; color:var(--muted); }
   .pagebreak { page-break-before: always; }
-  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } }
+  table { table-layout: fixed; }
+  th, td { overflow-wrap: anywhere; }
+  @media screen and (max-width: 1200px) {
+    .page { margin: 12px; padding: 22px; max-width: none; }
+    table { display: block; width: 100%; overflow-x: auto; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media screen and (max-width: 600px) {
+    body { font-size: 13px; }
+    .page { margin: 0; padding: 14px; border: 0; }
+    h2 { font-size: 17px; }
+    .grid { grid-template-columns: 1fr; }
+    tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    th, td { display: block; border: 0; padding: 2px 0; }
+    thead { display: none; }
+  }
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    body { background:#fff; font-size: 9px; }
+    .page { border:0; margin:0; max-width:none; padding:0; }
+    h1 { font-size:20px; } h2 { font-size:15px; margin-top:18px; page-break-after:avoid; }
+    table { display: table; font-size:8px; page-break-inside:auto; }
+    th, td { padding:3px 4px; }
+    thead { display: table-header-group; }
+    tr { page-break-inside:avoid; }
+    footer { font-size:8px; }
+  }
 </style>
 </head>
 <body>
@@ -41,7 +74,7 @@
     </div>
     <div style="text-align:right">
       <span class="badge synthetic">Synthetic estate</span>
-      <div class="muted" style="margin-top:6px">2026-11-08T04:46:34Z</div>
+      <div class="muted" style="margin-top:6px">2026-11-09T19:59:12Z</div>
     </div>
   </div>
 
@@ -56,23 +89,91 @@
     <tr><th>Estate</th><td>demo</td></tr>
     <tr><th>Fixture</th><td>demo-slice-300</td></tr>
     <tr><th>Release context</th><td>Qusar 2026.08 (review context)</td></tr>
-    <tr><th>Snapshot hash</th><td class="hash">20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404</td></tr>
+    <tr><th>Scope boundary</th><td>Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; local, non-deployable draft; field-level nameOverride only applies on this path.</td></tr>
+    <tr><th>Snapshot hash</th><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
     <tr><th>Files</th><td>300 (4 unsupported/corrupt, listed)</td></tr>
-    <tr><th>Audit head</th><td class="hash">ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f</td></tr>
+    <tr><th>Audit head</th><td class="hash">d7e3a32dd4a11a0a4daa6995261218eab815cdb18122539a41439fd63ffdb276</td></tr>
+    <tr><th>Audit chain verified</th><td><span class="badge ok">yes</span> (9 events)</td></tr>
+    <tr><th>Packet hash</th><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
   </table>
 
   <h2>2. Executive summary</h2>
   <div class="grid">
     <div class="kpi"><div class="n">8</div><div class="l">features assembled</div></div>
     <div class="kpi"><div class="n">24</div><div class="l">advisory findings</div></div>
+    <div class="kpi"><div class="n">1</div><div class="l">readiness flag</div></div>
     <div class="kpi"><div class="n">12</div><div class="l">explicit dispositions</div></div>
   </div>
-  <p>8 feature candidates were assembled from 300 files. 24 advisory findings were recorded, each with evidence and a claim-strength label. 12 source properties received an explicit disposition; unresolved items became assumptions instead of silent gaps.</p>
+  <p>8 feature candidates were assembled from 300 files. 24 advisory findings and 1 readiness flag were recorded, each with evidence and a claim-strength label. 12 source properties received an explicit disposition and 5 target changes await approval; unresolved items became assumptions instead of silent gaps.</p>
+  <div class="callout warning">
+    <strong>Cloud Retrofit boundary.</strong> Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; local, non-deployable draft; field-level nameOverride only applies on this path.
+  </div>
   <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
   productivity claims.</p>
+  <table>
+    <tr><th>Packet count</th><th>Value</th><th>Packet count</th><th>Value</th></tr>
+    
+    
+    <tr><td>files</td><td>300</td>
+    
+    
+    
+    <td>unsupported_files</td><td>4</td></tr>
+    
+    
+    
+    <tr><td>features</td><td>8</td>
+    
+    
+    
+    <td>findings</td><td>24</td></tr>
+    
+    
+    
+    <tr><td>readiness</td><td>1</td>
+    
+    
+    
+    <td>rules</td><td>8</td></tr>
+    
+    
+    
+    <tr><td>mappings</td><td>12</td>
+    
+    
+    
+    <td>changes</td><td>5</td></tr>
+    
+    
+    
+    <tr><td>assumptions</td><td>3</td>
+    
+    
+    
+    <td>discovery_evidence</td><td>101</td></tr>
+    
+    
+    
+    <tr><td>review_evidence</td><td>25</td>
+    
+    
+    
+    <td>evidence</td><td>126</td></tr>
+    
+    
+    
+    <tr><td>audit_events</td><td>9</td>
+    
+    
+    
+    <td>metrics</td><td>6</td></tr>
+    
+    
+    
+  </table>
 
   <h2>3. Coverage and confidence</h2>
-  <p><strong>Coverage ceiling.</strong> 296 files parsed; 4 unsupported or corrupt files are listed in the manifest rather than hidden. Confidence labels are parsed, linked, inferred-review, or unresolved. This packet makes no deployability or certification claim.</p>
+  <p><strong>Coverage ceiling.</strong> 296 files parsed; 4 unsupported or corrupt files are listed below rather than hidden. Confidence labels are parsed, linked, inferred-review, or unresolved. This packet makes no deployability or certification claim.</p>
   
   <table>
     <tr><th>Metric</th><th>Value</th><th>Numerator</th><th>Denominator</th><th>Caveat</th></tr>
@@ -82,7 +183,7 @@
       <td>1.00</td>
       <td>8</td>
       <td>8</td>
-      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Anchors count only when the linked evidence passes the locator-support audit. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
     <tr>
@@ -90,15 +191,15 @@
       <td>1.00</td>
       <td>8</td>
       <td>8</td>
-      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Anchors count only when the linked evidence passes the locator-support audit. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
     <tr>
-      <td>M3 - Evidence-link support precision (30-link audit)</td>
+      <td>M3 - Evidence-link support precision (all links)</td>
       <td>1.00</td>
-      <td>30</td>
-      <td>30</td>
-      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+      <td>101</td>
+      <td>101</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Every discovery link is audited for path containment, excerpt SHA, non-placeholder excerpt, and locator support; support is not semantic entailment. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
     <tr>
@@ -106,7 +207,7 @@
       <td>1.00</td>
       <td>12</td>
       <td>12</td>
-      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. Demo slice is in-sample (a subset of the development fixture).</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. A mapping must also be grounded by the full source_ref or at least two significant snapshot tokens. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
     <tr>
@@ -122,13 +223,50 @@
       <td>1.00</td>
       <td>48</td>
       <td>48</td>
-      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. 24 TP / 0 FP / 0 FN across 8 rules; fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. Demo slice is in-sample (a subset of the development fixture).</td>
+      <td class="muted">One synthetic fixture; demonstration, not a benchmark. No live tenant and no generalisation to real estates. 24 TP / 0 FP / 0 FN across 8 rules; TP requires at least one locator-supported evidence link on a labelled positive path. Fraction is the F1 numerator/denominator. No F1 interval; bootstrap deferred. Demo slice is in-sample (a subset of the development fixture).</td>
     </tr>
     
   </table>
   
 
-  <h2>4. Assumption register</h2>
+  <h3>Excluded and unsupported files (4)</h3>
+  
+  <table>
+    <tr><th>Path</th><th>Status</th><th>Kind</th><th>Reason / warning</th></tr>
+    
+    <tr>
+      <td><code>assets/dealer-logo.png</code></td>
+      <td><span class="pill">binary</span></td>
+      <td>binary</td>
+      <td class="muted">Binary content; not parsed.</td>
+    </tr>
+    
+    <tr>
+      <td><code>assets/rate-table.xls</code></td>
+      <td><span class="pill">binary</span></td>
+      <td>binary</td>
+      <td class="muted">Binary content; not parsed.</td>
+    </tr>
+    
+    <tr>
+      <td><code>config/web/pcf/policy/BrokenScreen.pcf</code></td>
+      <td><span class="pill">corrupt</span></td>
+      <td>pcf</td>
+      <td class="muted">XML parse error: Premature end of data in tag Screen line 1, line 1, column 34 (&lt;string&gt;, line 1)</td>
+    </tr>
+    
+    <tr>
+      <td><code>data/vehicle_rating_inputs.csv</code></td>
+      <td><span class="pill">unsupported</span></td>
+      <td>unknown</td>
+      <td class="muted">File type is outside the supported parsers.</td>
+    </tr>
+    
+  </table>
+  
+
+  <h2>4. Assumption register and disposition ledger</h2>
+  <h3>Assumption register (3)</h3>
   
   <table>
     <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr>
@@ -151,7 +289,7 @@
     
     <tr>
       <td>A-03</td>
-      <td>The long APD type name exceeds 24 characters; the draft adds a nameOverride to avoid truncation compile errors.</td>
+      <td>The product-template type name exceeds APD&#39;s 24-character import limit; the draft adds a nameOverride mapping the truncated visualized name to the installed name.</td>
       <td>high (7.0-9.0 engineer-days)</td>
       <td>Which teams own the 11 references, and can the nameOverride be validated on the target release?</td>
       <td>unassigned</td><td>open</td>
@@ -160,375 +298,2259 @@
   </table>
   
 
-  <h2>5. Findings</h2>
+  <h3>Mapping and disposition ledger (12)</h3>
   
   <table>
-    <tr><th>Rule</th><th>Title</th><th>Severity</th><th>Claim strength</th><th>Decision</th></tr>
+    <tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr>
     
     <tr>
-      <td>PF-GW-EXC-001</td>
-      <td>Swallowed exception</td>
+      <td>M-01</td>
+      <td><code>PAVehicle</code><div class="muted">apd_template</div></td>
+      <td><code>codegen.PAVehicle.nameOverride</code><div class="muted">PersonalVehicle</div></td>
+      <td>mapped_transformed</td>
+      <td>guidewire-doc</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-02</td>
+      <td><code>PAVehicle.Year</code><div class="muted">apd_template</div></td>
+      <td><code>codegen.PAVehicle.fields.Year.nameOverride</code><div class="muted">ModelYear</div></td>
+      <td>mapped_transformed</td>
+      <td>guidewire-doc</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-03</td>
+      <td><code>PADriver</code><div class="muted">apd_template</div></td>
+      <td><code>codegen.PADriver.nameOverride</code><div class="muted">VehicleDriver</div></td>
+      <td>mapped_transformed</td>
+      <td>guidewire-doc</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-04</td>
+      <td><code>PALine</code><div class="muted">apd_template</div></td>
+      <td><code>codegen.PALine.nameOverride</code><div class="muted">PersonalAutoLine</div></td>
+      <td>mapped_transformed</td>
+      <td>guidewire-doc</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-05</td>
+      <td><code>PersonalAutoRatingFactorConfiguration</code><div class="muted">apd_template</div></td>
+      <td><code>codegen.PersonalAutoRatingFactor.nameOverride</code><div class="muted">PersonalAutoRatingFactorConfiguration</div></td>
+      <td>mapped_transformed</td>
+      <td>guidewire-doc</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-06</td>
+      <td><code>PersonalVehicle.VehicleType</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.vehicleType</code><div class="muted">vehicleType</div></td>
+      <td>mapped_exact</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-07</td>
+      <td><code>PersonalVehicle.GarageLocation_Ext</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.garageLocation</code><div class="muted">garageLocation</div></td>
+      <td>mapped_transformed</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-08</td>
+      <td><code>PersonalVehicle.ModelYear</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.modelYear</code><div class="muted">modelYear</div></td>
+      <td>mapped_transformed</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-09</td>
+      <td><code>PersonalVehicle.Make</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.make</code><div class="muted">make</div></td>
+      <td>mapped_exact</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-10</td>
+      <td><code>PersonalVehicle.VIN</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.vin</code><div class="muted">vin</div></td>
+      <td>mapped_exact</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-11</td>
+      <td><code>PersonalVehicle.Usage</code><div class="muted">installed_entity</div></td>
+      <td><code>schema.usage</code><div class="muted">usage</div></td>
+      <td>mapped_exact</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+    <tr>
+      <td>M-12</td>
+      <td><code>VehicleType.Motorcycle_Ext</code><div class="muted">typelist</div></td>
+      <td><code>schema.vehicleType.motorcycle</code><div class="muted">motorcycle</div></td>
+      <td>mapped_transformed</td>
+      <td>preflight-convention</td>
+      <td><span class="pill">pending</span></td>
+    </tr>
+    
+  </table>
+  
+
+  <h3>Changes awaiting approval (5)</h3>
+  
+  <table>
+    <tr><th>ID</th><th>Approval state</th><th>Target path</th><th>Mapping</th><th>Reviewer</th></tr>
+    
+    <tr>
+      <td>C-01</td>
+      <td><span class="pill">pending</span></td>
+      <td><code>config/integration/schemas/ext/policyperiod/v1/policyperiod_pa_ext-1.0.schema.json</code></td>
+      <td>M-01</td>
+      <td>unassigned</td>
+    </tr>
+    
+    <tr>
+      <td>C-02</td>
+      <td><span class="pill">pending</span></td>
+      <td><code>config/integration/mappings/ext/policyperiod/v1/policyperiod_pa_ext-1.0.mapping.json</code></td>
+      <td>M-02</td>
+      <td>unassigned</td>
+    </tr>
+    
+    <tr>
+      <td>C-03</td>
+      <td><span class="pill">pending</span></td>
+      <td><code>config/integration/updaters/ext/policyperiod/v1/policyperiod_pa_ext-1.0.updater.json</code></td>
+      <td>M-03</td>
+      <td>unassigned</td>
+    </tr>
+    
+    <tr>
+      <td>C-04</td>
+      <td><span class="pill">pending</span></td>
+      <td><code>config/integration/apis/installedlobs/pa_codegen_config_ext-1.0.yaml</code></td>
+      <td>M-04</td>
+      <td>unassigned</td>
+    </tr>
+    
+    <tr>
+      <td>C-05</td>
+      <td><span class="pill">pending</span></td>
+      <td><code>config/integration/apis/installedlobs/pa_ext-1.0.yaml</code></td>
+      <td>M-05</td>
+      <td>unassigned</td>
+    </tr>
+    
+  </table>
+  
+
+  <h2>5. Findings</h2>
+  <p>24 advisory findings across 8 rules, grouped below. Each row
+  carries its source locator and the supporting evidence excerpt; secret values are fingerprinted.</p>
+  
+  
+  <h3 class="group">PF-GW-EXC-001 - Swallowed exception
+    <span class="pill">warning</span>
+    <span class="pill">verified-id / ERR00-G</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
+    <tr>
+      <td>F-002</td>
+      <td>Swallowed exception<div class="muted">Empty catch block at gsrc/acme/error/SwallowError.gs:7.</div></td>
       <td>warning</td>
-      <td>verified-id / ERR00-G</td>
+      <td>verified-id / ERR00-G
+        <div class="muted">Do Not Suppress Exceptions</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/error/SwallowError.gs:7</code></td>
+      <td>
+        
+        <div class="excerpt">} catch (e : Exception) {
+      // ignored on purpose
+    }
+  }
+}</div>
+        <div class="muted">line: line 7 · lexer · parsed · sha 5401a3e6ccff</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-EXC-001</td>
-      <td>Swallowed exception</td>
+      <td>F-003</td>
+      <td>Swallowed exception<div class="muted">Empty catch block at gsrc/acme/error/SwallowErrorB.gs:5.</div></td>
       <td>warning</td>
-      <td>verified-id / ERR00-G</td>
+      <td>verified-id / ERR00-G
+        <div class="muted">Do Not Suppress Exceptions</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/error/SwallowErrorB.gs:5</code></td>
+      <td>
+        
+        <div class="excerpt">try { maybeFail() } catch (e : Exception) { }
+  }
+}</div>
+        <div class="muted">line: line 5 · lexer · parsed · sha 0640c14c489c</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-EXC-001</td>
-      <td>Swallowed exception</td>
+      <td>F-004</td>
+      <td>Swallowed exception<div class="muted">Empty catch block at gsrc/acme/error/SwallowErrorC.gs:5.</div></td>
       <td>warning</td>
-      <td>verified-id / ERR00-G</td>
+      <td>verified-id / ERR00-G
+        <div class="muted">Do Not Suppress Exceptions</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/error/SwallowErrorC.gs:5</code></td>
+      <td>
+        
+        <div class="excerpt">try { maybeFail() } catch (e : Exception) { ; }
+  }
+}</div>
+        <div class="muted">line: line 5 · lexer · parsed · sha 3ed6793ecda1</div>
+        
+      </td>
     </tr>
     
+  </table>
+  
+  <h3 class="group">PF-GW-GUNIT-001 - Database access in a pure unit test
+    <span class="pill">warning</span>
+    <span class="pill">heuristic</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
     <tr>
-      <td>PF-GW-SRV-001</td>
-      <td>Custom servlet</td>
+      <td>F-020</td>
+      <td>Database access in a pure unit test<div class="muted">Pure unit test uses database calls (Query.make, loadSampleData) at gtest/acme/PersonalVehicleRatingDBTest.gs:5.</div></td>
       <td>warning</td>
-      <td>verified-policy</td>
+      <td>heuristic
+        
+        </td>
       <td>open</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTest.gs:5</code></td>
+      <td>
+        
+        <div class="excerpt">var q = Query.make(PersonalVehicle)
+    var rows = q.select().toList()
+    loadSampleData()</div>
+        <div class="muted">line: line 5 · lexer · parsed · sha 05a0287b0cce</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SRV-001</td>
-      <td>Custom servlet</td>
+      <td>F-021</td>
+      <td>Database access in a pure unit test<div class="muted">Pure unit test uses database calls (Query.make, loadSampleData) at gtest/acme/PersonalVehicleRatingDBTestB.gs:3.</div></td>
       <td>warning</td>
-      <td>verified-policy</td>
+      <td>heuristic
+        
+        </td>
       <td>open</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestB.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">function testRows() { var q = Query.make(PersonalVehicle); q.select(); loadSampleData() }
+}</div>
+        <div class="muted">line: line 3 · lexer · parsed · sha d1c8c9820fcf</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SRV-001</td>
-      <td>Custom servlet</td>
+      <td>F-022</td>
+      <td>Database access in a pure unit test<div class="muted">Pure unit test uses database calls (DriverManager.getConnection) at gtest/acme/PersonalVehicleRatingDBTestC.gs:3.</div></td>
       <td>warning</td>
-      <td>verified-policy</td>
+      <td>heuristic
+        
+        </td>
       <td>open</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestC.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">function testRows() { DriverManager.getConnection(&#34;jdbc:acme&#34;) }
+}</div>
+        <div class="muted">line: line 3 · lexer · parsed · sha ec50d7341100</div>
+        
+      </td>
     </tr>
     
+  </table>
+  
+  <h3 class="group">PF-GW-NAM-001 - APD truncates product-template type names over 24 characters
+    <span class="pill">error</span>
+    <span class="pill">verified-doc</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
     <tr>
-      <td>PF-GW-PKG-001</td>
-      <td>Hidden or internal package reference</td>
+      <td>F-023</td>
+      <td>APD truncates product-template type names over 24 characters<div class="muted">APD type &#39;PersonalAutoRatingFactorConfiguration&#39; is a 37-character product-template type. APD truncates type names over 24 characters on import, so endpoint generation fails to compile. A codegen nameOverride maps the truncated visualized name to the installed name. Synthetic fixture type.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1191</td>
+      <td>verified-doc / https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+        
+        </td>
       <td>open</td>
+      <td><code>product/template/LongTypeA.xml:3</code></td>
+      <td>
+        
+        <div class="excerpt">&lt;type name=&#34;PersonalAutoRatingFactorConfiguration&#34;&gt;
+    &lt;field name=&#34;Factor&#34; type=&#34;Decimal&#34;/&gt;
+  &lt;/type&gt;</div>
+        <div class="muted">line: line 3 · xml_xpath · linked · sha cc909e38cb8a</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-PKG-001</td>
-      <td>Hidden or internal package reference</td>
+      <td>F-024</td>
+      <td>APD truncates product-template type names over 24 characters<div class="muted">APD type &#39;PersonalAutoUnderwritingConfiguration&#39; is a 37-character product-template type. APD truncates type names over 24 characters on import, so endpoint generation fails to compile. A codegen nameOverride maps the truncated visualized name to the installed name. Synthetic fixture type.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1191</td>
+      <td>verified-doc / https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+        
+        </td>
       <td>open</td>
+      <td><code>product/template/LongTypeB.xml:3</code></td>
+      <td>
+        
+        <div class="excerpt">&lt;type name=&#34;PersonalAutoUnderwritingConfiguration&#34;&gt;
+    &lt;field name=&#34;Rule&#34; type=&#34;Text&#34;/&gt;
+  &lt;/type&gt;</div>
+        <div class="muted">line: line 3 · xml_xpath · linked · sha 0ec570c1873f</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-PKG-001</td>
-      <td>Hidden or internal package reference</td>
+      <td>F-025</td>
+      <td>APD truncates product-template type names over 24 characters<div class="muted">APD type &#39;PersonalAutoEligibilityConfiguration&#39; is a 36-character product-template type. APD truncates type names over 24 characters on import, so endpoint generation fails to compile. A codegen nameOverride maps the truncated visualized name to the installed name. Synthetic fixture type.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1191</td>
+      <td>verified-doc / https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+        
+        </td>
       <td>open</td>
+      <td><code>product/template/LongTypeC.xml:3</code></td>
+      <td>
+        
+        <div class="excerpt">&lt;type name=&#34;PersonalAutoEligibilityConfiguration&#34;&gt;
+    &lt;field name=&#34;Eligible&#34; type=&#34;Boolean&#34;/&gt;
+  &lt;/type&gt;</div>
+        <div class="muted">line: line 3 · xml_xpath · linked · sha e6998251fe74</div>
+        
+      </td>
     </tr>
     
+  </table>
+  
+  <h3 class="group">PF-GW-PKG-001 - Hidden or internal package reference
+    <span class="pill">error</span>
+    <span class="pill">verified-id / IS-TLS-1191</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
     <tr>
-      <td>PF-GW-SQL-001</td>
-      <td>Direct JDBC or SQL access</td>
+      <td>F-008</td>
+      <td>Hidden or internal package reference<div class="muted">Hidden or internal package reference detected at gsrc/acme/internal/HiddenPackage.gs:3.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1238</td>
+      <td>verified-id / IS-TLS-1191
+        <div class="muted">Hidden Package Reference</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/internal/HiddenPackage.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses gw.internal.util.ClassLoaderUtil
+uses com.guidewire.cc.system.SystemUtil</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha 71dc8a077017</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SQL-001</td>
-      <td>Direct JDBC or SQL access</td>
+      <td>F-009</td>
+      <td>Hidden or internal package reference<div class="muted">Hidden or internal package reference detected at gsrc/acme/internal/HiddenPackageB.gs:3.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1238</td>
+      <td>verified-id / IS-TLS-1191
+        <div class="muted">Hidden Package Reference</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/internal/HiddenPackageB.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses gw.internal.util.ReflectionUtil
+
+class HiddenPackageB {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha 415c5094723b</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SQL-001</td>
-      <td>Direct JDBC or SQL access</td>
+      <td>F-010</td>
+      <td>Hidden or internal package reference<div class="muted">Hidden or internal package reference detected at gsrc/acme/internal/HiddenPackageC.gs:3.</div></td>
       <td>error</td>
-      <td>verified-id / IS-TLS-1238</td>
+      <td>verified-id / IS-TLS-1191
+        <div class="muted">Hidden Package Reference</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/internal/HiddenPackageC.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses com.guidewire.cc.system.SystemUtil
+
+class HiddenPackageC {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha cf0a7cc819d9</div>
+        
+      </td>
     </tr>
     
+  </table>
+  
+  <h3 class="group">PF-GW-SEC-001 - Hard-coded secret
+    <span class="pill">error</span>
+    <span class="pill">verified-id / SEC00-G</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
     <tr>
-      <td>PF-GW-SEC-001</td>
-      <td>Hard-coded secret</td>
+      <td>F-014</td>
+      <td>Hard-coded secret<div class="muted">Hard-coded value assigned to &#39;apiKey&#39; at gsrc/acme/security/SecretConfig.gs:4. Value redacted (fingerprint 3cde3d6b).</div></td>
       <td>error</td>
-      <td>verified-id / SEC00-G</td>
+      <td>verified-id / SEC00-G
+        <div class="muted">Do Not Hardcode Secrets</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/security/SecretConfig.gs:4</code></td>
+      <td>
+        
+        <div class="excerpt">var apiKey = &#34;[REDACTED:3cde3d6b]&#34;
+  var password = &#34;[REDACTED:ba01338b]&#34;
+}</div>
+        <div class="muted">line: line 4 · regex_masked · parsed · sha bec6ef540fab</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SEC-001</td>
-      <td>Hard-coded secret</td>
+      <td>F-015</td>
+      <td>Hard-coded secret<div class="muted">Hard-coded value assigned to &#39;token&#39; at gsrc/acme/security/SecretConfigB.gs:4. Value redacted (fingerprint bc63790c).</div></td>
       <td>error</td>
-      <td>verified-id / SEC00-G</td>
+      <td>verified-id / SEC00-G
+        <div class="muted">Do Not Hardcode Secrets</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/security/SecretConfigB.gs:4</code></td>
+      <td>
+        
+        <div class="excerpt">var token = &#34;[REDACTED:bc63790c]&#34;
+}</div>
+        <div class="muted">line: line 4 · regex_masked · parsed · sha 6c6922d0f31e</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-SEC-001</td>
-      <td>Hard-coded secret</td>
+      <td>F-016</td>
+      <td>Hard-coded secret<div class="muted">Hard-coded value assigned to &#39;secret&#39; at gsrc/acme/security/SecretConfigC.gs:4. Value redacted (fingerprint f237d9b3).</div></td>
       <td>error</td>
-      <td>verified-id / SEC00-G</td>
+      <td>verified-id / SEC00-G
+        <div class="muted">Do Not Hardcode Secrets</div>
+        <div class="muted hash">https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G</div></td>
       <td>open</td>
+      <td><code>gsrc/acme/security/SecretConfigC.gs:4</code></td>
+      <td>
+        
+        <div class="excerpt">var secret : String = &#34;[REDACTED:f237d9b3]&#34;
+}</div>
+        <div class="muted">line: line 4 · regex_masked · parsed · sha e38657518591</div>
+        
+      </td>
+    </tr>
+    
+  </table>
+  
+  <h3 class="group">PF-GW-SQL-001 - Direct JDBC or SQL access
+    <span class="pill">error</span>
+    <span class="pill">verified-id / IS-TLS-1238</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
+    <tr>
+      <td>F-011</td>
+      <td>Direct JDBC or SQL access<div class="muted">Direct JDBC or SQL access detected at gsrc/acme/query/PersonalVehicleQuery.gs:3.</div></td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238
+        <div class="muted">Use of Direct SQL Calls to Access a Database</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
+      <td>open</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQuery.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses java.sql.Connection
+uses java.sql.DriverManager</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha a39ff0dde369</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-TX-001</td>
-      <td>Explicit commit inside runWithNewBundle</td>
+      <td>F-012</td>
+      <td>Direct JDBC or SQL access<div class="muted">Direct JDBC or SQL access detected at gsrc/acme/query/PersonalVehicleQueryB.gs:3.</div></td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238
+        <div class="muted">Use of Direct SQL Calls to Access a Database</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
+      <td>open</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQueryB.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses java.sql.Statement
+
+class PersonalVehicleQueryB {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha 5d6e483f3689</div>
+        
+      </td>
+    </tr>
+    
+    <tr>
+      <td>F-013</td>
+      <td>Direct JDBC or SQL access<div class="muted">Direct JDBC or SQL access detected at gsrc/acme/query/PersonalVehicleQueryC.gs:3.</div></td>
+      <td>error</td>
+      <td>verified-id / IS-TLS-1238
+        <div class="muted">Use of Direct SQL Calls to Access a Database</div>
+        <div class="muted hash">https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security</div></td>
+      <td>open</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQueryC.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses java.sql.DriverManager
+
+class PersonalVehicleQueryC {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha f91664e4d065</div>
+        
+      </td>
+    </tr>
+    
+  </table>
+  
+  <h3 class="group">PF-GW-SRV-001 - Custom servlet
+    <span class="pill">warning</span>
+    <span class="pill">verified-policy</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
+    <tr>
+      <td>F-005</td>
+      <td>Custom servlet<div class="muted">Custom servlet detected at gsrc/acme/integration/LegacyVehicleServlet.gs:3.</div></td>
       <td>warning</td>
-      <td>secondary</td>
+      <td>verified-policy / https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServlet.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses javax.servlet.http.HttpServlet
+uses javax.servlet.http.HttpServletRequest
+uses javax.servlet.http.HttpServletResponse</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha 564df6f674c0</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-TX-001</td>
-      <td>Explicit commit inside runWithNewBundle</td>
+      <td>F-006</td>
+      <td>Custom servlet<div class="muted">Custom servlet detected at gsrc/acme/integration/LegacyVehicleServletB.gs:3.</div></td>
       <td>warning</td>
-      <td>secondary</td>
+      <td>verified-policy / https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServletB.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">uses javax.servlet.http.HttpServlet
+
+class LegacyVehicleServletB extends HttpServlet {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha fe91aa66c2f7</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-TX-001</td>
-      <td>Explicit commit inside runWithNewBundle</td>
+      <td>F-007</td>
+      <td>Custom servlet<div class="muted">Custom servlet detected at gsrc/acme/integration/LegacyVehicleServletC.gs:3.</div></td>
       <td>warning</td>
-      <td>secondary</td>
+      <td>verified-policy / https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServletC.gs:3</code></td>
+      <td>
+        
+        <div class="excerpt">import javax.servlet.http.HttpServlet
+
+class LegacyVehicleServletC extends HttpServlet {</div>
+        <div class="muted">line: line 3 · regex_masked · parsed · sha b1338f43ecc0</div>
+        
+      </td>
     </tr>
     
+  </table>
+  
+  <h3 class="group">PF-GW-TX-001 - Explicit commit inside runWithNewBundle
+    <span class="pill">warning</span>
+    <span class="pill">secondary</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    
     <tr>
-      <td>PF-GW-GUNIT-001</td>
-      <td>Database access in a pure unit test</td>
+      <td>F-017</td>
+      <td>Explicit commit inside runWithNewBundle<div class="muted">Explicit commit inside runWithNewBundle at gsrc/acme/transaction/BundleCommit.gs:7.</div></td>
       <td>warning</td>
-      <td>heuristic</td>
+      <td>secondary / https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/transaction/BundleCommit.gs:7</code></td>
+      <td>
+        
+        <div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; {
+      bundle.add(vehicle)
+      bundle.commit()
+    })</div>
+        <div class="muted">line: line 7 · lexer · parsed · sha 0f7c26b40cbd</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-GUNIT-001</td>
-      <td>Database access in a pure unit test</td>
+      <td>F-018</td>
+      <td>Explicit commit inside runWithNewBundle<div class="muted">Explicit commit inside runWithNewBundle at gsrc/acme/transaction/BundleCommitB.gs:7.</div></td>
       <td>warning</td>
-      <td>heuristic</td>
+      <td>secondary / https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/transaction/BundleCommitB.gs:7</code></td>
+      <td>
+        
+        <div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; {
+      bundle.add(v)
+      bundle.commit()
+    })</div>
+        <div class="muted">line: line 7 · lexer · parsed · sha 036022f84354</div>
+        
+      </td>
     </tr>
     
     <tr>
-      <td>PF-GW-GUNIT-001</td>
-      <td>Database access in a pure unit test</td>
+      <td>F-019</td>
+      <td>Explicit commit inside runWithNewBundle<div class="muted">Explicit commit inside runWithNewBundle at gsrc/acme/transaction/BundleCommitC.gs:5.</div></td>
       <td>warning</td>
-      <td>heuristic</td>
+      <td>secondary / https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud
+        
+        </td>
       <td>open</td>
+      <td><code>gsrc/acme/transaction/BundleCommitC.gs:5</code></td>
+      <td>
+        
+        <div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; { bundle.add(v); bundle.commit() })</div>
+        <div class="muted">line: line 5 · lexer · parsed · sha 239c45e0d168</div>
+        
+      </td>
     </tr>
     
-    <tr>
-      <td>PF-GW-NAM-001</td>
-      <td>APD type name exceeds 24 characters</td>
-      <td>error</td>
-      <td>verified-doc</td>
-      <td>open</td>
-    </tr>
+  </table>
+  
+  
+
+  <h3>Readiness flags (1) - separate from advisory findings</h3>
+  
+  <table>
+    <tr><th>Flag</th><th>Rule</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Source</th><th>Supporting evidence</th></tr>
     
     <tr>
-      <td>PF-GW-NAM-001</td>
-      <td>APD type name exceeds 24 characters</td>
-      <td>error</td>
-      <td>verified-doc</td>
-      <td>open</td>
-    </tr>
-    
-    <tr>
-      <td>PF-GW-NAM-001</td>
-      <td>APD type name exceeds 24 characters</td>
-      <td>error</td>
-      <td>verified-doc</td>
-      <td>open</td>
+      <td>F-001</td>
+      <td><code>PF-GW-SBT-001</code></td>
+      <td>Standards Based Template readiness flag<div class="muted">Synthetic marker heuristic: config/resources/productmodel/WorkersCompensation.xml contains standardsBasedTemplate=&#34;true&#34;. This is not an official SBT assessment or a conversion check; the documented Olos SBT limitation is context for reviewer follow-up on the target release.</div></td>
+      <td>warning</td>
+      <td>heuristic / https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html
+        
+        </td>
+      <td><code>config/resources/productmodel/WorkersCompensation.xml:2</code></td>
+      <td>
+        
+        <div class="excerpt">&lt;productModel name=&#34;WorkersCompensation&#34; standardsBasedTemplate=&#34;true&#34;&gt;
+  &lt;type name=&#34;WCLine&#34;/&gt;
+  &lt;type name=&#34;WCEmployee&#34;/&gt;</div>
+        <div class="muted">line: line 2 · xml_xpath · linked · sha 193293046241</div>
+        
+      </td>
     </tr>
     
   </table>
   
 
   <h2>6. Evidence and audit appendix</h2>
+  <p><strong>Complete evidence set: 126 items</strong>
+  (25 review evidence items linked to findings or readiness flags;
+  101 discovery evidence items). All excerpts are shown after redaction;
+  locators are unchanged.</p>
+
+  <h3>Review evidence linked to findings (25)</h3>
   <table>
-    <tr><th>Evidence</th><th>File</th><th>Locator</th><th>Excerpt</th></tr>
+    <tr><th>ID</th><th>Linked finding(s)</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
+    
+    <tr>
+      <td>REV-0001</td>
+      <td>F-001</td>
+      <td><code>config/resources/productmodel/WorkersCompensation.xml</code></td>
+      <td>line: line 2</td>
+      <td><div class="excerpt">&lt;productModel name=&#34;WorkersCompensation&#34; standardsBasedTemplate=&#34;true&#34;&gt;
+  &lt;type name=&#34;WCLine&#34;/&gt;
+  &lt;type name=&#34;WCEmployee&#34;/&gt;</div></td>
+      <td class="hash">19329304624135855587ebe726c222e5658e7f7cd32a9439328d7c4b2187d259</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0002</td>
+      <td>F-002</td>
+      <td><code>gsrc/acme/error/SwallowError.gs</code></td>
+      <td>line: line 7</td>
+      <td><div class="excerpt">} catch (e : Exception) {
+      // ignored on purpose
+    }
+  }
+}</div></td>
+      <td class="hash">5401a3e6ccffe76def58e801b2a9837b223335b60b6353eb48316443d75f3e65</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0003</td>
+      <td>F-003</td>
+      <td><code>gsrc/acme/error/SwallowErrorB.gs</code></td>
+      <td>line: line 5</td>
+      <td><div class="excerpt">try { maybeFail() } catch (e : Exception) { }
+  }
+}</div></td>
+      <td class="hash">0640c14c489c96cc555838fb3f7d06df3d220a73e3393d673dca3cfc2bcf754a</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0004</td>
+      <td>F-004</td>
+      <td><code>gsrc/acme/error/SwallowErrorC.gs</code></td>
+      <td>line: line 5</td>
+      <td><div class="excerpt">try { maybeFail() } catch (e : Exception) { ; }
+  }
+}</div></td>
+      <td class="hash">3ed6793ecda1255ea7d833e6be8b765ddf3451020ae5c2dbb15e475af96b0245</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0005</td>
+      <td>F-005</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServlet.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses javax.servlet.http.HttpServlet
+uses javax.servlet.http.HttpServletRequest
+uses javax.servlet.http.HttpServletResponse</div></td>
+      <td class="hash">564df6f674c09e51ea0cf7f515981584aa519d4dbff44492d77a3c6e9ab0778b</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0006</td>
+      <td>F-006</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServletB.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses javax.servlet.http.HttpServlet
+
+class LegacyVehicleServletB extends HttpServlet {</div></td>
+      <td class="hash">fe91aa66c2f7fd008f10c3ee005e3a5c415f4d9ac470c1f0ab91e0fac705fd4d</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0007</td>
+      <td>F-007</td>
+      <td><code>gsrc/acme/integration/LegacyVehicleServletC.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">import javax.servlet.http.HttpServlet
+
+class LegacyVehicleServletC extends HttpServlet {</div></td>
+      <td class="hash">b1338f43ecc001848ee2927e678fe26033838c49766fb780a8e0e51f17e03acc</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0008</td>
+      <td>F-008</td>
+      <td><code>gsrc/acme/internal/HiddenPackage.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses gw.internal.util.ClassLoaderUtil
+uses com.guidewire.cc.system.SystemUtil</div></td>
+      <td class="hash">71dc8a077017b0fed65c9c99a80d34fbb919a7c503b015907161fb5b5e42e928</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0009</td>
+      <td>F-009</td>
+      <td><code>gsrc/acme/internal/HiddenPackageB.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses gw.internal.util.ReflectionUtil
+
+class HiddenPackageB {</div></td>
+      <td class="hash">415c5094723b03bdcff4da78d31a0e6991688ff6eb45642ae8404708bd97170d</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0010</td>
+      <td>F-010</td>
+      <td><code>gsrc/acme/internal/HiddenPackageC.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses com.guidewire.cc.system.SystemUtil
+
+class HiddenPackageC {</div></td>
+      <td class="hash">cf0a7cc819d95d7af0ed235db098ed373260c4e7520863460b94740f29e0b544</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0011</td>
+      <td>F-011</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQuery.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses java.sql.Connection
+uses java.sql.DriverManager</div></td>
+      <td class="hash">a39ff0dde369d23f7fb4f63edef4ebad029909098baadf2c92c4aba76b98d6b3</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0012</td>
+      <td>F-012</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQueryB.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses java.sql.Statement
+
+class PersonalVehicleQueryB {</div></td>
+      <td class="hash">5d6e483f36891f5ecc870ecebc209be7150719ba02c48a2bf64759f35fc3b4fe</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0013</td>
+      <td>F-013</td>
+      <td><code>gsrc/acme/query/PersonalVehicleQueryC.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">uses java.sql.DriverManager
+
+class PersonalVehicleQueryC {</div></td>
+      <td class="hash">f91664e4d065b6966e336ad310be6acc028242b40721b891f4e30bd72a8032d9</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0014</td>
+      <td>F-014</td>
+      <td><code>gsrc/acme/security/SecretConfig.gs</code></td>
+      <td>line: line 4</td>
+      <td><div class="excerpt">var apiKey = &#34;[REDACTED:3cde3d6b]&#34;
+  var password = &#34;[REDACTED:ba01338b]&#34;
+}</div></td>
+      <td class="hash">bec6ef540fabf8f34e7ebfe41329e605b9464177729f8358d0fae496ce134169</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0015</td>
+      <td>F-015</td>
+      <td><code>gsrc/acme/security/SecretConfigB.gs</code></td>
+      <td>line: line 4</td>
+      <td><div class="excerpt">var token = &#34;[REDACTED:bc63790c]&#34;
+}</div></td>
+      <td class="hash">6c6922d0f31e20c04dcaa6def522faabdcb1e483329a56b5245b32d178b763d1</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0016</td>
+      <td>F-016</td>
+      <td><code>gsrc/acme/security/SecretConfigC.gs</code></td>
+      <td>line: line 4</td>
+      <td><div class="excerpt">var secret : String = &#34;[REDACTED:f237d9b3]&#34;
+}</div></td>
+      <td class="hash">e3865751859190683c340df9b001b9568bbe79990ad6e12093425017d0763d56</td>
+      <td>parsed</td>
+      <td>regex_masked</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0017</td>
+      <td>F-017</td>
+      <td><code>gsrc/acme/transaction/BundleCommit.gs</code></td>
+      <td>line: line 7</td>
+      <td><div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; {
+      bundle.add(vehicle)
+      bundle.commit()
+    })</div></td>
+      <td class="hash">0f7c26b40cbd4bcbe2f54c423c288ee3c127cf22256f01fe010c5dc7bc5b0ffe</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0018</td>
+      <td>F-018</td>
+      <td><code>gsrc/acme/transaction/BundleCommitB.gs</code></td>
+      <td>line: line 7</td>
+      <td><div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; {
+      bundle.add(v)
+      bundle.commit()
+    })</div></td>
+      <td class="hash">036022f8435495a1c8b4ca9976c5c6077b48801af900cee6132b72005b0af116</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0019</td>
+      <td>F-019</td>
+      <td><code>gsrc/acme/transaction/BundleCommitC.gs</code></td>
+      <td>line: line 5</td>
+      <td><div class="excerpt">gw.transaction.Transaction.runWithNewBundle(\bundle -&gt; { bundle.add(v); bundle.commit() })</div></td>
+      <td class="hash">239c45e0d16832545748128a23390a613f01dba1fa554aa87948fafcf0131f8c</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0020</td>
+      <td>F-020</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTest.gs</code></td>
+      <td>line: line 5</td>
+      <td><div class="excerpt">var q = Query.make(PersonalVehicle)
+    var rows = q.select().toList()
+    loadSampleData()</div></td>
+      <td class="hash">05a0287b0cce33828aa2e782b25ba8b05fab486c23a5fb8d694ce9b857d8bd91</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0021</td>
+      <td>F-021</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestB.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">function testRows() { var q = Query.make(PersonalVehicle); q.select(); loadSampleData() }
+}</div></td>
+      <td class="hash">d1c8c9820fcf778b82d875b3f95ebdcc76c0011f8b91bbb8e48702fe9e3d2581</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0022</td>
+      <td>F-022</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestC.gs</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">function testRows() { DriverManager.getConnection(&#34;jdbc:acme&#34;) }
+}</div></td>
+      <td class="hash">ec50d7341100a01f54d5328187fc0455984ee365dd991d6f598584b6e2e5e96f</td>
+      <td>parsed</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0023</td>
+      <td>F-023</td>
+      <td><code>product/template/LongTypeA.xml</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">&lt;type name=&#34;PersonalAutoRatingFactorConfiguration&#34;&gt;
+    &lt;field name=&#34;Factor&#34; type=&#34;Decimal&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">cc909e38cb8af4ea2c2fbdac959f4b0a7c3f2449939c46aa38252ef6f26287c5</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0024</td>
+      <td>F-024</td>
+      <td><code>product/template/LongTypeB.xml</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">&lt;type name=&#34;PersonalAutoUnderwritingConfiguration&#34;&gt;
+    &lt;field name=&#34;Rule&#34; type=&#34;Text&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">0ec570c1873f32d044bca14d75d490d504694fc5a586d314e8ed8f8261737886</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>REV-0025</td>
+      <td>F-025</td>
+      <td><code>product/template/LongTypeC.xml</code></td>
+      <td>line: line 3</td>
+      <td><div class="excerpt">&lt;type name=&#34;PersonalAutoEligibilityConfiguration&#34;&gt;
+    &lt;field name=&#34;Eligible&#34; type=&#34;Boolean&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">e6998251fe7488124afdad7049a4343a030eb9b503a9ed8c92e39c61707a73d5</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+  </table>
+
+  <h3>Discovery evidence (101)</h3>
+  <table>
+    <tr><th>ID</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
     
     <tr>
       <td>EV-0001</td>
-      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
-      <td>xpath /PCF/Screen/TypeKeyInput[1]:4</td>
-      <td><code>&lt;TypeKeyInput id=&#34;VehicleType&#34; value=&#34;VehicleType&#34; label=&#34;VehicleType&#34;/&gt;</code></td>
+      <td><code>config/web/pcf/policy/PAVehicleDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 4)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;VehicleType&#34; value=&#34;VehicleType&#34; label=&#34;VehicleType&#34;/&gt;</div></td>
+      <td class="hash">d76bf9908b1fdf66f93731cbbac45729cdd851ca6a49552dac7fff6a0b4ed4a0</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0002</td>
-      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
-      <td>xpath /PCF/Screen/TextInput[1]:5</td>
-      <td><code>&lt;TextInput id=&#34;ModelYear&#34; value=&#34;ModelYear&#34; label=&#34;ModelYear&#34;/&gt;</code></td>
+      <td><code>config/web/pcf/policy/PAVehicleDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[1] (line 5)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;ModelYear&#34; value=&#34;ModelYear&#34; label=&#34;ModelYear&#34;/&gt;</div></td>
+      <td class="hash">e9fb1b4417fa962a07e0f724f3883b86146ff19eba1999852fc325ba2d542a16</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0003</td>
-      <td>config/web/pcf/policy/PAVehicleDV.pcf</td>
-      <td>xpath /PCF/Screen/TextInput[2]:6</td>
-      <td><code>&lt;TextInput id=&#34;GarageLocation_Ext&#34; value=&#34;GarageLocation_Ext&#34; label=&#34;GarageLocation_Ext&#34;/&gt;</code></td>
+      <td><code>config/web/pcf/policy/PAVehicleDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[2] (line 6)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;GarageLocation_Ext&#34; value=&#34;GarageLocation_Ext&#34; label=&#34;GarageLocation_Ext&#34;/&gt;</div></td>
+      <td class="hash">74f5071ecabbf61add4e0a48992b54ad4147a55b828ae4ac401775c69e747db3</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0004</td>
-      <td>config/extensions/entity/PersonalVehicle.etx</td>
-      <td>xpath /entityExtension/column[1]:3</td>
-      <td><code>&lt;column name=&#34;GarageLocation_Ext&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>config/extensions/entity/PersonalVehicle.etx</code></td>
+      <td>xpath: /entityExtension/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;GarageLocation_Ext&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">ec465500df030f2a62ff5a73136836fbfb3aa669a0c395fa1a2183efd0e9429c</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0005</td>
-      <td>config/extensions/entity/PersonalVehicle.etx</td>
-      <td>xpath /entityExtension/column[2]:4</td>
-      <td><code>&lt;column name=&#34;Territory_Ext&#34; type=&#34;Integer&#34;/&gt;</code></td>
+      <td><code>config/extensions/entity/PersonalVehicle.etx</code></td>
+      <td>xpath: /entityExtension/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Territory_Ext&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">95d70f5d3c07482a53e20218fb3a74a875351f8886627538d62fbcb9fa5f3c71</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0006</td>
-      <td>config/metadata/entity/PersonalVehicle.eti</td>
-      <td>xpath /entity/column[1]:3</td>
-      <td><code>&lt;column name=&#34;ModelYear&#34; type=&#34;Integer&#34;/&gt;</code></td>
+      <td><code>config/metadata/entity/PersonalVehicle.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;ModelYear&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">5e8404776cbed9acd31d0a3dd85f0d4da588bf3284e2c7e1404100b5cc43ffb9</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0007</td>
-      <td>config/metadata/entity/PersonalVehicle.eti</td>
-      <td>xpath /entity/column[2]:4</td>
-      <td><code>&lt;column name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>config/metadata/entity/PersonalVehicle.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">25efb8c0d5a8d08134367b194082cf171eb216ef69d10f7d81f9b4f44691c4c1</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0008</td>
-      <td>config/metadata/entity/PersonalVehicle.eti</td>
-      <td>xpath /entity/column[3]:5</td>
-      <td><code>&lt;column name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>config/metadata/entity/PersonalVehicle.eti</code></td>
+      <td>xpath: /entity/column[3] (line 5)</td>
+      <td><div class="excerpt">&lt;column name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">69c079ecdb5c0e692180f533a6f40415c92a8f89265c8a68b6acd0ba83792058</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0009</td>
-      <td>config/metadata/entity/PersonalVehicle.eti</td>
-      <td>xpath /entity/column[4]:6</td>
-      <td><code>&lt;column name=&#34;Usage&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleUsage&#34;/&gt;</code></td>
+      <td><code>config/metadata/entity/PersonalVehicle.eti</code></td>
+      <td>xpath: /entity/column[4] (line 6)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Usage&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleUsage&#34;/&gt;</div></td>
+      <td class="hash">0ea8bfed3fd89c0d972d7804f4e43753fb2fd004bdf5845c58d1969bfbb4f0f2</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0010</td>
-      <td>config/metadata/entity/PersonalVehicle.eti</td>
-      <td>xpath /entity/column[5]:7</td>
-      <td><code>&lt;column name=&#34;VehicleType&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleType&#34;/&gt;</code></td>
+      <td><code>config/metadata/entity/PersonalVehicle.eti</code></td>
+      <td>xpath: /entity/column[5] (line 7)</td>
+      <td><div class="excerpt">&lt;column name=&#34;VehicleType&#34; type=&#34;TypeKey&#34; typelist=&#34;VehicleType&#34;/&gt;</div></td>
+      <td class="hash">aabf9b346079b10574f5d87caafcee681df07e271e1ebba24bf63bbcb8dc0b22</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0011</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]:3</td>
-      <td><code>&lt;type name=&#34;PAVehicle&#34;&gt;
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1] (line 3)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PAVehicle&#34;&gt;
     &lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;
     &lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;
     &lt;field name=&#34;GarageLocation&#34; type=&#34;Text&#34;/&gt;
     &lt;field name=&#34;Make&#34; type=&#34;Text&#34;/&gt;
     &lt;field name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;
     &lt;field name=&#34;Usage&#34; type=&#34;TypeKey&#34;/&gt;
-  &lt;/type&gt;</code></td>
+  &lt;/type&gt;</div></td>
+      <td class="hash">ac0af8d952b1edca89f841a2df391cabcf3cef534b5398e9281d6586abe6bb3b</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0012</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[1]:4</td>
-      <td><code>&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[1] (line 4)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">dff00cf66ce81f7d96c10682563b318a60f07bd9da5178e891aab2ec13c04867</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0013</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[2]:5</td>
-      <td><code>&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[2] (line 5)</td>
+      <td><div class="excerpt">&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">ad7070320b8432a89956b3148f71cba1053fac0aadfc5f45e0fd72182235a34a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0014</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[3]:6</td>
-      <td><code>&lt;field name=&#34;GarageLocation&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[3] (line 6)</td>
+      <td><div class="excerpt">&lt;field name=&#34;GarageLocation&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">c57a88b623a824d8826dca4551ef3919743a361776b05a29501191d71fde038e</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0015</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[4]:7</td>
-      <td><code>&lt;field name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[4] (line 7)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Make&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">a7677b0097d97283e262a55adc50aec3ffa88cefe5d978b89dcc025ed8e4c0f9</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0016</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[5]:8</td>
-      <td><code>&lt;field name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[5] (line 8)</td>
+      <td><div class="excerpt">&lt;field name=&#34;VIN&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">8855ed9222484e694798bb7fc696f9d4588ab8a807dd3e008ecf04f5e3c9736e</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0017</td>
-      <td>product/template/PersonalAutoTemplate.xml</td>
-      <td>xpath /productTemplate/type[1]/field[6]:9</td>
-      <td><code>&lt;field name=&#34;Usage&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[6] (line 9)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Usage&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">e70517ec774b68f03a703f7e86aea490e444d54de0247e013cbdfa0279732d37</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0018</td>
-      <td>product/template/ShortTypes.xml</td>
-      <td>xpath /productTemplate/type[1]:3</td>
-      <td><code>&lt;type name=&#34;PAVehicle&#34;&gt;
+      <td><code>product/template/ShortTypes.xml</code></td>
+      <td>xpath: /productTemplate/type[1] (line 3)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PAVehicle&#34;&gt;
     &lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;
     &lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;
-  &lt;/type&gt;</code></td>
+  &lt;/type&gt;</div></td>
+      <td class="hash">e6a4a36a61fd902c0e077f16d14c9d077297ad7c3b7d97ef07f9ca6e4f9d3e01</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0019</td>
-      <td>product/template/ShortTypes.xml</td>
-      <td>xpath /productTemplate/type[1]/field[1]:4</td>
-      <td><code>&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</code></td>
+      <td><code>product/template/ShortTypes.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[1] (line 4)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">dff00cf66ce81f7d96c10682563b318a60f07bd9da5178e891aab2ec13c04867</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
     </tr>
     
     <tr>
       <td>EV-0020</td>
-      <td>product/template/ShortTypes.xml</td>
-      <td>xpath /productTemplate/type[1]/field[2]:5</td>
-      <td><code>&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</code></td>
+      <td><code>product/template/ShortTypes.xml</code></td>
+      <td>xpath: /productTemplate/type[1]/field[2] (line 5)</td>
+      <td><div class="excerpt">&lt;field name=&#34;VehicleType&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">ad7070320b8432a89956b3148f71cba1053fac0aadfc5f45e0fd72182235a34a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0021</td>
+      <td><code>product/template/ShortTypesB.xml</code></td>
+      <td>xpath: /productTemplate/type[1] (line 3)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PAVehicle&#34;&gt;
+    &lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">b1348ba6a1a6838e80daf5c8b40279598465c3d06511b111e17d757deba27297</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0022</td>
+      <td><code>product/template/ShortTypesB.xml</code></td>
+      <td>xpath: /productTemplate/type/field[1] (line 4)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Year&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">dff00cf66ce81f7d96c10682563b318a60f07bd9da5178e891aab2ec13c04867</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0023</td>
+      <td><code>config/extensions/typelist/VehicleType.ttx</code></td>
+      <td>xpath: /typelistExtension/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Motorcycle_Ext&#34;/&gt;</div></td>
+      <td class="hash">6eb58bf38343c766aa6addfa114056cbf9b37e863072de3da70eeb15d31e012f</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0024</td>
+      <td><code>config/metadata/typelist/VehicleType.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Passenger&#34;/&gt;</div></td>
+      <td class="hash">4390659a07212b90aa75cc4a8397132dff9ec50a43d9719a31033824b2a0817b</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0025</td>
+      <td><code>config/metadata/typelist/VehicleType.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Trailer&#34;/&gt;</div></td>
+      <td class="hash">030271622dafeaef4f2269579413241d0021e3b9136a151b55138db84a97d638</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0026</td>
+      <td><code>config/metadata/typelist/VehicleUsage.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Pleasure&#34;/&gt;</div></td>
+      <td class="hash">6a129604e0afab098aa262ffff6f6606eaf522d8d24f8dbcc535c11a2c67b522</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0027</td>
+      <td><code>config/metadata/typelist/VehicleUsage.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Commute&#34;/&gt;</div></td>
+      <td class="hash">9216b431247d0297f75177cdbad41e0807f67f42786c2f3c1f5f80ff94f7e1cc</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0028</td>
+      <td><code>config/metadata/typelist/VehicleUsage.tti</code></td>
+      <td>xpath: /typelist/code[3] (line 5)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Business&#34;/&gt;</div></td>
+      <td class="hash">483b4ca281b863333627553744b35492e69c742ac4e8a1267997d06a037f2988</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0029</td>
+      <td><code>gsrc/acme/validation/PersonalVehicleValidation.gs</code></td>
+      <td>line: class PersonalVehicleValidation (line 5)</td>
+      <td><div class="excerpt">class PersonalVehicleValidation {
+  // Query.make(PersonalVehicle) in prose must not be treated as SQL.</div></td>
+      <td class="hash">1abd00b6ef9fd62427865657e617eae2380b8b8d401293c22202ad1ccb86148d</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0030</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTest.gs</code></td>
+      <td>line: class PersonalVehicleRatingDBTest (line 3)</td>
+      <td><div class="excerpt">class PersonalVehicleRatingDBTest extends GUnitTestClassBase {
+  function testRatingRows() {</div></td>
+      <td class="hash">6d944582f4cbca4d2190a88e9d27566c4ea2f39ea0f310b4e39c704af182edd2</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0031</td>
+      <td><code>gtest/acme/PersonalVehicleValidationTest.gs</code></td>
+      <td>line: class PersonalVehicleValidationTest (line 3)</td>
+      <td><div class="excerpt">class PersonalVehicleValidationTest extends GUnitTestClassBase {
+  function testValidModelYear() {</div></td>
+      <td class="hash">88fb3640116c9a371ecee655765d3330872fac4ac5ce0b0b0d97a3e74ae96086</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0032</td>
+      <td><code>config/web/pcf/policy/PAVehicleRatingDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 4)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;FactorType&#34; value=&#34;FactorType&#34; label=&#34;FactorType&#34;/&gt;</div></td>
+      <td class="hash">4087cadc6133e6dbe25e6c1d0926fe89c83d88cb77ad03512bbd481fb68879c4</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0033</td>
+      <td><code>config/web/pcf/policy/PAVehicleRatingDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[1] (line 5)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;FactorValue&#34; value=&#34;FactorValue&#34; label=&#34;FactorValue&#34;/&gt;</div></td>
+      <td class="hash">634723ec1a4c8cb5dbb65d85442d0ac452f8e27d6667d22c029c7fd028c87ece</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0034</td>
+      <td><code>config/metadata/entity/RatingFactor.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;FactorType&#34; type=&#34;TypeKey&#34; typelist=&#34;FactorType&#34;/&gt;</div></td>
+      <td class="hash">e7e44206d440302edf941a5aff6c7a561a9c2c87269afbe2b9bf40060464565a</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0035</td>
+      <td><code>config/metadata/entity/RatingFactor.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;FactorValue&#34; type=&#34;Decimal&#34;/&gt;</div></td>
+      <td class="hash">2aadb4d4c12b38463a721f9122ba7b7e22ca8931cec04d494bc536ec45505a69</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0036</td>
+      <td><code>product/template/LongTypeA.xml</code></td>
+      <td>xpath: /productTemplate/type[1] (line 3)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PersonalAutoRatingFactorConfiguration&#34;&gt;
+    &lt;field name=&#34;Factor&#34; type=&#34;Decimal&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">cc909e38cb8af4ea2c2fbdac959f4b0a7c3f2449939c46aa38252ef6f26287c5</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0037</td>
+      <td><code>product/template/LongTypeA.xml</code></td>
+      <td>xpath: /productTemplate/type/field[1] (line 4)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Factor&#34; type=&#34;Decimal&#34;/&gt;</div></td>
+      <td class="hash">276ff9f17df2f4e849529f83b6ac2b4f90157593d2ef1cbb490f90aa92069a10</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0038</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[7] (line 32)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PAVehicleRatingFactor&#34;&gt;
+    &lt;field name=&#34;FactorType&#34; type=&#34;TypeKey&#34;/&gt;
+    &lt;field name=&#34;FactorValue&#34; type=&#34;Decimal&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">fc09f9c7d4b7d3fb6cd66f4cabf32b6739e67aed25db84c734aa1faf0161e18e</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0039</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[7]/field[1] (line 33)</td>
+      <td><div class="excerpt">&lt;field name=&#34;FactorType&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">511ac097519bbba9743712b584ef9075f90d8ae7e62dd38519f72d391dc2a01a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0040</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[7]/field[2] (line 34)</td>
+      <td><div class="excerpt">&lt;field name=&#34;FactorValue&#34; type=&#34;Decimal&#34;/&gt;</div></td>
+      <td class="hash">df46ac7fa67818381ff4eca2a3c2f466ee815dd7ac231e775ac4d3ed592c0fd6</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0041</td>
+      <td><code>config/metadata/typelist/FactorType.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Age&#34;/&gt;</div></td>
+      <td class="hash">4444b74ed194f6b53f57041083ced67498f30a5ae04bdd4630dc8dc512f65c86</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0042</td>
+      <td><code>config/metadata/typelist/FactorType.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Territory&#34;/&gt;</div></td>
+      <td class="hash">cf29a7b6f4352b761a51ed9778496f555406170e9fe05c892657b5ea43960a3a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0043</td>
+      <td><code>config/metadata/typelist/FactorType.tti</code></td>
+      <td>xpath: /typelist/code[3] (line 5)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Vehicle&#34;/&gt;</div></td>
+      <td class="hash">153b2f371520a78a4336f9473a89b072e414e7bb98cbf134b8d6e374a5fce8fb</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0044</td>
+      <td><code>gsrc/acme/rating/PersonalVehicleRating.gs</code></td>
+      <td>line: class PersonalVehicleRating (line 3)</td>
+      <td><div class="excerpt">class PersonalVehicleRating {
+  function factor(vehicle : PersonalVehicle) : int {</div></td>
+      <td class="hash">c36af547af79d4eac544dff162546c43b54b0b56a3fc3ddce84d1221dace54ce</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0045</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTest.gs</code></td>
+      <td>line: class PersonalVehicleRatingDBTest (line 3)</td>
+      <td><div class="excerpt">class PersonalVehicleRatingDBTest extends GUnitTestClassBase {
+  function testRatingRows() {</div></td>
+      <td class="hash">6d944582f4cbca4d2190a88e9d27566c4ea2f39ea0f310b4e39c704af182edd2</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0046</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestB.gs</code></td>
+      <td>line: class PersonalVehicleRatingDBTestB (line 2)</td>
+      <td><div class="excerpt">class PersonalVehicleRatingDBTestB extends GUnitTestClassBase {
+  function testRows() { var q = Query.make(PersonalVehicle); q.select(); loadSampleData() }</div></td>
+      <td class="hash">0e64c588c225968149ebbea89c735359316359f1e5f13346ad4a2d041134369f</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0047</td>
+      <td><code>gtest/acme/PersonalVehicleRatingDBTestC.gs</code></td>
+      <td>line: class PersonalVehicleRatingDBTestC (line 2)</td>
+      <td><div class="excerpt">class PersonalVehicleRatingDBTestC extends GUnitTestClassBase {
+  function testRows() { DriverManager.getConnection(&#34;jdbc:acme&#34;) }</div></td>
+      <td class="hash">eadcbfac679eefbdba4f4dec2a1939ffe5d9f47af26e02c8afc5613afe6a30ff</td>
+      <td>linked</td>
+      <td>lexer</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0048</td>
+      <td><code>config/web/pcf/policy/PADriverDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[1] (line 4)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;FirstName&#34; value=&#34;FirstName&#34; label=&#34;FirstName&#34;/&gt;</div></td>
+      <td class="hash">b88ba43a5af31c5f30c9ada07d6a58a3280c801e510504d089d1b6a93e01ec66</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0049</td>
+      <td><code>config/web/pcf/policy/PADriverDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[2] (line 5)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;LastName&#34; value=&#34;LastName&#34; label=&#34;LastName&#34;/&gt;</div></td>
+      <td class="hash">7276bd26393be8e9f91471d4cf19bd2c0178ee9a3c2a0db22d454a952ff36dbe</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0050</td>
+      <td><code>config/web/pcf/policy/PADriverDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 6)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;ViolationType&#34; value=&#34;ViolationType&#34; label=&#34;ViolationType&#34;/&gt;</div></td>
+      <td class="hash">9e56d83678c0f45c784269de8797afe168e8a4a6414041bdef6dace10b607823</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0051</td>
+      <td><code>config/extensions/entity/VehicleDriver.etx</code></td>
+      <td>xpath: /entityExtension/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;CDL_Ext&#34; type=&#34;Boolean&#34;/&gt;</div></td>
+      <td class="hash">3acd6eaea8ffd464a0080b3c2ed3cd27b9394752829eabecabd17982e14eed33</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0052</td>
+      <td><code>config/metadata/entity/VehicleDriver.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;FirstName&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">641f84916dd30e3a435df5cd8310bc9b1af60b9bf57906808af2246d82ea50e1</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0053</td>
+      <td><code>config/metadata/entity/VehicleDriver.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;LastName&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">04648ad1020020aa7dffe1c04b77a068db2129a5647d6120ec27980e2ac9d2ef</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0054</td>
+      <td><code>config/metadata/entity/VehicleDriver.eti</code></td>
+      <td>xpath: /entity/column[3] (line 5)</td>
+      <td><div class="excerpt">&lt;column name=&#34;LicenseNumber&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">7a6dbcb7052674cabef9a5d037cb1baef46a57f139c2b25a5e6abb05fa2985ac</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0055</td>
+      <td><code>config/metadata/entity/VehicleDriver.eti</code></td>
+      <td>xpath: /entity/column[4] (line 6)</td>
+      <td><div class="excerpt">&lt;column name=&#34;DateOfBirth&#34; type=&#34;Date&#34;/&gt;</div></td>
+      <td class="hash">39e6fea719f70b4b345394cf805cf17ae911d2a607940fded77638579c186aa0</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0056</td>
+      <td><code>config/metadata/entity/VehicleDriver.eti</code></td>
+      <td>xpath: /entity/column[5] (line 7)</td>
+      <td><div class="excerpt">&lt;column name=&#34;ViolationType&#34; type=&#34;TypeKey&#34; typelist=&#34;ViolationType&#34;/&gt;</div></td>
+      <td class="hash">c333eb74d67e939466603521222cb4722edfbd22d3c27f146c99ed07b7a1f3de</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0057</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[2] (line 11)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PADriver&#34;&gt;
+    &lt;field name=&#34;FirstName&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;LastName&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;LicenseNumber&#34; type=&#34;Text&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">248f093848cfab479d072565a42a0e36227805dbbefbd0ef7d06ca1caca0301d</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0058</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[2]/field[1] (line 12)</td>
+      <td><div class="excerpt">&lt;field name=&#34;FirstName&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">fe25e38b753092f3f1e28d461e99153d862438a3f6e59a67220172d2eea28e6d</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0059</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[2]/field[2] (line 13)</td>
+      <td><div class="excerpt">&lt;field name=&#34;LastName&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">d4c5379f96bd72250868e6ac26a5b107658edea4e04ebe9414287d9f8dbfc275</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0060</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[2]/field[3] (line 14)</td>
+      <td><div class="excerpt">&lt;field name=&#34;LicenseNumber&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">59d2638fc0d892532e6434592682166534eb22d6ec20e3b1440612dd5f42b19e</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0061</td>
+      <td><code>product/template/ShortTypes.xml</code></td>
+      <td>xpath: /productTemplate/type[2] (line 7)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PADriver&#34;&gt;
+    &lt;field name=&#34;FirstName&#34; type=&#34;Text&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">fcb6782f745345440890888c13814105149ea8c8e9aa7d6810b66a6ec75ad99b</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0062</td>
+      <td><code>product/template/ShortTypes.xml</code></td>
+      <td>xpath: /productTemplate/type[2]/field[1] (line 8)</td>
+      <td><div class="excerpt">&lt;field name=&#34;FirstName&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">fe25e38b753092f3f1e28d461e99153d862438a3f6e59a67220172d2eea28e6d</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0063</td>
+      <td><code>config/metadata/typelist/ViolationType.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Speeding&#34;/&gt;</div></td>
+      <td class="hash">c671de3b8e8af4504d55b039de06ffa8d5b523a635ea60b1a5cfd653342780d0</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0064</td>
+      <td><code>config/metadata/typelist/ViolationType.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;DUI&#34;/&gt;</div></td>
+      <td class="hash">e6959c97d38a878271d0f1dab9b64fb26c36147a2d596fe51e0c80ef760c79b4</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0065</td>
+      <td><code>config/web/pcf/policy/PADriverEligibilityDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/CheckBox[1] (line 4)</td>
+      <td><div class="excerpt">&lt;CheckBox id=&#34;Eligible&#34; value=&#34;Eligible&#34; label=&#34;Eligible&#34;/&gt;</div></td>
+      <td class="hash">10ddb150febec4f2c772b2673a6da09cb868070671df78b140d9bc25770f8115</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0066</td>
+      <td><code>config/web/pcf/policy/PADriverEligibilityDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 5)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;Reason&#34; value=&#34;Reason&#34; label=&#34;Reason&#34;/&gt;</div></td>
+      <td class="hash">a44c9e1164672cfad730b432baffc9498277c39f3cb667ce61f4b0fe8931a81d</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0067</td>
+      <td><code>config/metadata/entity/DriverEligibility.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Eligible&#34; type=&#34;Boolean&#34;/&gt;</div></td>
+      <td class="hash">0171fc6e88e227b54f9544971a16efb80b923d772cfb8919cb205fe42ee42cc1</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0068</td>
+      <td><code>config/metadata/entity/DriverEligibility.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Reason&#34; type=&#34;TypeKey&#34; typelist=&#34;EligibilityReason&#34;/&gt;</div></td>
+      <td class="hash">cfedce9fdd2963a39274a647e48781416c944d15f9e7f32260f9583e0b1ab66e</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0069</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[6] (line 28)</td>
+      <td><div class="excerpt">&lt;type name=&#34;DriverEligibility&#34;&gt;
+    &lt;field name=&#34;Eligible&#34; type=&#34;Boolean&#34;/&gt;
+    &lt;field name=&#34;Reason&#34; type=&#34;TypeKey&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">f0d18687635016e238391653219661000b71da273820ed0e4c86332371cb9cdb</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0070</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[6]/field[1] (line 29)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Eligible&#34; type=&#34;Boolean&#34;/&gt;</div></td>
+      <td class="hash">11d78670f89b4a96423bd58740fcef69fb3a8f9e0b2edfc88bf84a40db44ee57</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0071</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[6]/field[2] (line 30)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Reason&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">199c8363137336b2502984b089ad3f18a522b7a6d7a8092b76e4c596cf50d14c</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0072</td>
+      <td><code>config/metadata/typelist/EligibilityReason.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Clean&#34;/&gt;</div></td>
+      <td class="hash">e8bf33fcbdb210b703ce25b5333df677454149a7cbd776754cf684518b7c9329</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0073</td>
+      <td><code>config/metadata/typelist/EligibilityReason.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Suspended&#34;/&gt;</div></td>
+      <td class="hash">671c0108840b1e4b8ab68b567255c039b1ef24bd472a59d7ebf6c4e21f99e69d</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0074</td>
+      <td><code>config/web/pcf/policy/PACoverageDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 4)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;CoverageType&#34; value=&#34;CoverageType&#34; label=&#34;CoverageType&#34;/&gt;</div></td>
+      <td class="hash">2e11b3eb1ba816b5482441f635b770c5953297b0d89b12c1b10c85a04eaa875b</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0075</td>
+      <td><code>config/web/pcf/policy/PACoverageDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[2] (line 5)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;Limit&#34; value=&#34;Limit&#34; label=&#34;Limit&#34;/&gt;</div></td>
+      <td class="hash">dfb6ef1b7437b503477d1fac49c049e687e8c20303ebdab66bdf4499ce7b5297</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0076</td>
+      <td><code>config/metadata/entity/PACoverage.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;CoverageType&#34; type=&#34;TypeKey&#34; typelist=&#34;CoverageType&#34;/&gt;</div></td>
+      <td class="hash">d383e2cdb81aea7953b82c143b8067d95ee5bfd28edeef9a100120186b90a450</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0077</td>
+      <td><code>config/metadata/entity/PACoverage.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Limit&#34; type=&#34;TypeKey&#34; typelist=&#34;LimitType&#34;/&gt;</div></td>
+      <td class="hash">b36acd2fed161415ffc0d318f78aa769d35f96b4b71d2ce572ea7083b0f3ce78</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0078</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[4] (line 20)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PACoverage&#34;&gt;
+    &lt;field name=&#34;CoverageType&#34; type=&#34;TypeKey&#34;/&gt;
+    &lt;field name=&#34;Limit&#34; type=&#34;TypeKey&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">8ed19df36da1affdecf94c3a38eb9c8b5b484ab0a82d9743daeeb6cc82357739</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0079</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[4]/field[1] (line 21)</td>
+      <td><div class="excerpt">&lt;field name=&#34;CoverageType&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">7dee8cdf79de3f1e9bee2e3dfa9abfeac8776c4cbe1f92f25b94c801ccbf6b49</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0080</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[4]/field[2] (line 22)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Limit&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">01c846ddb2b008799d00c14f6aaef008481835961a9854aa9b96f7585b4881ef</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0081</td>
+      <td><code>product/template/ShortTypesC.xml</code></td>
+      <td>xpath: /productTemplate/type[1] (line 3)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PACoverage&#34;&gt;
+    &lt;field name=&#34;Limit&#34; type=&#34;TypeKey&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">32ba4cfa9213a254c53103156df817331ebd9fb1935d92d36a8dbbbd84911f5a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0082</td>
+      <td><code>product/template/ShortTypesC.xml</code></td>
+      <td>xpath: /productTemplate/type/field[1] (line 4)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Limit&#34; type=&#34;TypeKey&#34;/&gt;</div></td>
+      <td class="hash">01c846ddb2b008799d00c14f6aaef008481835961a9854aa9b96f7585b4881ef</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0083</td>
+      <td><code>config/metadata/typelist/CoverageType.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Liability&#34;/&gt;</div></td>
+      <td class="hash">220a9b2e5afb06ea1e1b94a5626f61e27854b4462aa9185061d4f2a62aa945c3</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0084</td>
+      <td><code>config/metadata/typelist/CoverageType.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Collision&#34;/&gt;</div></td>
+      <td class="hash">f289920768b9bfd2d4a42cc6e268cda1ece0121d749c19ed2519c2107bf7a011</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0085</td>
+      <td><code>config/metadata/typelist/CoverageType.tti</code></td>
+      <td>xpath: /typelist/code[3] (line 5)</td>
+      <td><div class="excerpt">&lt;code name=&#34;Comprehensive&#34;/&gt;</div></td>
+      <td class="hash">bd1009f83d0751b7fe9392d0cfb75bb431ce4bdd16fce699352f5d8a937659e8</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0086</td>
+      <td><code>config/metadata/typelist/LimitType.tti</code></td>
+      <td>xpath: /typelist/code[1] (line 3)</td>
+      <td><div class="excerpt">&lt;code name=&#34;PerPerson&#34;/&gt;</div></td>
+      <td class="hash">6c0ffb7e9f5b846cdd0997ba60adf7bb696bec14fb41a3cd4a33da46346ac233</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0087</td>
+      <td><code>config/metadata/typelist/LimitType.tti</code></td>
+      <td>xpath: /typelist/code[2] (line 4)</td>
+      <td><div class="excerpt">&lt;code name=&#34;PerAccident&#34;/&gt;</div></td>
+      <td class="hash">cafafd44cab2b935d51f303fdeadd5b8a3078750cf12edfe7dd1251b98bf5347</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0088</td>
+      <td><code>config/web/pcf/policy/PACoverageTermsDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 4)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;TermType&#34; value=&#34;TermType&#34; label=&#34;TermType&#34;/&gt;</div></td>
+      <td class="hash">2edb12162571cc0db89bb3578103390dd86f7b84d7a44a0220e3bd03fd2714a3</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0089</td>
+      <td><code>config/web/pcf/policy/PACoverageTermsDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TextInput[1] (line 5)</td>
+      <td><div class="excerpt">&lt;TextInput id=&#34;TermValue&#34; value=&#34;TermValue&#34; label=&#34;TermValue&#34;/&gt;</div></td>
+      <td class="hash">af63a4f99437dc513590c52d520f18295b499dccb8a72db6c46848bcfcb3240f</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0090</td>
+      <td><code>config/metadata/entity/PACoverageTerm.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;TermType&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">279e477bbdefacd62076aca6fbe46d379e4ddfda9197fe085247ee480979f37f</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0091</td>
+      <td><code>config/metadata/entity/PACoverageTerm.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;TermValue&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">96650c9eb0d97b75ff211aa3e573b8c3edc4631a7bc2dd4f5d8cfe2341e80646</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0092</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[5] (line 24)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PACoverageTerm&#34;&gt;
+    &lt;field name=&#34;TermType&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;TermValue&#34; type=&#34;Integer&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">3978a878dfbed58b3d4872749188d94660d1ae51a8c014c993ab4851ccd7a8f1</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0093</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[5]/field[1] (line 25)</td>
+      <td><div class="excerpt">&lt;field name=&#34;TermType&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">0b603cab36241f846ff68adcd70d00206abe7df6d3f22cca911fe17b6c07c705</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0094</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[5]/field[2] (line 26)</td>
+      <td><div class="excerpt">&lt;field name=&#34;TermValue&#34; type=&#34;Integer&#34;/&gt;</div></td>
+      <td class="hash">5fd864970018a5e445819e9c9162372acd4e6dc30f18f10b571428e4cd0bc24a</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0095</td>
+      <td><code>config/metadata/entity/PersonalAutoLine.eti</code></td>
+      <td>xpath: /entity/column[1] (line 3)</td>
+      <td><div class="excerpt">&lt;column name=&#34;ProductCode&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">61bb79f5c53b2165a97826d2a74034f142fa69a93500aa66f6646b11652f6ce7</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0096</td>
+      <td><code>config/metadata/entity/PersonalAutoLine.eti</code></td>
+      <td>xpath: /entity/column[2] (line 4)</td>
+      <td><div class="excerpt">&lt;column name=&#34;Edition&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">ab5927686c4f8e9d08c6933a6e67732a2ff0291c1165053a23c66e20440e3294</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0097</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[3] (line 16)</td>
+      <td><div class="excerpt">&lt;type name=&#34;PALine&#34;&gt;
+    &lt;field name=&#34;ProductCode&#34; type=&#34;Text&#34;/&gt;
+    &lt;field name=&#34;Edition&#34; type=&#34;Text&#34;/&gt;
+  &lt;/type&gt;</div></td>
+      <td class="hash">2aee07e52ecb15865378db949e6376caf2af665995dab515c80112456e5c5122</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0098</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[3]/field[1] (line 17)</td>
+      <td><div class="excerpt">&lt;field name=&#34;ProductCode&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">71fb9f6ce457f721b1afdc6269886ff7eae0912905018a8c3d8bf482bb288e6b</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0099</td>
+      <td><code>product/template/PersonalAutoTemplate.xml</code></td>
+      <td>xpath: /productTemplate/type[3]/field[2] (line 18)</td>
+      <td><div class="excerpt">&lt;field name=&#34;Edition&#34; type=&#34;Text&#34;/&gt;</div></td>
+      <td class="hash">8bbd82e549afe8f323713cadac9208248f744b28313c588ced887a1221058977</td>
+      <td>linked</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0100</td>
+      <td><code>config/web/pcf/policy/PAPolicyQuestionsDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/CheckBox[1] (line 4)</td>
+      <td><div class="excerpt">&lt;CheckBox id=&#34;GarageKept&#34; value=&#34;GarageKept&#34; label=&#34;GarageKept&#34;/&gt;</div></td>
+      <td class="hash">ed4a478428b976569d2800ea91ffa7eecd5699f6af85c81f64ca53370bcc2725</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
+    </tr>
+    
+    <tr>
+      <td>EV-0101</td>
+      <td><code>config/web/pcf/policy/PAPolicyQuestionsDV.pcf</code></td>
+      <td>xpath: /PCF/Screen/TypeKeyInput[1] (line 5)</td>
+      <td><div class="excerpt">&lt;TypeKeyInput id=&#34;Usage&#34; value=&#34;Usage&#34; label=&#34;Usage&#34;/&gt;</div></td>
+      <td class="hash">3417284796c283c8c0411383b84d4d42c48ce167ad35b2a4552a266c51bf7503</td>
+      <td>parsed</td>
+      <td>xml_xpath</td>
     </tr>
     
   </table>
-  <p class="muted">Evidence excerpts are redacted at capture where a secret was detected. The review log is
-  hash-chained and can be verified with <code>preflight verify-audit</code>.</p>
+
+  <h3>Audit trail (9 events)</h3>
+  <p><strong>Audit chain verified: yes</strong>. The local log is
+  tamper-evident, not non-repudiation. Verify with <code>preflight verify-audit R-DEMO-001</code>.</p>
+  <table>
+    <tr><th>Seq</th><th>Timestamp</th><th>Action</th><th>Object</th><th>Actor</th><th>Hash</th><th>Prev hash</th></tr>
+    
+    <tr>
+      <td>0</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.intake</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">78d6e7ddfb9dc0f7</td>
+      <td class="hash">GENESIS</td>
+    </tr>
+    
+    <tr>
+      <td>1</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.parse</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">e5bf1ed678f7a246</td>
+      <td class="hash">78d6e7ddfb9dc0f7</td>
+    </tr>
+    
+    <tr>
+      <td>2</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.review</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">088a49aa305efb1e</td>
+      <td class="hash">e5bf1ed678f7a246</td>
+    </tr>
+    
+    <tr>
+      <td>3</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.reconstruct</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">944b22e585ae9a49</td>
+      <td class="hash">088a49aa305efb1e</td>
+    </tr>
+    
+    <tr>
+      <td>4</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.compare</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">072577b8b772f7a3</td>
+      <td class="hash">944b22e585ae9a49</td>
+    </tr>
+    
+    <tr>
+      <td>5</td>
+      <td>2026-11-09T19:58:51Z</td>
+      <td>stage.evaluate</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">ecbe17889e3a289a</td>
+      <td class="hash">072577b8b772f7a3</td>
+    </tr>
+    
+    <tr>
+      <td>6</td>
+      <td>2026-11-09T19:58:52Z</td>
+      <td>stage.packet</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">b9ceb6161fc0f37e</td>
+      <td class="hash">ecbe17889e3a289a</td>
+    </tr>
+    
+    <tr>
+      <td>7</td>
+      <td>2026-11-09T19:58:52Z</td>
+      <td>run.immutability.verified</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">6800846e2d3c9804</td>
+      <td class="hash">b9ceb6161fc0f37e</td>
+    </tr>
+    
+    <tr>
+      <td>8</td>
+      <td>2026-11-09T19:58:52Z</td>
+      <td>run.succeeded</td>
+      <td><code>run:R-DEMO-001</code></td>
+      <td>system</td>
+      <td class="hash">d7e3a32dd4a11a0a</td>
+      <td class="hash">6800846e2d3c9804</td>
+    </tr>
+    
+  </table>
+
+  <h3>Hashes</h3>
   <table>
     <tr><th>Hash</th><th>Value</th></tr>
     
-    <tr><td>snapshot</td><td class="hash">20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404</td></tr>
+    <tr><td>snapshot</td><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
     
-    <tr><td>rulepack</td><td class="hash">d151a780899b712d3b8ad6595606142b20594460afa754336f7248340051bcae</td></tr>
+    <tr><td>rulepack</td><td class="hash">cb26756f81df7ba674b57c9694b3784435708dbafdcacaf2e45cc161f32fcd4a</td></tr>
     
     <tr><td>reference_target</td><td class="hash">7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541</td></tr>
     
-    <tr><td>audit_head</td><td class="hash">ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f</td></tr>
+    <tr><td>ground_truth_manifest</td><td class="hash">260a20fad95f69b0806dd062754da296f5a525a7456308b885558e7f8f3e0587</td></tr>
+    
+    <tr><td>audit_head</td><td class="hash">d7e3a32dd4a11a0a4daa6995261218eab815cdb18122539a41439fd63ffdb276</td></tr>
+    
+    <tr><td>features</td><td class="hash">d04bdcc3bda1e8bb26d665fafed9592962a15f36cfe490d4ca3218dd22aecbc0</td></tr>
+    
+    <tr><td>findings</td><td class="hash">fe237678b57a18aebd9c2d4b8c3e60953ddd01fe9c552eadacd6dec80cc7ace0</td></tr>
+    
+    <tr><td>readiness</td><td class="hash">55db25effa1a6aad78a0c12a7573efae44e0478cec2a972c1c7f29470e6cbe3e</td></tr>
+    
+    <tr><td>mappings</td><td class="hash">3714b64e92cd44a25deeea929ec0464f7f7f95ff23aeb84c0ae11fce90adc25e</td></tr>
+    
+    <tr><td>changes</td><td class="hash">1165f8d7dae2366db79aa3b0afeaa49e84e4e944811b87630f785fe7f3b9f8e5</td></tr>
+    
+    <tr><td>assumptions</td><td class="hash">5b073aa75a8f876badd635de5654817c73f528bee596f3627e50d01fdd29025b</td></tr>
+    
+    <tr><td>evidence</td><td class="hash">14ea995d48283119281dbed4fd661e0997180d88dd33fcded7cf2c01e606d001</td></tr>
+    
+    <tr><td>review_evidence</td><td class="hash">d4f7427b18e1b9ff34afc0083200b1db3bc4528f6a71c933cc794852fcb9c1ac</td></tr>
+    
+    <tr><td>gaps</td><td class="hash">36fc86c518ceaff006be00963de431aa9e79c8bade422c7e366690f2cbef0895</td></tr>
+    
+    <tr><td>packet_json</td><td class="hash">f8f85121e84e9cf011b4a040159f0c6a51b7c73add667b10a0ed208858351706</td></tr>
+    
+    <tr><td>packet</td><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
+    
+    <tr><td>packet_html</td><td class="hash">e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a</td></tr>
     
   </table>
+  <p class="muted"><strong>Packet hash scope.</strong> SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.</p>
 
   <footer>
     PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. This packet is generated from a synthetic fixture; it contains no customer data or confidential Guidewire information. Findings are pattern-based heuristics, not official Cloud Standards checks. Official Cloud Assurance: not run. Impact ranges are heuristic planning ranges, not quotes.

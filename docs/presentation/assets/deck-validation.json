@@ -39,12 +39,12 @@
         "clientWidth": 358
       }
     },
-    "generated_at": "2026-11-09T18:48:54+00:00"
+    "generated_at": "2026-11-09T20:10:02+00:00"
   },
   "pdf": {
     "pdf": "/home/understressengineer/programming/Preflight-CloudMigration/docs/presentation/PreFlight-deck.pdf",
-    "bytes": 960175,
-    "sha256": "7d86e3cd756ebe46489293205e03dc1cda710c5bf4a4534d667db53c85c1fa8e",
+    "bytes": 961813,
+    "sha256": "0cbcd8e21cf9e8ec983ee31e70b5efc8039f269c0c8d677ab1398aeb0efbea71",
     "pages": 16,
     "page_size": "1200 x 675.12 pts"
   },

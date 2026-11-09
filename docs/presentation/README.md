@@ -162,7 +162,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 | 10 | Demo: Assistant | Territory refusal; Motorcycle_Ext citation; retrieval-only, model off. |
 | 11 | Demo: Evaluation | Six metrics M1–M6; M6 F1 1.00 (24 TP / 0 FP / 0 FN); 24/24 guard count separate; intervals, baselines, holdout, limitations. |
 | 12 | Demo: Packet | 126 evidence, post-decision 11 audit events / 4 assumptions; packet/audit hashes labelled read live; snapshot hash stable; verify command. |
-| 13 | Engineering rigor | 393 tests, Playwright, 18/18 freeze hashes, 9 seed audit events, security, flaws found and fixed. |
+| 13 | Engineering rigor | 410 tests, Playwright, 18/18 freeze hashes, 9 seed audit events, security, flaws found and fixed. |
 | 14 | Novelty & prior art | Feature location, traceability, Reversa, GSN, honest scorecard. |
 | 15 | Viability | Kill risks, vendor-independent wedge (not independently validated), acceptance tests, roadmap. |
 | 16 | Close | The three-line standard, pilot ask, Saundarya Singh / repository / MIT. |
@@ -176,7 +176,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 - At 390 px the capability matrix is a labelled, keyboard-focusable scroll region (`tabindex="0"`, `role="region"`). At 1920 px the stage-label column sizes to content so “RECONSTRUCT” cannot collide with the mapped text.
 - Charts are inline SVG with a text caption and equivalent numbers in the surrounding slide.
 - Validation was run with Playwright at **1920 × 1080, 1440 × 900, 1280 × 720, 1024 × 768, and 390 × 844**: all 16 slides navigated, zero console errors, zero external requests, zero clipping/overflow at desktop viewports, zero horizontal overflow at 390, zero stage-label overlaps at 1920, and a focusable mobile matrix. The capture script also validates every focus crop against the live DOM (no footer slices, no section crossing) and checks that slide 7’s visible snapshot hash matches the immutability banner. Print produced **16 pages at 1200 × 675 pt**. See `assets/deck-validation.json`, `assets/capture-manifest.json`, and `evidence.json`.
-- Repository checks on 2026-11-09: `pytest -q` — **393 passed**; `scripts/claims_lint.py` — **OK**; `preflight verify-audit R-DEMO-001` — **OK (9 seed events; 11 after the two runbook actions)**; freeze manifest — **18/18 recorded hashes recompute**.
+- Repository checks on 2026-11-09: `pytest -q` — **410 passed**; `scripts/claims_lint.py` — **OK**; `preflight verify-audit R-DEMO-001` — **OK (9 seed events; 11 after the two runbook actions)**; freeze manifest — **18/18 recorded hashes recompute**.
 
 ## Boundaries
 

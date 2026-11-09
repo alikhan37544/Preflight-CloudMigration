@@ -13,6 +13,7 @@ packet that merely looks complete.
 from __future__ import annotations
 
 import hashlib
+import re
 import json
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -329,6 +330,45 @@ def _excluded_files(manifest: Manifest) -> list[dict]:
     return rows
 
 
+
+_TABLE_CAPTIONS = [
+    "Packet cover",
+    "Packet counts",
+    "Headline metrics",
+    "Excluded and unsupported files",
+    "Assumption register",
+    "Dispositions",
+    "Draft changes",
+    "Advisory findings",
+    "Readiness flags",
+    "Review evidence",
+    "Discovery evidence",
+    "Audit trail",
+    "Artifact hashes",
+]
+
+
+def _accessible_tables(html: str) -> str:
+    """Add captions, header sections, and scoped cells to the static packet."""
+    counter = 0
+
+    def replace(match):
+        nonlocal counter
+        inner = match.group(1)
+        caption = _TABLE_CAPTIONS[counter] if counter < len(_TABLE_CAPTIONS) else f"Packet table {counter + 1}"
+        counter += 1
+        first_row = re.search(r"<tr>(.*?)</tr>", inner, flags=re.S)
+        if first_row and "<th>" in first_row.group(1) and "<td>" not in first_row.group(1):
+            header = re.sub(r"<th>", '<th scope="col">', first_row.group(0))
+            rest = inner[first_row.end():]
+            inner = f"<thead>{header}</thead><tbody>{rest}</tbody>"
+        else:
+            inner = re.sub(r"<th>", '<th scope="row">', inner)
+        return f"<table><caption>{caption}</caption>{inner}</table>"
+
+    return re.sub(r"<table>(.*?)</table>", replace, html, flags=re.S)
+
+
 def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, release_context: str,
                  manifest: Manifest, discovery: DiscoveryResult, review: ReviewResult,
                  reconstruction: ReconstructionResult | None, comparison: CompareResult | None,
@@ -522,6 +562,7 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
         audit_verified=audit_verified,
         disclaimer=DISCLAIMER,
     )
+    html = _accessible_tables(html)
     packet_sha256 = packet_html_hash(html, PACKET_HASH_PLACEHOLDER)
     packet.hashes["packet"] = packet_sha256
     packet.hashes["packet_html"] = packet_sha256

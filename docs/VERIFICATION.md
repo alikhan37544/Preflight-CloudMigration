@@ -1,8 +1,8 @@
-# PreFlight — Independent Verification Record
+# PreFlight — Internal QA and Adversarial Review Record
 
 **Date:** 8 November 2026
 **Product:** local `R-DEMO-001` / `demo-slice-300`
-**Rule:** verifier agents were read-only; every finding below was fixed and re-tested before the final freeze.
+**Rule:** internal verifier agents were read-only; findings below were fixed and re-tested. This is internal QA, not independent third-party certification.
 
 ## Verification rounds
 
@@ -19,21 +19,21 @@
 | 3 | Product confirmation | final product gate | **SHIP** | **9/10** | no genuine blockers; only non-blocking polish |
 | 3 | Evaluation confirmation | final metric gate | FIX → fixed | 7–8/10 | F1 fraction labels, baseline descriptions, M6 line-matching claim |
 | 3 | Claims/FP confirmation | final precision gate | FIX → fixed | 7–8/10 | SEC adjacent-comment/escaped-quote redaction |
-| 3 | Final focused confirmation | SEC redaction, evaluation labels, freeze | **SHIP** | **10/10** | 61 targeted tests, zero raw secret values in evidence/artifacts, 21/21 freeze hashes, screenshot hash match |
+| 3 | Final focused confirmation | SEC redaction, evaluation labels, freeze | **SHIP** | **10/10** | targeted adversarial tests, raw-secret scan, 18/18 freeze hashes, screenshot hash match |
 
 ## Fixes applied after the final reviews
 
 - Metrics:
   - M1/M2 require a gold anchor path; adversarial bogus-feature test.
-  - M3 is a stratified 30-link excerpt-support audit; fabricated excerpts fail.
-  - M4 checks source, target, disposition, and penalises extra/duplicate mappings; adversarial tests added.
-  - M5 has a gold issue file with a top-8 allowance labelled 6/8, not a hidden ranking.
-  - M6 uses 8 rules × 3 positives + 3 hard negatives; micro-F1 headline, macro-F1 supporting, no invalid interval.
+  - M3 is an all-link excerpt-support audit (101/101 in the demo); the 30-link stratified sample is supporting only; fabricated excerpts fail.
+  - M4 checks source, target, disposition, snapshot grounding, and penalises extra/duplicate mappings; adversarial tests added.
+  - M5 has a gold issue file with an anchored signal and a stable top-8 allowance labelled 6/8, not a hidden ranking.
+  - M6 uses 8 rules × 3 positives + 3 hard negatives; forged evidence and unlabelled false positives are penalised.
   - Freeze now hashes fixtures, reference, annotation guide/concordance, rule pack, pre-registration, claims ledger, and all scored gold files.
 - Reconstruction loads `rules/mapping_rules.yaml`; no mapping rows live in code.
 - Reference target is labelled internally authored, AI-assisted, not independent.
 - Holdout is excluded from importable fixtures; its aggregate is pre-computed.
-- Codegen draft has exactly 12 mappings; GarageLocation override is removed.
+- Codegen draft has 12 dispositions; `GarageLocation` maps to installed `GarageLocation_Ext` with a documented `nameOverride` and `requiredForCreate: false`.
 - Deterministic rule engine fixes: comments/strings masked, SEC typed/snake/camel names, all secrets redacted from evidence, SQL custom method names, SBT XML attributes, LOG-001 call-site and multiline handling, TX multiple commits, path-segment classification.
 - Product shell: `/runs` restored; failed/loading pages; accepted/rejected row persistence; packet refresh; owner/status in packet; excluded-file filter; holdout lock; responsive overflow.
 - Claims: C-002/C-014/C-016 URLs, C-018/C-036 PCF wording, C-032 rules present as `emitted: false`, reference limitations disclosed.
@@ -41,18 +41,18 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 197 passed (after final freeze)
-pytest tests/test_false_positives.py ...  60 passed targeted
+pytest -q                                 410 passed
+pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
-preflight verify-audit R-DEMO-001         OK (8 events)
+preflight verify-audit R-DEMO-001         OK (9 seed events; 11 after runbook actions)
 packet audit head == audit log head       true
-Playwright golden path                    22 passed (accept/reject, evidence drawer, packet, evaluation)
+Playwright golden path                    passes (accept/reject dialog, mobile layout, packet, evaluation)
 ```
 
 ## Final status
 
-**Final focused gate: SHIP, 10/10.** Settings-page regression caught in the end-to-end re-run and fixed with a route-content test. SEC redaction is closed (adjacent comments and escaped quotes), evaluation labels match the computed values, and the frozen hashes reproduce. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 410 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 

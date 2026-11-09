@@ -128,7 +128,7 @@ Point at the header:
 
 > “12 explicit dispositions. Five target changes. Every change starts pending. `_gen` writes: zero; the draft is local and non-deployable.”
 
-**Accept M-01** (`PAVehicle → PersonalVehicle`, rule `R-CG-01`, codegen `nameOverride`). The row turns green.
+**Accept M-01** (`PAVehicle → PersonalVehicle`, rule `R-CG-01`, codegen `nameOverride`). The row has an **Accept** button; a decision dialog opens and requires a reason (for example “Reviewed against the documented codegen override.”). Confirm, and the row turns green.
 
 **Scroll to M-12** (`VehicleType.Motorcycle_Ext → schema.vehicleType.motorcycle`, rule `R-TYP-01`) and **Reject** it. The decision dialog/action records a reason; state “rejected in demo: replacement target not agreed.” The banner appears:
 
@@ -193,7 +193,7 @@ Click **Motorcycle_Ext?**:
 
 **Open:** `http://127.0.0.1:8000/evaluation?run=R-DEMO-001`
 
-Point at the **summary strip labels** first — left to right they read **6/6 estimate-moving issues**, **48/48 finding F1**, **4/4 holdout recall (not imported)**, **6/8 top-8 allowance**, and **24/24 hard negatives silent**:
+Point at the **summary strip labels** first — left to right they read **6/6 estimate-moving issues**, **24 findings / micro-F1 1.00**, **4/4 holdout recall (not imported)**, **6/8 top-8 allowance**, and **24/24 hard negatives silent**:
 
 > “Those five labels are the denominator check. The six metric cards below repeat the same evidence as M1–M6: M1 and M2 8/8, M3 101/101 all links plus a 30/30 sample, M4 12/12, M5 6/6 with the 6/8 top-8 allowance, M6 F1 1.00 — 24 TP / 0 FP / 0 FN. The 24/24 hard negatives are a separate guard count, not a seventh metric.”
 
@@ -354,7 +354,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
 - Packet (`packet`/`packet_json`), content digests, and audit head change with reviewer decisions and packet refreshes; read the live screen. The snapshot hash is the stable fixture hash. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
-- Tests: 393 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
+- Tests: 410 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
 ---
 
@@ -400,7 +400,7 @@ PACKET        /packet?run=R-DEMO-001
               content digests bind findings/mappings/evidence; audit head = chain
               static docs/demo packet = historical, not hash-verifiable
 
-BUILD         393 tests · 18/18 freeze hashes · 9 seed audit events
+BUILD         410 tests · 18/18 freeze hashes · 9 seed audit events
 
 CLOSE         “Every claim has evidence; every unknown has a name;
                every change waits for a human.”

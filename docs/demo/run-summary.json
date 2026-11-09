@@ -1,6 +1,6 @@
 {
-  "snapshot": "v1.0.0",
-  "date": "2026-11-08",
+  "snapshot": "v1.1.0-demo",
+  "date": "2026-11-10",
   "run_id": "R-DEMO-001",
   "fixture": "demo-slice-300",
   "source_files": 300,
@@ -9,6 +9,9 @@
   "rules": 8,
   "mappings": 12,
   "assumptions": 3,
+  "audit_events": 9,
+  "audit_head": "d7e3a32dd4a11a0a4daa6995261218eab815cdb18122539a41439fd63ffdb276",
+  "packet_sha256": "e6cbc06d645271613175163f1af7815da0f5f0bd8bece17eaad56921b54e982a",
   "metrics": [
     {
       "id": "M1",
@@ -26,9 +29,9 @@
     },
     {
       "id": "M3",
-      "label": "Evidence-link support precision (30-link audit)",
-      "numerator": 30,
-      "denominator": 30,
+      "label": "Evidence-link support precision (all links)",
+      "numerator": 101,
+      "denominator": 101,
       "value": 1.0
     },
     {
@@ -53,7 +56,6 @@
       "value": 1.0
     }
   ],
-  "audit_head": "ff635e1b123e54477314e6fff6b81c4932c57b16f85a78f67f02582fc69a2c1f",
-  "frozen_commit": "a18d35bd21ff9993659a1c87f7fc9f8ffe26c5c4",
-  "official_cloud_assurance": "not run"
+  "official_cloud_assurance": "not run",
+  "note": "Capture-time static snapshot. Live hashes change after reviewer decisions or packet refresh. Regenerate with make demo + /packet/export."
 }

@@ -10,7 +10,7 @@ PreFlight is an offline, evidence-first review workstation for legacy Guidewire-
 
 [![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-197%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-410%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-demo--ready-informational)
 
@@ -63,7 +63,7 @@ Generic linters answer none of those questions. PreFlight is built around the in
 | Advisory findings | 24 from 8 rules |
 | Mappings | 12 explicit dispositions |
 | Assumptions | 3 |
-| Tests | 197 passing |
+| Tests | 410 passing |
 | Frozen evaluation hashes | `ground_truth/FROZEN.json` |
 | Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
 | Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
@@ -74,7 +74,7 @@ Generic linters answer none of those questions. PreFlight is built around the in
 |---|---:|---|
 | M1 Feature recall | 8 / 8 | In-sample synthetic demo slice |
 | M2 Feature precision | 8 / 8 | In-sample synthetic demo slice |
-| M3 Evidence-link support precision | 30 / 30 | 30-link stratified audit; excerpt support, not semantic entailment |
+| M3 Evidence-link support precision | 101 / 101 | All-link audit; 30/30 stratified sample is supporting only. Excerpt support, not semantic entailment |
 | M4 Disposition correctness | 12 / 12 | Source + target + disposition; extras penalised |
 | M5 Estimate-moving issue recall | 6 / 6 | Top-8 allowance is 6 TP / 8 slots (2 fixed decoys) |
 | M6 Finding micro-F1 | 48 / 48 | 8 rules × 3 positives + 3 hard negatives |
@@ -221,7 +221,7 @@ Every finding carries a claim-strength label. No finding is presented as a Cloud
 ## Testing
 
 ```bash
-make test       # full suite: 197 tests
+make test       # full suite: 410 tests
 make e2e        # Playwright golden path
 make claims     # claims-ledger and rule-coverage gate
 make verify     # hash-chained audit verification
@@ -240,19 +240,19 @@ Coverage includes:
 - full pipeline, packet, audit chain
 - browser golden path, offline network check, screenshots
 
-## Independent verification
+## Internal QA and adversarial review
 
 The full record is in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 
 | Gate | Result |
 |---|---|
-| Final focused verification | **SHIP, 10/10** |
-| Product gate | **SHIP, 9/10** |
-| Claims / precision / reproducibility | 10/10 after redaction fix |
-| Freeze hashes | 21/21 recompute |
+| Demo-readiness panel | Four independent reviewers: 7/10 (Loop 2); demo hardening continues |
+| Product gate | Internal QA: core flow, packet, and audit gates pass |
+| Claims / precision / reproducibility | Claims lint OK; freeze hashes 18/18 recompute |
+| Freeze hashes | 18/18 recompute |
 | Audit chain | `R-DEMO-001: OK` |
 
-Final focused verifier summary: no genuine blockers; all previously reported precision, redaction, evaluation-label, packet, and state issues were closed and re-tested.
+The full adversarial record is historical and is being updated for the current build. It is internal QA, not an independent third-party certification.
 
 ## Data, security, and boundaries
 

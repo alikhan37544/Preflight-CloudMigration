@@ -12,7 +12,7 @@ make demo
 
 Health check: `curl -s http://127.0.0.1:8000/api/health`.
 
-**Backup:** screenshots in `docs/screenshots/`; static packet snapshot in
+**Backup:** screenshots in `docs/presentation/assets/`; static packet snapshot in
 `docs/demo/preflight-review-packet.html`. The packet file is a frozen snapshot from the packaged
 build, not a live artifact from the run you just seeded: its audit head and hashes will not match a
 fresh `R-DEMO-001`. Do not run `verify-audit` against it. If the live server fails, show it as a

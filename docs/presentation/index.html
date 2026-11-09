@@ -453,8 +453,8 @@
   .prior-table td:first-child { font-weight: 700; white-space: nowrap; }
   .score-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 34px; gap: 8px; align-items: center; margin: 7px 0; }
   .score-label { font-size: clamp(.66rem, .71vw, .76rem); font-weight: 700; line-height: 1.2; }
-  .score-track { height: 9px; background: #E5ECF0; border: 1px solid #D0DBE2; overflow: hidden; }
-  .score-fill { height: 100%; background: var(--teal); }
+  .score-track { display:block; height: 9px; background: #E5ECF0; border: 1px solid #D0DBE2; overflow: hidden; }
+  .score-fill { display:block; height: 100%; background: var(--teal); }
   .score-fill.mid { background: #4B8A9B; }
   .score-fill.low { background: var(--amber); }
   .score-num { font-family: var(--mono); font-size: 11px; text-align: right; color: var(--muted); }
@@ -599,6 +599,7 @@
     .invariants, .demo-stats, .ask-grid, .roadmap, .section-list { grid-template-columns: 1fr; }
     .stat { min-width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
   }
+  @media screen and (min-width: 901px) and (max-height: 800px) { .slide-body { zoom: .86; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   }
@@ -1078,7 +1079,7 @@
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>31 evidence / 12 files / 4 artefact types / 2 tests / 11 references.</b> Every number is a count of linked records, not a narrative claim.</div></div>
             <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Eight features, each with evidence count and confidence.</b> The selected feature is PA-VEH-01; the list is the inventory entry point.</div></div>
-            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>18-node spine, six columns.</b> PCF → entity → typelist → template/Gosu → API draft → tests. Directed edges; click any node for evidence.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>18-node spine, six columns.</b> PCF → entity → typelist → template/Gosu → API draft → tests. Directed edges; click any highlighted evidence-bearing node for evidence.</div></div>
             <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>37 vs 24, and 3 estate-wide gaps.</b> A long type against the APD limit; the gaps are labelled estate-wide, not three missing links in this feature.</div></div>
           </div>
           <div class="demo-stats">
@@ -1165,15 +1166,15 @@
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="740" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
-          <span class="marker middle" style="left:1.7%;top:29.6%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:1.7%;top:63.1%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:1.7%;top:3.5%" aria-hidden="true">3</span>
-          <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The live run remains read-only. M-12 itself is below this crop and is shown schematically in panel 4.</figcaption>
+          <span class="marker middle" style="left:5%;top:57%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:5%;top:70%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:82%;top:4%" aria-hidden="true">3</span>
+          <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The capture uses an isolated copy; reseed the live run with make demo before presenting. M-12 itself is below this crop and is shown schematically in panel 4.</figcaption>
         </figure>
         <div class="demo-side">
           <div class="callout-list">
             <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Reject M-12 → new A-DEC-04.</b> “What target should replace the rejected mapping?” Impact medium, owner unassigned, status open.</div></div>
-            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Accept is explicit and reversible in the audit.</b> M-01 row turns green only after the action; the other rows stay pending.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Accept is explicit and recorded in the audit.</b> M-01 row turns green only after the action; the other rows stay pending.</div></div>
             <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b><code>_gen</code> writes: 0.</b> Draft is local and non-deployable; only <code>_ext</code>, codegen, and product-access proposals are written.</div></div>
             <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>M-12 rejected, not deleted.</b> 12 dispositions / 5 target changes. Four exact documented examples + one documented 24-char mechanism on a synthetic long type; six API conventions; one typelist convention.</div></div>
           </div>
@@ -1200,7 +1201,7 @@
     <div class="speaker-note" hidden>
       <p><strong>Set the frame.</strong> “This is a decision queue, not an automated rename. Twelve source-to-target dispositions for PA-VEH-01. <b>Four exact documented examples + one documented 24-char mechanism applied to a synthetic long type.</b> Six are PreFlight API conventions; one is a typelist convention. Provenance is visible per row.”</p>
       <p>Show the two actions. “Accept M-01: PAVehicle maps to PersonalVehicle by the documented nameOverride. Reject M-12, the Motorcycle_Ext typelist convention. The reject is not a delete. A-DEC-04 appears with impact medium, owner unassigned, and the question that would close it.” The decision dialog asks for a reason; state that the rejection is because the replacement target is not agreed.</p>
-      <p>Point at the header badge. “_gen writes zero. The draft is local, non-deployable, and every change starts pending. The screenshot is an isolated copy so the live demo run stays untouched.”</p>
+      <p>Point at the header badge. “_gen writes zero. The draft is local, non-deployable, and every change starts pending. The screenshot is an isolated copy; before presenting, reseed the live run with make demo.”</p>
       <p><strong>Scope note, say it explicitly:</strong> “The draft targets Cloud Retrofit <b>without APD App</b>, which Guidewire explicitly labels not the recommended process. Field-level <code>nameOverride</code> applies only on that path. The <code>_ext</code> draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.”</p>
     </div>
   </section>
@@ -1431,10 +1432,10 @@
       <div class="packet-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/packet-focus-1440x900.png" width="1212" height="772" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
-          <span class="marker middle" style="left:1.7%;top:5.5%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:1.7%;top:31.2%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:1.7%;top:54.5%" aria-hidden="true">3</span>
-          <span class="marker middle" style="left:1.7%;top:42.6%" aria-hidden="true">4</span>
+          <span class="marker middle" style="left:88%;top:4%" aria-hidden="true">1</span>
+          <span class="marker middle" style="left:50%;top:23%" aria-hidden="true">2</span>
+          <span class="marker middle" style="left:79%;top:46%" aria-hidden="true">3</span>
+          <span class="marker middle" style="left:10%;top:37%" aria-hidden="true">4</span>
           <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; the crop shows the assumption-register summary (A-01), while the live register has four rows including A-DEC-04. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1479,12 +1480,12 @@
         <div class="slide-head-main">
           <p class="kicker">Engineering rigor</p>
           <h2>The demo is the surface. The hardening is the work.</h2>
-          <p class="slide-lede"><b>393 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+          <p class="slide-lede"><b>410 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
         </div>
         <span class="head-badge">Internal adversarial review</span>
       </div>
       <div class="rigor-top">
-        <span class="rigor-badge"><b>393</b> tests collected</span>
+        <span class="rigor-badge"><b>410</b> tests collected</span>
         <span class="rigor-badge"><b>1</b> Playwright golden path</span>
         <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
         <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
@@ -1508,7 +1509,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 393 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 410 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
       <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
       <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
     </div>
