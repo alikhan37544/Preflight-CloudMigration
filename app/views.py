@@ -25,6 +25,51 @@ def _short_label(stem: str) -> str:
     return label
 
 
+def _break_word(word: str, limit: int) -> list[str]:
+    """Split an over-long camel-case label at readable boundaries."""
+    if len(word) <= limit:
+        return [word]
+    boundaries = [
+        index for index in range(2, len(word))
+        if word[index].isupper() and word[index - 1].islower()
+    ]
+    fitting = [index for index in boundaries if index <= limit]
+    split = max(fitting) if fitting else limit
+    return [word[:split]] + _break_word(word[split:], limit)
+
+
+def _wrap_label(label: str, limit: int = 15, max_lines: int = 2) -> list[str]:
+    """Wrap an SVG label without relying on browser text measurement.
+
+    Column widths in ``spine_layout`` are computed from these lines. Keeping
+    the wrapper deliberately conservative (15 characters at 10px) means the
+    graph fits a 1280px workbench while labels stay at or above 10px.
+    """
+    chunks: list[tuple[str, str]] = []
+    for word_index, word in enumerate(label.split()):
+        pieces = _break_word(word, limit)
+        for piece_index, piece in enumerate(pieces):
+            separator = "" if piece_index else (" " if word_index else "")
+            chunks.append((piece, separator))
+
+    lines: list[str] = []
+    current = ""
+    for piece, separator in chunks:
+        candidate = f"{current}{separator}{piece}" if current else piece
+        if len(candidate) <= limit:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = piece
+    if current:
+        lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1][: limit - 1] + "\u2026"
+    return lines or [label[:limit]]
+
+
 def _column_for(node: dict[str, Any]) -> str:
     path = (node.get("artifact_path") or "").lower()
     if path.endswith(".pcf"):
@@ -53,40 +98,71 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
     if not nodes:
         return None
 
-    # Six compact columns fit a 1280px workbench without hiding the Tests column.
-    spacing = 108
-    node_width = 100
-    columns = {
-        key: {"key": key, "label": label, "nodes": [], "x": 14 + index * spacing}
-        for index, (key, label) in enumerate(COLUMNS)
+    # Labels are wrapped to at most 15 characters at 10px. Each column width is
+    # computed from its longest wrapped line (minimum 100px), which keeps all
+    # six columns inside a 1280px workbench without shrinking text below 10px.
+    char_width = 5.6
+    gap = 10
+    left = 14
+    top = 58
+    row_gap = 8
+    min_width = 100
+    columns: dict[str, dict[str, Any]] = {
+        key: {
+            "key": key,
+            "label": label,
+            "header_lines": _wrap_label(label, limit=13, max_lines=2),
+            "nodes": [],
+            "x": 0,
+            "width": min_width,
+        }
+        for key, label in COLUMNS
     }
     for node in nodes:
         if node.get("kind") == "feature":
             continue
         columns[_column_for(node)]["nodes"].append(node)
 
-    positions: dict[str, tuple[float, float]] = {}
-    width = 14 + len(COLUMNS) * spacing + 8
-    height = 120
-    for key, column in columns.items():
-        for row, node in enumerate(column["nodes"]):
-            x = column["x"]
-            y = 70 + row * 52
-            positions[node["id"]] = (x, y)
-            height = max(height, y + 90)
+    for column in columns.values():
+        longest = max(
+            [len(line) for line in column["header_lines"]]
+            + [len(line) for node in column["nodes"]
+               for line in _wrap_label(node.get("label", ""), limit=15)]
+            + [8]  # the kind caption, e.g. "artifact"
+        )
+        column["width"] = max(min_width, round(14 + longest * char_width))
+
+    x = left
+    for column in columns.values():
+        column["x"] = x
+        x += column["width"] + gap
+    width = x - gap + 8
+
+    positions: dict[str, tuple[float, float, float, float]] = {}
+    height = top + 90
+    for column in columns.values():
+        y = top
+        for node in column["nodes"]:
+            label_lines = _wrap_label(node.get("label", ""), limit=15)
+            node_height = 44 if len(label_lines) == 1 else 56
+            positions[node["id"]] = (column["x"], y, node_height, column["width"])
+            y += node_height + row_gap
+            height = max(height, y + 10)
 
     svg_nodes = []
-    for key in columns:
-        for node in columns[key]["nodes"]:
-            x, y = positions[node["id"]]
+    for column in columns.values():
+        for node in column["nodes"]:
+            x, y, node_height, node_width = positions[node["id"]]
             svg_nodes.append({
                 "id": node["id"],
-                "label": node.get("label", "")[:18],
+                "label": node.get("label", ""),
+                "label_lines": _wrap_label(node.get("label", ""), limit=15),
                 "kind": node.get("kind", ""),
                 "x": x,
                 "y": y,
-                "w": node_width,
-                "h": 38,
+                "w": column["width"],
+                "h": node_height,
+                "kind_y": node_height - 8,
                 "artifact_path": node.get("artifact_path"),
                 "evidence_id": node.get("evidence_id"),
                 "confidence": node.get("confidence", ""),
@@ -99,10 +175,10 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
         if not src or not dst:
             continue
         svg_edges.append({
-            "x1": src[0] + node_width,
-            "y1": src[1] + 19,
+            "x1": src[0] + src[3],
+            "y1": src[1] + src[2] / 2,
             "x2": dst[0],
-            "y2": dst[1] + 19,
+            "y2": dst[1] + dst[2] / 2,
             "kind": edge.get("kind", ""),
         })
 
@@ -242,6 +318,206 @@ def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+BASELINE_LABELS = {
+    "identity_mapper": "Identity mapper",
+    "normalized_name_mapper": "Normalized-name mapper",
+    "pcf_grep_discovery": "PCF+grep discovery",
+    "grep_only_findings": "Grep-only findings (precision)",
+    "grep_only_findings_f1": "Grep-only F1",
+    "all_unresolved": "All-unresolved",
+}
+BASELINE_ORDER = [
+    "identity_mapper", "normalized_name_mapper", "pcf_grep_discovery",
+    "grep_only_findings", "grep_only_findings_f1", "all_unresolved",
+]
+def _pct(value: Any, digits: int = 1) -> str:
+    try:
+        return f"{float(value) * 100:.{digits}f}%"
+    except (TypeError, ValueError):
+        return "-"
+
+
+def _fraction(metric: dict[str, Any] | None) -> str:
+    if not metric:
+        return "-"
+    return f"{metric.get('numerator', 0)}/{metric.get('denominator', 0)}"
+
+
+def _metric_aria(metric: dict[str, Any]) -> str:
+    label = f"{metric.get('metric_id', '')} {metric.get('label', '')}: {_pct(metric.get('value'))}"
+    low = metric.get("interval_low")
+    high = metric.get("interval_high")
+    if low is None or high is None:
+        return f"{label}; no interval; bootstrap deferred."
+    return f"{label}; 95% Wilson interval {_pct(low)} to {_pct(high)}."
+
+
+def evaluation_view(view: dict[str, Any]) -> dict[str, Any]:
+    """Pre-compute display rows so every number comes from metrics.json."""
+    payload = view.get("metrics") or {}
+    metrics = payload.get("metrics", [])
+    supporting = payload.get("supporting", [])
+    by_id = {metric.get("metric_id"): metric for metric in metrics}
+    supporting_by_id = {metric.get("metric_id"): metric for metric in supporting}
+    per_rule = payload.get("per_rule", {}) or {}
+    margins = payload.get("margins", {}) or {}
+    baselines = payload.get("baselines", {}) or {}
+
+    m5 = by_id.get("M5")
+    m6 = by_id.get("M6")
+    top8 = supporting_by_id.get("M5-TOP8")
+    holdout = supporting_by_id.get("HOLDOUT-RECALL")
+
+    hard_negatives = len(per_rule) * 3
+    false_positives = sum(int(stats.get("fp", 0) or 0) for stats in per_rule.values())
+    silent_negatives = max(0, hard_negatives - min(false_positives, hard_negatives))
+
+    facts = []
+    if m5:
+        facts.append({"value": _fraction(m5), "label": "estimate-moving issues",
+                      "title": "M5 recall"})
+    if m6:
+        facts.append({"value": _fraction(m6), "label": "finding F1",
+                      "title": "M6 micro-F1 numerator / denominator"})
+    if holdout:
+        facts.append({"value": _fraction(holdout), "label": "holdout recall (not imported)",
+                      "title": "Pre-computed holdout aggregate; never imported"})
+    if top8:
+        facts.append({"value": _fraction(top8), "label": "top-8 allowance",
+                      "title": "M5 top-8 slots"})
+    if hard_negatives:
+        facts.append({"value": f"{silent_negatives}/{hard_negatives}",
+                      "label": "hard negatives silent",
+                      "title": "Labelled hard negatives with no false positive"})
+    facts.append({"value": "", "label": "all metrics in-sample on one synthetic fixture",
+                  "title": "No claim beyond the synthetic demo slice", "wide": True})
+
+    chart_rows = []
+    for metric in metrics:
+        if metric.get("metric_id") not in {"M1", "M2", "M3", "M4", "M5", "M6"}:
+            continue
+        low = metric.get("interval_low")
+        high = metric.get("interval_high")
+        has_interval = low is not None and high is not None
+        chart_rows.append({
+            "id": metric.get("metric_id"),
+            "label": metric.get("label", ""),
+            "value_pct": _pct(metric.get("value")),
+            "fraction": _fraction(metric),
+            "dot_left": f"{float(metric.get('value', 0)) * 100:.2f}",
+            "has_interval": has_interval,
+            "interval_left": f"{float(low) * 100:.2f}" if has_interval else "0",
+            "interval_right": f"{float(high) * 100:.2f}" if has_interval else "0",
+            "interval_text": (
+                f"{_pct(low)}–{_pct(high)}" if has_interval
+                else "no interval (bootstrap deferred)"
+            ),
+            "aria": _metric_aria(metric),
+        })
+
+    short_labels = {
+        "M1": "Feature discovery recall",
+        "M4": "Disposition correctness",
+        "M6": "Finding micro-F1",
+    }
+    baseline_keys = {"M1": "pcf_grep_discovery", "M4": "identity_mapper", "M6": "grep_only_findings_f1"}
+    bar_rows = []
+    for metric_id in ("M1", "M4", "M6"):
+        metric = by_id.get(metric_id)
+        margin = margins.get(metric_id)
+        if not metric or not margin:
+            continue
+        baseline_key = baseline_keys[metric_id]
+        bar_rows.append({
+            "id": metric_id,
+            "label": short_labels.get(metric_id, metric.get("label", "")),
+            "value_pct": _pct(metric.get("value")),
+            "value_left": f"{float(metric.get('value', 0)) * 100:.2f}",
+            "baseline_pct": _pct(margin.get("baseline")),
+            "baseline_left": f"{float(margin.get('baseline', 0)) * 100:.2f}",
+            "baseline_label": BASELINE_LABELS.get(baseline_key, baseline_key),
+            "delta_pp": f"{float(margin.get('delta', 0)) * 100:+.1f} pp",
+            "pass": bool(margin.get("pass")),
+        })
+
+    baseline_rows = []
+    for key in BASELINE_ORDER:
+        if key not in baselines:
+            continue
+        baseline_rows.append({
+            "key": key,
+            "label": BASELINE_LABELS.get(key, key.replace("_", " ")),
+            "value_pct": _pct(baselines[key]),
+        })
+
+    margin_rows = []
+    for metric_id, margin in margins.items():
+        baseline_key = baseline_keys.get(metric_id, "")
+        margin_rows.append({
+            "id": metric_id,
+            "label": short_labels.get(metric_id, metric_id),
+            "baseline_pct": _pct(margin.get("baseline")),
+            "baseline_label": BASELINE_LABELS.get(baseline_key, "baseline"),
+            "delta_pp": f"{float(margin.get('delta', 0)) * 100:+.1f} pp",
+            "required_pp": f"+{float(margin.get('required_pp', 0)):.0f} pp",
+            "pass": bool(margin.get("pass")),
+        })
+
+    per_rule_rows = []
+    for rule_id, stats in per_rule.items():
+        tp, fp, fn = int(stats.get("tp", 0)), int(stats.get("fp", 0)), int(stats.get("fn", 0))
+        precision = tp / (tp + fp) if (tp + fp) else 0.0
+        recall = tp / (tp + fn) if (tp + fn) else 0.0
+        per_rule_rows.append({
+            "rule_id": rule_id, "tp": tp, "fp": fp, "fn": fn,
+            "precision_pct": _pct(precision), "recall_pct": _pct(recall),
+        })
+
+    supporting_rows = []
+    for metric in supporting:
+        if metric.get("metric_id") == "HOLDOUT-RECALL":
+            continue
+        supporting_rows.append({
+            "id": metric.get("metric_id"),
+            "label": metric.get("label", ""),
+            "value_pct": _pct(metric.get("value")),
+            "fraction": _fraction(metric),
+        })
+
+    holdout_view = None
+    if holdout:
+        holdout_view = {
+            "value_pct": _pct(holdout.get("value")),
+            "fraction": _fraction(holdout),
+            "interval_text": (
+                f"95% Wilson interval {_pct(holdout.get('interval_low'))}–{_pct(holdout.get('interval_high'))}"
+                if holdout.get("interval_low") is not None else "No interval reported"
+            ),
+            "fixture_id": holdout.get("fixture_id") or "northstar-pc-2026.10",
+            "caveat": holdout.get("caveat", "Pre-computed holdout aggregate; not imported."),
+        }
+
+    return {
+        "facts": facts,
+        "chart_rows": chart_rows,
+        "bar_rows": bar_rows,
+        "baseline_rows": baseline_rows,
+        "margin_rows": margin_rows,
+        "per_rule_rows": per_rule_rows,
+        "supporting_rows": supporting_rows,
+        "holdout": holdout_view,
+        "m5_top8": (
+            {"fraction": _fraction(top8), "pct": _pct(top8.get("value")),
+             "aria": _metric_aria(top8)}
+            if top8 else None
+        ),
+        "baseline_footnote": (
+            "The pre-registered always-answer assistant refusal-recall baseline (0.0%) "
+            "is not a meaningful comparator for this demo and is omitted from the table."
+        ),
+    }
+
+
 def _fallback_spine(feature: dict[str, Any], evidence_by_id: dict[str, Any]) -> Spine:
     """Build an inventory spine from evidence for runs predating multi-spine output."""
     nodes: list[SpineNode] = []
@@ -338,4 +614,5 @@ def load_run_view(store: RunStore, run_id: str) -> dict[str, Any]:
         "precision_guards": PRECISION_GUARDS,
     }
     view["feature_summary"] = feature_summary(view)
+    view["evaluation"] = evaluation_view(view)
     return view

@@ -53,37 +53,68 @@
 </div>
 
 <div class="finding-layout">
-  <section class="panel">
-    <table class="data-table" data-findings-table>
-      <thead><tr><th>Rule</th><th>Title</th><th>Source</th><th>Severity</th><th>Claim strength</th><th>Standard</th><th>State</th><th></th></tr></thead>
-      <tbody>
-        {% for finding in view.findings %}
-        {% set ev = view.evidence_by_id.get(finding.evidence_ids[0]) if finding.evidence_ids else None %}
-        <tr class="{{ 'selected' if selected_finding and selected_finding.finding_id == finding.finding_id }}" data-finding-row="{{ finding.finding_id }}">
-          <td><code class="rule-code">{{ finding.rule_id }}</code></td>
-          <td>{{ finding.title }}</td>
-          <td>
-            {% if ev %}
-            <code>{{ ev.path }}{% if ev.locator.line %}:{{ ev.locator.line }}{% endif %}</code>
-            {% else %}<span class="muted">-</span>{% endif %}
-          </td>
-          <td>{{ severity(finding.severity) }}</td>
-          <td>{{ claim(finding.claim_strength) }}</td>
-          <td>
-            {% if finding.standard_id %}
-            <code class="rule-code">{{ finding.standard_id }}</code>
-            {% elif finding.standard_title %}{{ finding.standard_title }}
-            {% elif finding.standard_url %}<a href="{{ finding.standard_url }}" target="_blank" rel="noopener">public reference</a>
-            {% else %}<span class="muted">none</span>{% endif %}
-          </td>
-          <td><span class="pill pill-state" data-state>{{ finding.decision }}</span></td>
-          <td class="actions-col">
-            <a class="btn btn-small btn-ghost" href="/findings?run={{ run_id }}&selected={{ finding.finding_id }}">Inspect</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <section class="panel findings-table-panel">
+    <div class="table-scroll" role="region" aria-label="Findings table, horizontally scrollable if needed" tabindex="0">
+      <table class="data-table findings-table" data-findings-table>
+        <caption class="table-caption">Advisory findings: {{ view.findings|length }} rows across {{ view.findings|groupby('rule_id')|length }} rules. Source paths are truncated with the full path in the tooltip.</caption>
+        <colgroup>
+          <col class="col-rule">
+          <col class="col-title">
+          <col class="col-source">
+          <col class="col-severity">
+          <col class="col-claim">
+          <col class="col-standard">
+          <col class="col-state">
+          <col class="col-actions">
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Rule</th>
+            <th scope="col">Title</th>
+            <th scope="col">Source</th>
+            <th scope="col">Severity</th>
+            <th scope="col">Claim strength</th>
+            <th scope="col">Standard</th>
+            <th scope="col">State</th>
+            <th scope="col" class="actions-col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for finding in view.findings %}
+          {% set ev = view.evidence_by_id.get(finding.evidence_ids[0]) if finding.evidence_ids else None %}
+          {% set is_selected = selected_finding and selected_finding.finding_id == finding.finding_id %}
+          <tr class="{{ 'selected' if is_selected }}" data-finding-row="{{ finding.finding_id }}">
+            <td>
+              {% if is_selected %}<span class="visually-hidden">Selected row.</span>{% endif %}
+              <code class="rule-code">{{ finding.rule_id }}</code>
+            </td>
+            <td><span class="finding-title" title="{{ finding.title }}">{{ finding.title }}</span></td>
+            <td class="source-cell">
+              {% if ev %}
+              <code title="{{ ev.path }}{% if ev.locator.line %}:{{ ev.locator.line }}{% endif %}">{{ ev.path }}{% if ev.locator.line %}:{{ ev.locator.line }}{% endif %}</code>
+              {% else %}<span class="muted">-</span>{% endif %}
+            </td>
+            <td>{{ severity(finding.severity) }}</td>
+            <td>{{ claim(finding.claim_strength) }}</td>
+            <td>
+              {% if finding.standard_id %}
+              <code class="rule-code">{{ finding.standard_id }}</code>
+              {% elif finding.standard_title %}{{ finding.standard_title }}
+              {% elif finding.standard_url %}<a href="{{ finding.standard_url }}" target="_blank" rel="noopener">public reference</a>
+              {% else %}<span class="muted">none</span>{% endif %}
+            </td>
+            <td>
+              {% if is_selected %}<span class="selected-flag">selected</span>{% endif %}
+              <span class="pill pill-state" data-state>{{ finding.decision }}</span>
+            </td>
+            <td class="actions-col">
+              <a class="btn btn-small btn-ghost" href="/findings?run={{ run_id }}&selected={{ finding.finding_id }}">Inspect</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <aside class="panel detail-panel">

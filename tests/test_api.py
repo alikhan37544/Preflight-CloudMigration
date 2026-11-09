@@ -104,6 +104,75 @@ def test_metrics_and_packet_api(api, run_id) -> None:
     assert len(packet["pages"]) == 6
 
 
+def test_evaluation_summary_strip_and_charts(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/evaluation?run={run_id}").text
+    assert 'data-eval-summary' in text
+    for fact in [
+        "estimate-moving issues",
+        "finding F1",
+        "holdout recall (not imported)",
+        "top-8 allowance",
+        "hard negatives silent",
+        "all metrics in-sample on one synthetic fixture",
+    ]:
+        assert fact in text, fact
+    assert "6/6" in text
+    assert "48/48" in text
+    assert "4/4" in text
+    assert "6/8" in text
+    assert "24/24" in text
+    assert 'data-chart="wilson"' in text
+    assert 'data-chart="baseline-bars"' in text
+    for metric_id in ["M1", "M2", "M3", "M4", "M5", "M6"]:
+        assert f'data-metric-id="{metric_id}"' in text
+    for metric_id in ["M1", "M4", "M6"]:
+        assert f'data-bar-metric="{metric_id}"' in text
+    assert "95% Wilson intervals" in text
+    assert "What this does not prove" in text
+    assert "not imported" in text
+    assert "metric-fact-allowance" in text
+    assert 'href="#limitations"' in text
+    assert 'id="limitations"' in text
+
+
+def test_workbench_legend_caption_and_all_six_columns(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/?run={run_id}&feature=PA-VEH-01").text
+    assert 'class="spine-caption"' in text
+    for label in ["PCF", "Entity", "Typelist", "Template / Gosu", "API draft", "Tests"]:
+        assert f'data-column-label="{label}"' in text, label
+    for kind in ["contains", "declares", "references", "configures", "tested_by"]:
+        assert f"legend-{kind}" in text, kind
+    assert "selected node" in text
+    assert "data-spine-scroll-hint" in text
+    assert "Spine table fallback" in text
+
+
+def test_findings_table_columns_caption_and_source_title(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/findings?run={run_id}&selected=F-008").text
+    assert '<caption class="table-caption">' in text
+    for header in ["Rule", "Title", "Source", "Severity", "Claim strength", "Standard", "State"]:
+        assert f'<th scope="col">{header}</th>' in text, header
+    assert 'class="table-scroll"' in text
+    assert 'class="source-cell"' in text
+    assert "gsrc/acme/integration/LegacyVehicleServlet.gs:3" in text
+
+
+def test_workbench_direct_evidence_url_selects_node(api, run_id) -> None:
+    client, _ = api
+    features = client.get(f"/api/runs/{run_id}/features").json()["features"]
+    feature = features[0]
+    evidence = client.get(f"/api/runs/{run_id}/features/{feature['feature_id']}").json()["evidence"]
+    target = next(item for item in evidence if item["evidence_id"] == "EV-0006")
+    text = client.get(f"/?run={run_id}&feature={feature['feature_id']}&evidence={target['evidence_id']}").text
+    assert "node-artifact selected" in text
+    assert 'aria-pressed="true"' in text
+    assert "Selected node evidence" in text
+    assert target["path"] in text
+
+
 def test_decision_persists_and_is_audited(api, run_id) -> None:
     client, token = api
     response = client.post(

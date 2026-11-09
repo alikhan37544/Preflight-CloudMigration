@@ -18,7 +18,8 @@
 {% if runs %}
 <section class="panel" data-runs-table>
   <table class="data-table">
-    <thead><tr><th>Run</th><th>Project</th><th>Fixture</th><th>Status</th><th>Stage</th><th>Created</th><th></th></tr></thead>
+    <caption>Local analysis runs with project, fixture, status, stage, and creation time.</caption>
+    <thead><tr><th scope="col">Run</th><th scope="col">Project</th><th scope="col">Fixture</th><th scope="col">Status</th><th scope="col">Stage</th><th scope="col">Created</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
     <tbody>
       {% for run in runs %}
       <tr data-run-row="{{ run.run_id }}">

@@ -57,7 +57,8 @@
   </form>
 
   <table class="data-table manifest-table">
-    <thead><tr><th>Path</th><th>Kind</th><th>Parser</th><th>Status</th><th>Why excluded</th><th>Lines</th><th>Size</th><th>SHA-256</th></tr></thead>
+    <caption>Snapshot artifacts with parser, status, and exclusion reason.</caption>
+    <thead><tr><th scope="col">Path</th><th scope="col">Kind</th><th scope="col">Parser</th><th scope="col">Status</th><th scope="col">Why excluded</th><th scope="col">Lines</th><th scope="col">Size</th><th scope="col">SHA-256</th></tr></thead>
     <tbody>
       {% for artifact in artifacts %}
       <tr>

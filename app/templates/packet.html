@@ -52,7 +52,8 @@
     <div class="panel-head"><h2>Assumption register</h2></div>
     {% if view.assumptions %}
     <table class="data-table compact">
-      <thead><tr><th>ID</th><th>Statement</th><th>Range</th><th>Question</th><th>Owner</th><th>Status</th></tr></thead>
+      <caption>Assumptions included in the review packet.</caption>
+      <thead><tr><th scope="col">ID</th><th scope="col">Statement</th><th scope="col">Range</th><th scope="col">Question</th><th scope="col">Owner</th><th scope="col">Status</th></tr></thead>
       <tbody>
         {% for item in view.assumptions %}
         <tr><td><code class="rule-code">{{ item.assumption_id }}</code></td><td>{{ item.statement }}<div class="muted">{{ item.impact_caveat }}</div></td><td>{{ item.impact_range_days[0]|int }}-{{ item.impact_range_days[1]|int }} engineer-days</td><td>{{ item.question_to_ask }}</td><td>{{ item.owner }}</td><td>{{ item.status }}</td></tr>
@@ -65,7 +66,8 @@
     <div class="panel-head"><h2>Findings summary</h2></div>
     {% if view.findings %}
     <table class="data-table compact">
-      <thead><tr><th>Rule</th><th>Severity</th><th>Claim</th><th>State</th></tr></thead>
+      <caption>Findings summary included in the review packet.</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">Claim</th><th scope="col">State</th></tr></thead>
       <tbody>
         {% for finding in view.findings %}
         <tr><td><code>{{ finding.rule_id }}</code></td><td>{{ severity(finding.severity) }}</td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.decision }}</td></tr>
@@ -79,7 +81,8 @@
 <section class="panel">
   <div class="panel-head"><h2>Hashes and audit</h2><span class="muted">{{ 'tamper-evident local log' if view.audit_verified else 'audit verification FAILED' }}</span></div>
   <table class="data-table compact">
-    <thead><tr><th>Hash</th><th>Value</th></tr></thead>
+    <caption>Packet hashes and audit values.</caption>
+    <thead><tr><th scope="col">Hash</th><th scope="col">Value</th></tr></thead>
     <tbody>
       {% for name, value in view.packet.hashes.items() %}
       <tr><td>{{ name }}</td><td><code class="hash">{{ value }}</code></td></tr>
