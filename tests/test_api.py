@@ -245,6 +245,8 @@ def test_empty_uploaded_run_has_honest_empty_states(api) -> None:
         assert packet.status_code == 200
         assert "six-section" not in packet.text.lower()
         assert "Packet not generated" in packet.text
+        assert "No packet has been generated for this run yet." in packet.text
+        assert "Packet refresh failed" not in packet.text
 
         findings = client.get(f"/findings?run={run_id}")
         assert "No findings" in findings.text
@@ -268,6 +270,49 @@ def test_packet_section_count_comes_from_the_packet(api, run_id) -> None:
     text = client.get(f"/packet?run={run_id}").text
     assert "6-section packet" in text
     assert "six-section" not in text
+    assert "review, challenge, and download" in text
+    assert "review, challenge, and approve" not in text
+    assert "target changes /" in text
+
+
+def test_manifest_no_match_shows_empty_state(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/manifest?run={run_id}&q=zzzz-no-such-file").text
+    assert "No files match these filters." in text
+    assert 'class="data-table manifest-table"' not in text
+
+
+def test_missing_run_hides_audit_and_copy_controls(api) -> None:
+    client, _ = api
+    response = client.get("/?run=R-DOES-NOT-EXIST")
+    assert response.status_code == 404
+    assert "no longer exists" in response.text
+    assert "Audit JSON" not in response.text
+    assert "Copy snapshot hash" not in response.text
+
+
+def test_review_state_pills_are_consistent(api, run_id) -> None:
+    client, _ = api
+    reconstruction = client.get(f"/reconstruction?run={run_id}").text
+    assert 'class="pill pill-state state-pending" data-state>pending</span>' in reconstruction
+    findings = client.get(f"/findings?run={run_id}&selected=F-008").text
+    assert 'class="pill pill-state state-open" data-state>open</span>' in findings
+    assert "Finding F-008" in findings
+    assert 'aria-label="Inspect finding F-008' in findings
+    runs = client.get("/runs").text
+    assert "pill pill-status status-succeeded" in runs
+
+
+def test_decision_dialog_markup_is_present(api, run_id) -> None:
+    client, _ = api
+    for path in [f"/reconstruction?run={run_id}", f"/findings?run={run_id}&selected=F-008"]:
+        text = client.get(path).text
+        assert 'data-decision-dialog' in text
+        assert 'data-decision-reason' in text
+        assert 'data-decision-confirm' in text
+    mapping = client.get(f"/reconstruction?run={run_id}").text
+    assert 'data-object-label="mapping M-01"' in mapping
+    assert 'aria-label="Accept mapping M-01 PAVehicle to' in mapping
 
 
 def test_precision_guard_counts_are_corpus_totals(api, run_id) -> None:
@@ -509,8 +554,9 @@ def test_findings_selected_marker_is_in_rule_cell_not_state(api, run_id) -> None
     assert len(cells) == 8
     assert 'class="selected-flag"' in cells[0]
     assert all('class="selected-flag"' not in cell for cell in cells[1:])
+    assert "F-008" in cells[0]
     assert re.fullmatch(
-        r'\s*<span class="pill pill-state" data-state>open</span>\s*', cells[6]
+        r'\s*<span class="pill pill-state state-open" data-state>open</span>\s*', cells[6]
     ), cells[6]
 
 
@@ -518,8 +564,12 @@ def test_unknown_reconstruction_tab_falls_back_to_mappings(api, run_id) -> None:
     client, _ = api
     response = client.get(f"/reconstruction?run={run_id}&tab=not-a-tab")
     assert response.status_code == 200
-    assert '<section class="tab-panel active" data-tab-panel="mappings">' in response.text
-    assert '<section class="tab-panel active" data-tab-panel="not-a-tab">' not in response.text
+    assert re.search(
+        r'<section class="tab-panel active"[^>]*data-tab-panel="mappings"', response.text
+    )
+    assert 'data-tab-panel="not-a-tab"' not in response.text
+    assert 'role="tabpanel"' in response.text
+    assert 'aria-selected="true"' in response.text
 
 
 def test_import_affordance_renders(api) -> None:
@@ -565,6 +615,7 @@ def test_running_run_shows_loading_state(api) -> None:
     assert response.status_code == 200
     assert "Analysis in progress" in response.text
     assert "data-run-wait" in response.text
+    assert 'data-return-to="/manifest?run=R-LOADING"' in response.text
 
 
 def test_runs_page_lists_existing_run(api, run_id) -> None:

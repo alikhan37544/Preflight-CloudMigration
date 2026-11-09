@@ -38,10 +38,14 @@
       {% endif %}
       <span>{{ release_context }}</span>
     </div>
+    {% if view %}
     <div class="context-actions">
       <a class="btn btn-ghost btn-small" href="/api/runs/{{ run_id }}/audit" target="_blank" rel="noopener">Audit JSON</a>
-      <button class="btn btn-ghost btn-small" type="button" data-copy="{{ view.manifest.sha256 if view else '' }}">Copy snapshot hash</button>
+      {% if view.manifest.sha256 %}
+      <button class="btn btn-ghost btn-small" type="button" data-copy="{{ view.manifest.sha256 }}">Copy snapshot hash</button>
+      {% endif %}
     </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -91,6 +95,27 @@
       {{ disclaimer }}
     </div>
   </footer>
+  <dialog class="decision-dialog" data-decision-dialog aria-labelledby="decision-dialog-title">
+    <form data-decision-form>
+      <div class="panel-head">
+        <h2 id="decision-dialog-title">Record decision</h2>
+        <button class="btn btn-ghost btn-small" type="button" data-decision-cancel aria-label="Close decision dialog">Close</button>
+      </div>
+      <p class="decision-object" data-decision-object></p>
+      <p class="muted">The decision is written to the hash-chained audit trail with your reason.</p>
+      <label class="decision-label" for="decision-reason">Reason (required)</label>
+      <textarea class="input decision-reason" id="decision-reason" name="reason" rows="4" required data-decision-reason></textarea>
+      <div data-decision-edit hidden>
+        <label class="decision-label" for="decision-value" data-decision-value-label>Edited value (required)</label>
+        <input class="input" id="decision-value" name="edited_value" data-decision-value>
+      </div>
+      <p class="banner banner-error decision-error" data-decision-error role="alert" hidden></p>
+      <div class="button-row decision-buttons">
+        <button class="btn" type="button" data-decision-cancel>Cancel</button>
+        <button class="btn btn-primary" type="submit" data-decision-confirm>Record decision</button>
+      </div>
+    </form>
+  </dialog>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
 </body>
 </html>

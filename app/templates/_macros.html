@@ -18,6 +18,45 @@
 <span class="pill pill-class class-{{ value }}">{{ value }}</span>
 {%- endmacro %}
 
+{% macro state_pill(value) -%}
+<span class="pill pill-state state-{{ value }}" data-state>{{ value }}</span>
+{%- endmacro %}
+
+{% macro pluralize(count, singular, plural=None) -%}
+{{ count }} {{ singular if count == 1 else (plural or singular ~ 's') }}
+{%- endmacro %}
+
+{% macro effective_change_state(decisions, change_id, stored) -%}
+{%- set ns = namespace(state=stored) -%}
+{%- for decision in decisions -%}
+  {%- if decision.object_type == 'change' and decision.object_id == change_id -%}
+    {%- if decision.action == 'accept' -%}{% set ns.state = 'accepted' %}
+    {%- elif decision.action == 'reject' -%}{% set ns.state = 'rejected' %}
+    {%- elif decision.action == 'defer' -%}{% set ns.state = 'deferred' %}
+    {%- elif decision.action == 'edit' -%}{% set ns.state = 'edited' %}
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+{{ ns.state }}
+{%- endmacro %}
+
+{% macro locator(value) -%}
+{%- set kind = (value.kind or '')|lower -%}
+{%- set text = value.value or '' -%}
+{%- set line = value.line -%}
+{%- if text and kind and text.lower().startswith(kind ~ ' ') -%}
+{{ text }}
+{%- elif text and kind -%}
+{{ kind }} {{ text }}{% if line %}:{{ line }}{% endif %}
+{%- elif kind -%}
+{{ kind }}{% if line %} {{ line }}{% endif %}
+{%- elif text -%}
+{{ text }}
+{%- else -%}
+unknown
+{%- endif -%}
+{%- endmacro %}
+
 {% macro scroll_region(label, hint='Scroll horizontally to see all columns.') -%}
 <p class="scroll-hint" data-scroll-hint hidden>{{ hint }} <span aria-hidden="true">&rarr;</span></p>
 <div class="table-scroll" role="region" aria-label="{{ label }}" tabindex="0" data-table-scroll>

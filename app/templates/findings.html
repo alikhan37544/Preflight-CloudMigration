@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import claim, severity, confidence, scroll_region %}
+{% from "_macros.html" import claim, severity, confidence, scroll_region, state_pill, pluralize, locator %}
 {% set guard_rule_count = view.precision_guards|length %}
 {% set guard_negative_count = view.precision_guards|map(attribute='negatives')|map('length')|sum %}
 {% set guard_negatives_per_rule = view.precision_guards[0].negatives|length if view.precision_guards else 0 %}
@@ -15,6 +15,7 @@
   <div class="head-meta">
     <span class="counter">{{ view.findings|length }}</span>
     <span class="muted">findings</span>
+    {% if view.findings %}<a class="btn btn-small detail-jump" href="#finding-detail-heading" data-detail-jump>View detail</a>{% endif %}
   </div>
 </div>
 
@@ -38,7 +39,7 @@
     <span class="pill pill-claim claim-{{ flag.claim_strength }}">{{ flag.claim_strength }}</span>
   </div>
   {% endfor %}
-  <p class="muted">Readiness flags are separate from the {{ view.findings|length }} advisory findings and the {{ guard_rule_count }} scored rules.</p>
+  <p class="muted">Readiness flags are separate from the {{ pluralize(view.findings|length, 'advisory finding') }} and the {{ pluralize(guard_rule_count, 'scored rule') }}.</p>
 </section>
 {% else %}
 <section class="panel readiness-panel" aria-label="Readiness flags">
@@ -52,14 +53,14 @@
   {% for rule_id, rows in view.findings|groupby('rule_id') %}
   <span class="rule-summary-item"><code>{{ rule_id }}</code><span class="counter">{{ rows|length }}</span></span>
   {% endfor %}
-  <span class="muted">{{ view.findings|length }} advisory findings from {{ view.findings|groupby('rule_id')|length }} rules</span>
+  <span class="muted">{{ pluralize(view.findings|length, 'advisory finding') }} from {{ pluralize(view.findings|groupby('rule_id')|length, 'rule') }}</span>
 </div>
 
 <div class="finding-layout">
   <section class="panel findings-table-panel">
     {% call scroll_region("Findings table, horizontally scrollable if needed", "Scroll horizontally to see the remaining finding columns.") %}
       <table class="data-table findings-table" data-findings-table>
-        <caption class="table-caption">Advisory findings: {{ view.findings|length }} rows across {{ view.findings|groupby('rule_id')|length }} rules. Source paths are truncated with the full path in the tooltip.</caption>
+        <caption class="table-caption">Advisory findings: {{ pluralize(view.findings|length, 'row') }} across {{ pluralize(view.findings|groupby('rule_id')|length, 'rule') }}. Source paths are truncated with the full path in the tooltip.</caption>
         <colgroup>
           <col class="col-rule">
           <col class="col-title">
@@ -90,6 +91,7 @@
             <td{% if is_selected %} aria-current="true" data-selected="true"{% endif %}>
               {% if is_selected %}<span class="selected-flag" title="Currently selected finding">selected</span>{% endif %}
               <code class="rule-code">{{ finding.rule_id }}</code>
+              <code class="finding-id">{{ finding.finding_id }}</code>
             </td>
             <td><span class="finding-title" title="{{ finding.title }}">{{ finding.title }}</span></td>
             <td class="source-cell">
@@ -107,10 +109,11 @@
               {% else %}<span class="muted">none</span>{% endif %}
             </td>
             <td>
-              <span class="pill pill-state" data-state>{{ finding.decision }}</span>
+              {{ state_pill(finding.decision) }}
             </td>
             <td class="actions-col">
-              <a class="btn btn-small btn-ghost" href="/findings?run={{ run_id }}&selected={{ finding.finding_id }}">Inspect</a>
+              <a class="btn btn-small btn-ghost" href="/findings?run={{ run_id }}&selected={{ finding.finding_id }}"
+                 aria-label="Inspect finding {{ finding.finding_id }} {{ finding.title }}">Inspect</a>
             </td>
           </tr>
           {% endfor %}
@@ -119,17 +122,28 @@
     {% endcall %}
   </section>
 
-  <aside class="panel detail-panel">
-    <div class="panel-head"><h2>Finding detail</h2></div>
+  <aside class="panel detail-panel" id="finding-detail" aria-labelledby="finding-detail-heading">
+    <div class="panel-head"><h2 id="finding-detail-heading" tabindex="-1">Finding {{ selected_finding.finding_id if selected_finding else 'detail' }}</h2></div>
     {% if selected_finding %}
     <div class="detail-block">
       <div class="finding-top">{{ severity(selected_finding.severity) }} {{ claim(selected_finding.claim_strength) }}</div>
+      <div class="detail-state"><span class="muted">Recorded state</span> {{ state_pill(selected_finding.decision) }}</div>
       <h3>{{ selected_finding.title }}</h3>
       <p>{{ selected_finding.message }}</p>
-      <div class="detail-actions">
-        <button class="btn btn-small" type="button" data-decision="accept" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}">Accept</button>
-        <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}">Reject</button>
-        <button class="btn btn-small btn-ghost" type="button" data-decision="defer" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}">Defer</button>
+      <div class="detail-actions" data-decision-actions>
+        {% if selected_finding.decision in ['accepted', 'rejected', 'deferred', 'edited'] %}
+        <p class="decision-recorded state-{{ selected_finding.decision }}" role="status">Decision recorded: <strong>{{ selected_finding.decision }}</strong></p>
+        {% else %}
+        <button class="btn btn-small" type="button" data-decision="accept" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}"
+                data-object-label="finding {{ selected_finding.finding_id }}" data-object-summary="{{ selected_finding.title }}"
+                aria-label="Accept finding {{ selected_finding.finding_id }} {{ selected_finding.title }}">Accept</button>
+        <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}"
+                data-object-label="finding {{ selected_finding.finding_id }}" data-object-summary="{{ selected_finding.title }}"
+                aria-label="Reject finding {{ selected_finding.finding_id }} {{ selected_finding.title }}">Reject</button>
+        <button class="btn btn-small btn-ghost" type="button" data-decision="defer" data-object-type="finding" data-object-id="{{ selected_finding.finding_id }}"
+                data-object-label="finding {{ selected_finding.finding_id }}" data-object-summary="{{ selected_finding.title }}"
+                aria-label="Defer finding {{ selected_finding.finding_id }} {{ selected_finding.title }}">Defer</button>
+        {% endif %}
       </div>
       <h4>Remediation</h4>
       <p>{{ selected_finding.remediation }}</p>
@@ -148,7 +162,7 @@
       {% if ev %}
       <div class="evidence-card">
         <div class="evidence-path">{{ ev.path }}</div>
-        <div class="evidence-locator">{{ ev.locator.kind }} {{ ev.locator.value }}{% if ev.locator.line %}:{{ ev.locator.line }}{% endif %}</div>
+        <div class="evidence-locator">{{ locator(ev.locator) }}</div>
         <pre class="evidence-excerpt">{{ ev.excerpt }}</pre>
       </div>
       {% endif %}

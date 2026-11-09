@@ -30,7 +30,7 @@
           <td>{{ status(run.status) }}</td>
           <td>{{ run.stage }}</td>
           <td class="muted runs-created">{{ run.created_at }}</td>
-          <td class="runs-actions"><a class="btn btn-small" href="/?run={{ run.run_id }}">Open</a> <button class="btn btn-small btn-danger-ghost" type="button" data-delete-run="{{ run.run_id }}">Delete</button></td>
+          <td class="runs-actions"><a class="btn btn-small" href="/?run={{ run.run_id }}" aria-label="Open run {{ run.run_id }}">Open</a> <button class="btn btn-small btn-danger-ghost" type="button" data-delete-run="{{ run.run_id }}" aria-label="Delete run {{ run.run_id }}">Delete</button></td>
         </tr>
         {% endfor %}
       </tbody>
