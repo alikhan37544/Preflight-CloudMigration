@@ -71,7 +71,7 @@ FOCUS_CLIPS = {
     # Page heading, decision notice, tabs, and M-01..M-03 (post-decision).
     "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 755},
     # Banner, SBT flag, finding table, and the complete detail panel.
-    "findings": {"x": 218, "y": 220, "width": 1212, "height": 1000},
+    "findings": {"x": 218, "y": 220, "width": 1212, "height": 1016},
     # Page heading, six section cards, and the first assumption row (A-01).
     "packet": {"x": 218, "y": 95, "width": 1212, "height": 752},
 }
@@ -407,7 +407,8 @@ class Capture:
         print("Workbench")
         self.open("/?feature=PA-VEH-01")
         self.shot("workbench-1440x900.png")
-        self.check_crop("workbench")
+        self.check_crop("workbench", full=CROP_SPECS["workbench"]["full"],
+                        partial=CROP_SPECS["workbench"].get("partial", ()), text=CROP_SPECS["workbench"].get("text", {}))
         self.shot("workbench-focus-1440x900.png", clip=FOCUS_CLIPS["workbench"])
         self.shot("workbench-full-1440.png", full_page=True)
         # Markers 1 and 4 sit in the thin gap above the summary strip; 2 and 3
@@ -433,7 +434,8 @@ class Capture:
         print("Manifest excluded filter")
         self.open("/manifest?excluded=1")
         self.shot("manifest-excluded-1440x900.png")
-        self.check_crop("manifest")
+        self.check_crop("manifest", full=CROP_SPECS["manifest"]["full"],
+                        partial=CROP_SPECS["manifest"].get("partial", ()), text=CROP_SPECS["manifest"].get("text", {}))
         self.shot("manifest-focus-1440x900.png", clip=FOCUS_CLIPS["manifest"])
         hash_code = self.page.locator(".panel .banner-info code.hash").first
         short_hash = hash_code.inner_text().strip()
@@ -457,14 +459,17 @@ class Capture:
         print("Reconstruction (seed, pre-decision)")
         self.open("/reconstruction")
         self.shot("reconstruction-1440x900.png")
-        self.check_crop("reconstruction", bottom_before='[data-mapping-row="M-06"]')
+        self.check_crop("reconstruction", full=CROP_SPECS["reconstruction"]["full"],
+                        partial=CROP_SPECS["reconstruction"].get("partial", ()), text=CROP_SPECS["reconstruction"].get("text", {}),
+                        bottom_before='[data-mapping-row="M-06"]')
         self.shot("reconstruction-focus-1440x900.png", clip=FOCUS_CLIPS["reconstruction"])
         self.shot("reconstruction-full-1440.png", full_page=True)
 
         print("Findings")
         self.open("/findings")
         self.shot("findings-1440x900.png")
-        self.check_crop("findings")
+        self.check_crop("findings", full=CROP_SPECS["findings"]["full"],
+                        partial=CROP_SPECS["findings"].get("partial", ()), text=CROP_SPECS["findings"].get("text", {}))
         self.shot("findings-focus-1440x900.png", clip=FOCUS_CLIPS["findings"])
         self.hint("slide9.marker1", ".rule-summary-item", FOCUS_CLIPS["findings"])
         self.hint("slide9.marker2", ".findings-table tr.selected", FOCUS_CLIPS["findings"])

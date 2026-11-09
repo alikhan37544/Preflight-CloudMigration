@@ -106,7 +106,7 @@
             </td>
             <td>
               {% if finding.standard_id %}
-              <code class="rule-code">{{ finding.standard_id }}</code>
+              <code class="rule-code standard-id" title="{{ finding.standard_id }}">{{ finding.standard_id }}</code>
               {% elif finding.standard_title %}{{ finding.standard_title }}
               {% elif finding.standard_url %}<a href="{{ finding.standard_url }}" target="_blank" rel="noopener">public reference</a>
               {% else %}<span class="muted">none</span>{% endif %}

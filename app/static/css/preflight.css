@@ -868,3 +868,6 @@ a.citation-card:hover { border-color: var(--brand); text-decoration: none; }
   }
   .mapping-table { min-width: 1040px; }
 }
+
+.findings-table col.col-standard { width: 112px; }
+.findings-table .standard-id { white-space: nowrap; }

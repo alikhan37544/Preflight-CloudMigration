@@ -54,6 +54,16 @@ def main() -> int:
             run["snapshot_hash"] = facts.get("snapshot_hash", run.get("snapshot_hash"))
             run["packet_hash_seed"] = facts.get("packet_cover_packet", run.get("packet_hash_seed"))
             run["packet_cover_snapshot"] = facts.get("packet_cover_snapshot", run.get("packet_cover_snapshot"))
+        run_id = payload.get("run", {}).get("run_id") or manifest.get("run_id", "R-DEMO-001")
+        live_packet = ROOT / "data" / "runs" / run_id / "packet.json"
+        if live_packet.is_file():
+            live = json.loads(live_packet.read_text(encoding="utf-8"))
+            run["packet_hash_predecision"] = live.get("packet_sha256", run.get("packet_hash_predecision"))
+            run["audit_head_predecision"] = live.get("audit_head", run.get("audit_head_predecision"))
+            run["audit_events_predecision"] = live.get("audit_event_count", run.get("audit_events_predecision"))
+        if facts.get("packet_cover_packet"):
+            run["packet_hash_predecision"] = facts["packet_cover_packet"]
+        run["packet_hash_seed"] = run.get("packet_hash_predecision", run.get("packet_hash_seed"))
         failures = manifest.get("crop_failures", [])
         payload.setdefault("validation", {})["crop_failures"] = len(failures)
         payload["validation"]["capture_ok"] = not failures

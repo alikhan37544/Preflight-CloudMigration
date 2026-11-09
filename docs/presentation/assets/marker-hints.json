@@ -36,22 +36,22 @@
   },
   "slide9.marker1": {
     "left": 1.7,
-    "top": 33.5,
+    "top": 33.0,
     "selector": ".rule-summary-item"
   },
   "slide9.marker2": {
     "left": 1.7,
-    "top": 51.3,
+    "top": 52.7,
     "selector": ".findings-table tr.selected"
   },
   "slide9.marker3": {
     "left": 70.2,
-    "top": 41.5,
+    "top": 40.8,
     "selector": ".detail-panel h2"
   },
   "slide9.marker4": {
     "left": 1.7,
-    "top": 19.8,
+    "top": 19.5,
     "selector": ".readiness-panel"
   },
   "slide8.marker1": {

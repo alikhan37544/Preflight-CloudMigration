@@ -39,12 +39,12 @@
         "clientWidth": 358
       }
     },
-    "generated_at": "2026-11-09T21:26:26+00:00"
+    "generated_at": "2026-11-09T22:19:08+00:00"
   },
   "pdf": {
     "pdf": "docs/presentation/PreFlight-deck.pdf",
-    "bytes": 912318,
-    "sha256": "51cd25f3523470f1abc0b1aa31fc15985c337e66d9c8704ca606092be75877be",
+    "bytes": 914344,
+    "sha256": "3fa2211880c74edcb2cd059cce21f581d5ce829acb9727f4db3f654c7df6e4d4",
     "pages": 16,
     "page_size": "1200 x 675.12 pts"
   },

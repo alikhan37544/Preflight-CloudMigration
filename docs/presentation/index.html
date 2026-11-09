@@ -326,7 +326,7 @@
   .pipe-num { font-family: var(--mono); font-size: 9px; color: var(--muted-2); letter-spacing: .06em; }
   .pipe-name { display: block; font-size: clamp(.68rem, .74vw, .79rem); font-weight: 800; line-height: 1.15; margin: 3px 0 4px; }
   .pipe-desc { display: block; font-size: clamp(.59rem, .63vw, .68rem); color: var(--muted); line-height: 1.28; }
-  .arrow { flex: none; width: 10px; display: grid; place-items: center; color: var(--teal); font-size: 15px; font-weight: 800; }
+  .arrow { flex: none; width: 10px; display: grid; place-items: center; color: #3E5563; font-size: 15px; font-weight: 800; }
   .invariants { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
   .invariant { background: var(--paper); border: 1px solid var(--border); border-top: 2px solid var(--teal); padding: 9px 10px; }
   .invariant b { display: block; font-size: clamp(.68rem, .73vw, .78rem); margin-bottom: 3px; }
@@ -352,7 +352,7 @@
   .field-list dd { margin: 0; }
   .chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
   .chain-node { font-family: var(--mono); font-size: 8.5px; border: 1px solid var(--border-strong); background: #F7F9FB; padding: 4px 5px; color: var(--ink-2); white-space: nowrap; }
-  .chain-arrow { color: var(--teal); font-weight: 800; font-size: 11px; }
+  .chain-arrow { color: #3E5563; font-weight: 800; font-size: 11px; }
 
   /* Demo slides */
   .demo-grid { display: grid; grid-template-columns: minmax(0, 1.52fr) minmax(0, .88fr); gap: clamp(12px, 1.5vw, 20px); align-items: start; min-height: 0; }
@@ -600,6 +600,7 @@
     .stat { min-width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
   }
   @media screen and (min-width: 901px) and (max-height: 800px) { .slide-body { zoom: .86; } }
+  @media screen and (min-width: 901px) and (max-height: 900px) { #slide-12 .slide-body { zoom: .95; } #slide-9 .slide-body { zoom: .97; } }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   }
@@ -1208,7 +1209,7 @@
       </div>
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
-          <img src="assets/findings-focus-1440x900.png" width="1212" height="1000" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls. The complete detail panel is included.">
+          <img src="assets/findings-focus-1440x900.png" width="1212" height="1016" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls. The complete detail panel is included.">
           <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the complete detail panel. The precision-guard corpus is shown separately below.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1806,6 +1807,9 @@
 
   function keydown(event) {
     var tag = (event.target && event.target.tagName) || "";
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) {
+      if (["ArrowLeft", "ArrowRight", "Home", "End", " "].indexOf(event.key) >= 0) return;
+    }
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
     if (helpOpen) {
       if (event.key === "Tab") {
@@ -1860,12 +1864,14 @@
   window.addEventListener("hashchange", function () { show(hashToIndex(), false); });
 
   document.querySelector(".deck").addEventListener("touchstart", function (event) {
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) { touchX = null; touchY = null; return; }
     if (event.touches.length !== 1) return;
     touchX = event.touches[0].clientX;
     touchY = event.touches[0].clientY;
   }, { passive: true });
 
   document.querySelector(".deck").addEventListener("touchend", function (event) {
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) { touchX = null; touchY = null; return; }
     if (touchX === null || event.changedTouches.length !== 1) return;
     var dx = event.changedTouches[0].clientX - touchX;
     var dy = event.changedTouches[0].clientY - touchY;

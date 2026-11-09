@@ -121,3 +121,22 @@ No score is claimed in this log; the independent reviewer panel decides.
 5. **Source IDs.** S-18/S-19 were rechecked against `sources.md`; both currently resolve to the same Guidewire Personal Auto and Sonar rows (no swap). The slide-3 footnote cites S-05–S-07 and S-19–S-24, matching the adjacent-tool rows it describes.
 
 No score is claimed in this log; the independent reviewer panel decides.
+
+## Loop 4 — Independent panel reaches the 8/10 bar (10 Nov 2026)
+
+| Reviewer | Loop 3 | Loop 4 | Basis |
+|---|---:|---:|---|
+| Judge / demo | 7.0 | **8.0** | Full script works on a copied run; seed intact; no blockers |
+| UX / accessibility | 7.5 | **8.2** | 0 axe violations, 1280/390 layouts clean, dialogs and packet export semantics fixed |
+| Guidewire domain | 6.0 | **8.5** | ERR00-G, A-03, CUE, APD-conversion scope, GarageLocation_Ext, and verify-packet all corrected |
+| Engineering | 7.5 | **8.0** | 416 tests, 92/92 asset hashes, PDF hash, packet tamper/audit checks, seed state |
+
+## Loop 5 — Residual polish (no new review round)
+
+- Removed all overlay callout markers; callouts are text-only and never cover evidence.
+- Crop validator now checks every declared full/partial element; capture manifest reports 0 crop failures.
+- Deck slide 9 and 12 get short-viewport guards; all five viewports validate with 0 failures.
+- Mobile capability matrix scrolls with keyboard/touch without advancing the slide.
+- Findings standard IDs are no longer truncated; connector arrows meet contrast.
+- `evidence.json` run hashes are synchronized with the capture manifest and live seed packet.
+- Final counts: **416 tests**, packte verify OK, audit verify OK, 18/18 freeze hashes, 16-page PDF.
