@@ -193,7 +193,8 @@ class RunStore:
     # -- run status ----------------------------------------------------
     def update_status(self, run_id: str, *, status: str, stage: str, percent: float,
                       files_done: int | None = None, files_total: int | None = None,
-                      error: dict[str, Any] | None = None) -> dict[str, Any]:
+                      error: dict[str, Any] | None = None,
+                      metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         path = self.run_dir(run_id) / "status.json"
         with self._lock(run_id):
             if path.exists():
@@ -215,6 +216,8 @@ class RunStore:
                 payload["finished_at"] = _utc_now()
             if error is not None:
                 payload["error"] = error
+            if metadata:
+                payload.update(metadata)
             self._atomic_write(path, payload)
             return payload
 

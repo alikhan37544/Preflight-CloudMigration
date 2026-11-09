@@ -5,11 +5,14 @@ Written before app/services/pipeline.py exists.
 
 from __future__ import annotations
 
+import json
+import shutil
 from pathlib import Path
 
 import pytest
 
 from app.services.intake import snapshot_hash
+from app.services.packet import PacketIntegrityError, build_packet, packet_content_hash
 from app.services.pipeline import execute_run
 from app.store import RunStore
 
@@ -108,3 +111,89 @@ def test_every_feature_keeps_a_spine(run) -> None:
     assert any(node_id.startswith("pcf:") for node_id in node_ids)
     assert any(node_id.startswith("schema:") for node_id in node_ids)
     assert any(node_id.startswith("codegen:") for node_id in node_ids)
+
+
+def test_packet_audit_head_and_counts_are_current(run) -> None:
+    store, _ = run
+    packet = store.read_artifact("R-PIPE", "packet.json")
+    audit = store.read_audit("R-PIPE")
+    assert packet["audit_head"] == audit[-1]["hash"]
+    assert packet["audit_verified"] is True
+    assert packet["audit_event_count"] == len(audit)
+    assert packet["counts"]["audit_events"] == len(audit)
+    assert packet["counts"]["findings"] == len(
+        store.read_artifact("R-PIPE", "findings.json")["findings"]
+    )
+
+
+def test_packet_hash_is_reproducible(run) -> None:
+    store, _ = run
+    packet = store.read_artifact("R-PIPE", "packet.json")
+    assert packet["hashes"]["packet"] == packet["packet_sha256"]
+    assert packet_content_hash(packet) == packet["packet_sha256"]
+
+
+def test_packet_carries_readiness_evidence_mappings_and_excluded_files(run) -> None:
+    store, _ = run
+    packet = store.read_artifact("R-PIPE", "packet.json")
+    counts = packet["counts"]
+    assert counts["readiness"] >= 1
+    assert counts["mappings"] == 12
+    assert counts["changes"] == 5
+    assert counts["unsupported_files"] == 4
+    assert counts["discovery_evidence"] == 101
+    assert counts["evidence"] == counts["discovery_evidence"] + counts["review_evidence"]
+    html = (store.run_dir("R-PIPE") / "packet.html").read_text(encoding="utf-8")
+    assert "Readiness flags" in html
+    assert "Mapping and disposition ledger" in html
+    assert "Excluded and unsupported files (4)" in html
+    assert "Audit chain verified: yes" in html
+    assert f"Complete evidence set: {counts['evidence']} items" in html
+    assert "Discovery evidence (101)" in html
+    assert "data/vehicle_rating_inputs.csv" in html
+    assert "packet_sha256" in packet
+
+
+def test_tampered_audit_fails_packet_build(run, tmp_path) -> None:
+    store, result = run
+    copied = tmp_path / "data"
+    shutil.copytree(store.base_dir, copied)
+    copy_store = RunStore(copied)
+    audit_path = copy_store.run_dir("R-PIPE") / "audit.jsonl"
+    lines = audit_path.read_text(encoding="utf-8").splitlines()
+    first = json.loads(lines[0])
+    first["action"] = "stage.tampered"
+    lines[0] = json.dumps(first, ensure_ascii=False)
+    audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert copy_store.verify_audit("R-PIPE") is False
+    with pytest.raises(PacketIntegrityError):
+        build_packet(
+            store=copy_store, run_id="R-PIPE", project_id="demo",
+            fixture_id="demo-slice-300", release_context="Qusar 2026.08 (review context)",
+            manifest=result.manifest, discovery=result.discovery, review=result.review,
+            reconstruction=result.reconstruction, comparison=result.comparison,
+            evaluation=result.evaluation, reference_path=REFERENCE,
+        )
+
+
+SECRET_LITERALS = (
+    "sk-live-9f3a7c2b6d1e",
+    "tok-live-4b8c1d",
+    "s3cr3t-live-value",
+    "CHANGEME",
+)
+
+
+def test_persisted_artifacts_never_contain_fixture_secrets(run) -> None:
+    store, _ = run
+    for name in ("evidence.json", "review_evidence.json", "findings.json",
+                 "packet.html", "packet.json"):
+        text = (store.run_dir("R-PIPE") / name).read_text(encoding="utf-8")
+        for secret in SECRET_LITERALS:
+            assert secret not in text, (name, secret)
+    packet_html = (store.run_dir("R-PIPE") / "packet.html").read_text(encoding="utf-8")
+    assert "REDACTED" in packet_html
+    findings = store.read_artifact("R-PIPE", "findings.json")
+    assert any("Value redacted (fingerprint " in finding["message"]
+               for finding in findings["findings"]
+               if finding["rule_id"] == "PF-GW-SEC-001")

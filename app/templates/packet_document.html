@@ -8,27 +8,33 @@
   :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
   * { box-sizing: border-box; }
   body { margin:0; background:#f6f8fa; color:var(--ink); font:14px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
-  .page { max-width: 980px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
+  .page { max-width: 1120px; margin: 24px auto; background:#fff; border:1px solid var(--line); padding: 40px 48px; }
   h1,h2,h3 { margin:0 0 8px; line-height:1.2; }
-  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; }
+  h1 { font-size:28px; } h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-top:36px; } h3 { font-size:15px; margin-top:22px; }
   .brandbar { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:20px; }
   .mark { font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; color:var(--brand); }
   .badge { display:inline-block; border:1px solid var(--line); border-radius:3px; padding:2px 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
   .badge.synthetic { color:var(--warn); border-color:#e3c08e; background:#fdf7ec; }
+  .badge.ok { color:#1c6b3a; border-color:#b5d7c2; background:#f0f8f3; }
+  .badge.bad { color:var(--danger); border-color:#e6b5b1; background:#fdf1f0; }
   .muted { color:var(--muted); }
-  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin:14px 0; }
+  .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin:14px 0; }
   .kpi { border:1px solid var(--line); padding:12px 14px; }
   .kpi .n { font-size:22px; font-weight:700; } .kpi .l { font-size:12px; color:var(--muted); }
-  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:13px; }
-  th,td { text-align:left; border-bottom:1px solid var(--line); padding:7px 8px; vertical-align:top; }
-  th { background:#f1f4f7; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  table { border-collapse:collapse; width:100%; margin:10px 0 18px; font-size:12px; }
+  th,td { text-align:left; border-bottom:1px solid var(--line); padding:6px 7px; vertical-align:top; }
+  th { background:#f1f4f7; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
   .pill { display:inline-block; border-radius:10px; padding:1px 8px; font-size:11px; border:1px solid var(--line); }
   .error { color:var(--danger); } .warning { color:var(--warn); } .evidence { color:var(--evidence); }
   .callout { border-left:3px solid var(--brand); background:#f4f9fb; padding:10px 14px; margin:14px 0; }
-  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; word-break:break-all; }
+  .callout.warning { border-left-color:var(--warn); background:#fdf7ec; }
+  .hash { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:10px; word-break:break-all; }
+  .excerpt { font-family: ui-monospace, "Cascadia Mono", monospace; font-size:11px; white-space:pre-wrap; word-break:break-word; margin:2px 0; }
+  .group { margin:18px 0 6px; }
   footer { margin-top:36px; border-top:1px solid var(--line); padding-top:12px; font-size:11px; color:var(--muted); }
   .pagebreak { page-break-before: always; }
-  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } h2 { page-break-after:avoid; } table { page-break-inside:auto; } tr { page-break-inside:avoid; } }
 </style>
 </head>
 <body>
@@ -59,17 +65,31 @@
     <tr><th>Snapshot hash</th><td class="hash">{{ snapshot_hash }}</td></tr>
     <tr><th>Files</th><td>{{ file_count }} ({{ unsupported_count }} unsupported/corrupt, listed)</td></tr>
     <tr><th>Audit head</th><td class="hash">{{ audit_head }}</td></tr>
+    <tr><th>Audit chain verified</th><td><span class="badge {{ 'ok' if audit_verified else 'bad' }}">{{ 'yes' if audit_verified else 'no' }}</span> ({{ audit_event_count }} events)</td></tr>
+    <tr><th>Packet hash</th><td class="hash">{{ packet_sha256 }}</td></tr>
   </table>
 
   <h2>2. Executive summary</h2>
   <div class="grid">
     <div class="kpi"><div class="n">{{ feature_count }}</div><div class="l">features assembled</div></div>
     <div class="kpi"><div class="n">{{ finding_count }}</div><div class="l">advisory findings</div></div>
+    <div class="kpi"><div class="n">{{ readiness_count }}</div><div class="l">readiness flags</div></div>
     <div class="kpi"><div class="n">{{ mapping_count }}</div><div class="l">explicit dispositions</div></div>
   </div>
   <p>{{ executive_summary }}</p>
   <p class="muted">Impact ranges in this packet are heuristic planning ranges, not quotes or measured
   productivity claims.</p>
+  <table>
+    <tr><th>Packet count</th><th>Value</th><th>Packet count</th><th>Value</th></tr>
+    {% for name, value in counts.items() %}
+    {% if loop.index0 is even %}
+    <tr><td>{{ name }}</td><td>{{ value }}</td>
+    {% else %}
+    <td>{{ name }}</td><td>{{ value }}</td></tr>
+    {% endif %}
+    {% endfor %}
+    {% if counts|length is odd %}<td></td><td></td></tr>{% endif %}
+  </table>
 
   <h2>3. Coverage and confidence</h2>
   <p><strong>Coverage ceiling.</strong> {{ coverage_summary }}</p>
@@ -88,7 +108,25 @@
   </table>
   {% endif %}
 
-  <h2>4. Assumption register</h2>
+  <h3>Excluded and unsupported files ({{ excluded_files|length }})</h3>
+  {% if excluded_files %}
+  <table>
+    <tr><th>Path</th><th>Status</th><th>Kind</th><th>Reason / warning</th></tr>
+    {% for item in excluded_files %}
+    <tr>
+      <td><code>{{ item.path }}</code></td>
+      <td><span class="pill">{{ item.status }}</span></td>
+      <td>{{ item.kind }}</td>
+      <td class="muted">{{ item.reason }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No excluded or unsupported files were recorded in the manifest.</p>
+  {% endif %}
+
+  <h2>4. Assumption register and disposition ledger</h2>
+  <h3>Assumption register ({{ assumptions|length }})</h3>
   {% if assumptions %}
   <table>
     <tr><th>ID</th><th>Statement</th><th>Impact</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr>
@@ -106,44 +144,174 @@
   <p>No assumptions were created for this run.</p>
   {% endif %}
 
-  <h2>5. Findings</h2>
-  {% if findings %}
+  <h3>Mapping and disposition ledger ({{ mappings|length }})</h3>
+  {% if mappings %}
   <table>
-    <tr><th>Rule</th><th>Title</th><th>Severity</th><th>Claim strength</th><th>Decision</th></tr>
-    {% for finding in findings %}
+    <tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr>
+    {% for item in mappings %}
     <tr>
-      <td>{{ finding.rule_id }}</td>
-      <td>{{ finding.title }}</td>
-      <td>{{ finding.severity }}</td>
-      <td>{{ finding.claim_strength }}{% if finding.standard_id %} / {{ finding.standard_id }}{% endif %}</td>
-      <td>{{ finding.decision }}</td>
+      <td>{{ item.mapping_id }}</td>
+      <td><code>{{ item.source_ref }}</code><div class="muted">{{ item.source_layer }}</div></td>
+      <td><code>{{ item.target_path }}</code><div class="muted">{{ item.target_name }}</div></td>
+      <td>{{ item.disposition.value }}</td>
+      <td>{{ item.provenance.value }}</td>
+      <td><span class="pill">{{ item.reviewer_state }}</span></td>
     </tr>
     {% endfor %}
   </table>
   {% else %}
-  <p>No advisory findings were produced.</p>
+  <p>No mappings were produced for this run.</p>
   {% endif %}
 
-  <h2>6. Evidence and audit appendix</h2>
+  <h3>Changes awaiting approval ({{ changes|length }})</h3>
+  {% if changes %}
   <table>
-    <tr><th>Evidence</th><th>File</th><th>Locator</th><th>Excerpt</th></tr>
-    {% for item in evidence_sample %}
+    <tr><th>ID</th><th>Approval state</th><th>Target path</th><th>Mapping</th><th>Reviewer</th></tr>
+    {% for item in changes %}
     <tr>
-      <td>{{ item.evidence_id }}</td>
-      <td>{{ item.path }}</td>
-      <td>{{ item.locator.kind.value if item.locator.kind.value is defined else item.locator.kind }} {{ item.locator.value }}{% if item.locator.line %}:{{ item.locator.line }}{% endif %}</td>
-      <td><code>{{ item.excerpt }}</code></td>
+      <td>{{ item.change_id }}</td>
+      <td><span class="pill">{{ item.approval_state }}</span></td>
+      <td><code>{{ item.target_path }}</code></td>
+      <td>{{ item.mapping_id }}</td>
+      <td>{{ item.reviewer or 'unassigned' }}</td>
     </tr>
     {% endfor %}
   </table>
-  <p class="muted">Evidence excerpts are redacted at capture where a secret was detected. The review log is
-  hash-chained and can be verified with <code>preflight verify-audit</code>.</p>
+  {% else %}
+  <p>No target changes were produced for this run.</p>
+  {% endif %}
+
+  <h2>5. Findings</h2>
+  <p>{{ finding_count }} advisory findings across {{ finding_groups|length }} rules, grouped below. Each row
+  carries its source locator and the supporting evidence excerpt; secret values are fingerprinted.</p>
+  {% if finding_groups %}
+  {% for group in finding_groups %}
+  <h3 class="group">{{ group.rule_id }} - {{ group.title }}
+    <span class="pill">{{ group.severity }}</span>
+    <span class="pill">{{ group.claim_strength }}{% if group.standard_id %} / {{ group.standard_id }}{% endif %}</span>
+  </h3>
+  <table>
+    <tr><th>Finding</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Decision</th><th>Source</th><th>Supporting evidence</th></tr>
+    {% for item in group.findings %}
+    <tr>
+      <td>{{ item.finding.finding_id }}</td>
+      <td>{{ item.finding.title }}<div class="muted">{{ item.message }}</div></td>
+      <td>{{ item.finding.severity.value }}</td>
+      <td>{{ item.claim_strength }}{% if item.standard and item.standard != 'none' %} / {{ item.standard }}{% endif %}
+        {% if item.standard_title %}<div class="muted">{{ item.standard_title }}</div>{% endif %}
+        {% if item.standard_url and item.standard_url != item.standard %}<div class="muted hash">{{ item.standard_url }}</div>{% endif %}</td>
+      <td>{{ item.finding.decision }}</td>
+      <td><code>{{ item.source }}</code></td>
+      <td>
+        {% for ev in item.evidence %}
+        <div class="excerpt">{{ ev.excerpt }}</div>
+        <div class="muted">{{ ev.locator }} · {{ ev.method }} · {{ ev.confidence }} · sha {{ ev.excerpt_sha[:12] }}</div>
+        {% else %}
+        <span class="muted">No review evidence linked.</span>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% else %}
+  <p>No advisory findings were produced.</p>
+  {% endif %}
+
+  <h3>Readiness flags ({{ readiness_count }}) - separate from advisory findings</h3>
+  {% if readiness_views %}
+  <table>
+    <tr><th>Flag</th><th>Rule</th><th>Title / message</th><th>Severity</th><th>Claim / standard</th><th>Source</th><th>Supporting evidence</th></tr>
+    {% for item in readiness_views %}
+    <tr>
+      <td>{{ item.finding.finding_id }}</td>
+      <td><code>{{ item.finding.rule_id }}</code></td>
+      <td>{{ item.finding.title }}<div class="muted">{{ item.message }}</div></td>
+      <td>{{ item.finding.severity.value }}</td>
+      <td>{{ item.claim_strength }}{% if item.standard and item.standard != 'none' %} / {{ item.standard }}{% endif %}
+        {% if item.standard_title %}<div class="muted">{{ item.standard_title }}</div>{% endif %}
+        {% if item.standard_url and item.standard_url != item.standard %}<div class="muted hash">{{ item.standard_url }}</div>{% endif %}</td>
+      <td><code>{{ item.source }}</code></td>
+      <td>
+        {% for ev in item.evidence %}
+        <div class="excerpt">{{ ev.excerpt }}</div>
+        <div class="muted">{{ ev.locator }} · {{ ev.method }} · {{ ev.confidence }} · sha {{ ev.excerpt_sha[:12] }}</div>
+        {% else %}
+        <span class="muted">No review evidence linked.</span>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No readiness flags were produced separately from advisory findings.</p>
+  {% endif %}
+
+  <h2>6. Evidence and audit appendix</h2>
+  <p><strong>Complete evidence set: {{ evidence_count }} items</strong>
+  ({{ review_evidence|length }} review evidence items linked to findings or readiness flags;
+  {{ discovery_evidence|length }} discovery evidence items). All excerpts are shown after redaction;
+  locators are unchanged.</p>
+
+  <h3>Review evidence linked to findings ({{ review_evidence|length }})</h3>
+  <table>
+    <tr><th>ID</th><th>Linked finding(s)</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
+    {% for item in review_evidence %}
+    <tr>
+      <td>{{ item.evidence_id }}</td>
+      <td>{{ item.linked_findings|join(', ') or 'none' }}</td>
+      <td><code>{{ item.path }}</code></td>
+      <td>{{ item.locator }}</td>
+      <td><div class="excerpt">{{ item.excerpt }}</div></td>
+      <td class="hash">{{ item.excerpt_sha }}</td>
+      <td>{{ item.confidence }}</td>
+      <td>{{ item.method }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Discovery evidence ({{ discovery_evidence|length }})</h3>
+  <table>
+    <tr><th>ID</th><th>Path</th><th>Locator</th><th>Excerpt</th><th>Excerpt SHA-256</th><th>Confidence</th><th>Method</th></tr>
+    {% for item in discovery_evidence %}
+    <tr>
+      <td>{{ item.evidence_id }}</td>
+      <td><code>{{ item.path }}</code></td>
+      <td>{{ item.locator }}</td>
+      <td><div class="excerpt">{{ item.excerpt }}</div></td>
+      <td class="hash">{{ item.excerpt_sha }}</td>
+      <td>{{ item.confidence }}</td>
+      <td>{{ item.method }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Audit trail ({{ audit_event_count }} events)</h3>
+  <p><strong>Audit chain verified: {{ 'yes' if audit_verified else 'no' }}</strong>. The local log is
+  tamper-evident, not non-repudiation. Verify with <code>preflight verify-audit {{ run_id }}</code>.</p>
+  <table>
+    <tr><th>Seq</th><th>Timestamp</th><th>Action</th><th>Object</th><th>Actor</th><th>Hash</th><th>Prev hash</th></tr>
+    {% for item in audit_events %}
+    <tr>
+      <td>{{ item.seq }}</td>
+      <td>{{ item.ts }}</td>
+      <td>{{ item.action }}</td>
+      <td><code>{{ item.object }}</code></td>
+      <td>{{ item.actor }}</td>
+      <td class="hash">{{ item.hash }}</td>
+      <td class="hash">{{ item.prev_hash }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Hashes</h3>
   <table>
     <tr><th>Hash</th><th>Value</th></tr>
     {% for name, value in hashes.items() %}
     <tr><td>{{ name }}</td><td class="hash">{{ value }}</td></tr>
     {% endfor %}
   </table>
+  <p class="muted"><strong>Packet hash scope.</strong> {{ hash_scope }}</p>
 
   <footer>
     {{ disclaimer }}

@@ -538,6 +538,18 @@ class Packet(PreflightModel):
     audit_head: str
     disclaimer: str
     created_at: str
+    counts: dict[str, int] = Field(default_factory=dict)
+    audit_verified: bool = False
+    audit_event_count: int = Field(default=0, ge=0)
+    hash_scope: str = ""
+    packet_sha256: str | None = None
+
+    @field_validator("packet_sha256")
+    @classmethod
+    def _packet_sha(cls, value: str | None) -> str | None:
+        if value is not None and not _is_hex64(value):
+            raise ValueError("packet_sha256 must be a 64-character hex digest")
+        return value
 
 
 class Project(PreflightModel):

@@ -365,6 +365,33 @@ def test_failed_run_shows_scoped_error(api) -> None:
     assert "Analysis did not complete" in response.text
 
 
+def test_packet_refresh_preserves_readiness_and_run_context(api, run_id) -> None:
+    client, _ = api
+    status = client.get(f"/api/runs/{run_id}/status").json()
+    assert status["release_context"]
+    assert status["reference_path"].endswith("pa_veh_01_reference.json")
+    packet = client.get(f"/api/runs/{run_id}/packet").json()
+    assert packet["counts"]["readiness"] >= 1
+    page = client.get(f"/packet?run={run_id}").text
+    assert status["release_context"] in page
+
+
+def test_packet_refresh_failure_is_visible_and_export_blocks(api, run_id, monkeypatch) -> None:
+    client, _ = api
+
+    def fail_build(**kwargs):
+        raise RuntimeError("synthetic refresh failure")
+
+    monkeypatch.setattr("app.main.build_packet", fail_build)
+    page = client.get(f"/packet?run={run_id}")
+    assert page.status_code == 200
+    assert "Packet refresh failed; this artifact may be stale" in page.text
+    assert "synthetic refresh failure" in page.text
+    export = client.get(f"/packet/export?run={run_id}")
+    assert export.status_code == 503
+    assert "refusing to export a stale artifact" in export.json()["detail"]
+
+
 def test_delete_run(api, run_id) -> None:
     client, token = api
     response = client.post(f"/api/runs/{run_id}/delete", headers={"X-CSRF-Token": token})

@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.models import Manifest
+from app.models import Evidence, Manifest
 from app.services.compare import CompareResult, compare_feature
 from app.services.discovery import DiscoveryResult, run_discovery
 from app.services.evaluate import EvaluationResult, evaluate_run
 from app.services.intake import build_manifest, snapshot_hash
 from app.services.packet import build_packet
 from app.services.reconstruction import ReconstructionResult, reconstruct
+from app.services.redaction import redact_excerpt
 from app.services.review import ReviewResult, run_review
 
 GROUND_TRUTH = Path(__file__).resolve().parents[2] / "ground_truth"
@@ -40,6 +42,21 @@ def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def _redacted_evidence(items: list[Evidence]) -> list[Evidence]:
+    """Return evidence copies safe to persist; locators and IDs are untouched."""
+    redacted: list[Evidence] = []
+    for item in items:
+        excerpt, changed = redact_excerpt(item.excerpt)
+        if changed:
+            item = item.model_copy(update={
+                "excerpt": excerpt,
+                "excerpt_sha": hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
+                "redacted": True,
+            })
+        redacted.append(item)
+    return redacted
+
+
 STAGE_WEIGHTS = {
     "intake": 10, "parse": 38, "discover": 25, "review": 9,
     "reconstruct": 10, "compare": 3, "evaluate": 3, "packet": 2,
@@ -55,6 +72,11 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
     root = Path(root)
     completed = 0
     stage = "intake"
+    reference_sha = (
+        hashlib.sha256(Path(reference_path).read_bytes()).hexdigest()
+        if reference_path and Path(reference_path).is_file()
+        else None
+    )
 
     def mark(next_stage: str, percent: float, *, files_done: int = 0, files_total: int = 0) -> None:
         if cancel_event is not None and cancel_event.is_set():
@@ -65,19 +87,28 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
 
     try:
         mark("intake", 2)
+        store.update_status(
+            run_id, status="running", stage="intake", percent=2,
+            metadata={
+                "release_context": release_context,
+                "reference_path": str(reference_path) if reference_path else None,
+                "reference_sha256": reference_sha,
+            },
+        )
         manifest = build_manifest(root, snapshot_id=f"S-{run_id}", project_id=project_id)
         store.write_artifact(run_id, "manifest.json", manifest.model_dump(mode="json"))
         completed += STAGE_WEIGHTS["intake"]
 
         mark("parse", completed + 2, files_done=0, files_total=manifest.file_count)
         discovery = run_discovery(root, manifest)
+        durable_evidence = _redacted_evidence(discovery.evidence)
         store.write_artifact(run_id, "features.json", {
             "schema_version": "1.0",
             "features": [f.model_dump(mode="json") for f in discovery.features],
         })
         store.write_artifact(run_id, "evidence.json", {
             "schema_version": "1.0",
-            "evidence": [e.model_dump(mode="json") for e in discovery.evidence],
+            "evidence": [e.model_dump(mode="json") for e in durable_evidence],
         })
         store.write_artifact(run_id, "gaps.json", {
             "schema_version": "1.0",
@@ -96,9 +127,10 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
             "findings": [f.model_dump(mode="json") for f in review.findings],
             "readiness": [f.model_dump(mode="json") for f in review.readiness],
         })
+        durable_review_evidence = _redacted_evidence(review.evidence)
         store.write_artifact(run_id, "review_evidence.json", {
             "schema_version": "1.0",
-            "evidence": [e.model_dump(mode="json") for e in review.evidence],
+            "evidence": [e.model_dump(mode="json") for e in durable_review_evidence],
         })
         completed += STAGE_WEIGHTS["review"]
 
@@ -161,12 +193,6 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
                     completed += STAGE_WEIGHTS["evaluate"]
 
             mark("packet", completed + 2)
-            build_packet(
-                store=store, run_id=run_id, project_id=project_id, fixture_id=fixture_id,
-                release_context=release_context, manifest=manifest, discovery=discovery,
-                review=review, reconstruction=reconstruction, comparison=comparison,
-                evaluation=evaluation, reference_path=reference_path,
-            )
             completed += STAGE_WEIGHTS["packet"]
 
         after_hash = snapshot_hash(root)
@@ -179,10 +205,26 @@ def execute_run(root: Path, store, run_id: str, *, project_id: str, fixture_id: 
             "unchanged": True,
             "checked_at": _now(),
         })
+        store.append_audit(run_id, action="run.immutability.verified",
+                           object_type="run", object_id=run_id,
+                           before_hash=manifest.sha256, after_hash=after_hash)
 
         store.update_status(run_id, status="succeeded", stage="succeeded", percent=100.0,
                             files_done=manifest.file_count, files_total=manifest.file_count)
         store.append_audit(run_id, action="run.succeeded", object_type="run", object_id=run_id)
+
+        if can_reconstruct:
+            # The packet intentionally uses redacted copies: evaluation has already
+            # consumed the original excerpts, and no secret leaves the run store.
+            build_packet(
+                store=store, run_id=run_id, project_id=project_id, fixture_id=fixture_id,
+                release_context=release_context, manifest=manifest,
+                discovery=replace(discovery, evidence=durable_evidence),
+                review=replace(review, evidence=durable_review_evidence),
+                reconstruction=reconstruction, comparison=comparison,
+                evaluation=evaluation, reference_path=reference_path,
+                reference_sha256=reference_sha,
+            )
 
         return PipelineResult(
             run_id=run_id, manifest=manifest, discovery=discovery, review=review,
