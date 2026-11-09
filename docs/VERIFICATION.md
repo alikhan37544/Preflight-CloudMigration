@@ -33,7 +33,7 @@
 - Reconstruction loads `rules/mapping_rules.yaml`; no mapping rows live in code.
 - Reference target is labelled internally authored, AI-assisted, not independent.
 - Holdout is excluded from importable fixtures; its aggregate is pre-computed.
-- Codegen draft has 12 dispositions; `GarageLocation` maps to installed `GarageLocation_Ext` with a documented `nameOverride` and `requiredForCreate: false`.
+- Codegen draft has 12 dispositions; `GarageLocation` carries `{nameOverride: GarageLocation_Ext, requiredForCreate: false}` and the updater maps `garageLocation → GarageLocation_Ext`. The earlier “GarageLocation override removed” note is obsolete.
 - Deterministic rule engine fixes: comments/strings masked, SEC typed/snake/camel names, all secrets redacted from evidence, SQL custom method names, SBT XML attributes, LOG-001 call-site and multiline handling, TX multiple commits, path-segment classification.
 - Product shell: `/runs` restored; failed/loading pages; accepted/rejected row persistence; packet refresh; owner/status in packet; excluded-file filter; holdout lock; responsive overflow.
 - Claims: C-002/C-014/C-016 URLs, C-018/C-036 PCF wording, C-032 rules present as `emitted: false`, reference limitations disclosed.
@@ -41,18 +41,19 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 410 passed
+pytest -q                                 412 passed
 pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
-preflight verify-audit R-DEMO-001         OK (9 seed events; 11 after runbook actions)
+preflight verify-packet R-DEMO-001        OK (packet hash, content digests, audit head)
+preflight verify-audit R-DEMO-001         OK (9 seed events; 11 after runbook actions; audit chain only)
 packet audit head == audit log head       true
 Playwright golden path                    passes (accept/reject dialog, mobile layout, packet, evaluation)
 ```
 
 ## Final status
 
-**Current internal gate: PASS for the demo path.** 410 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 412 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 

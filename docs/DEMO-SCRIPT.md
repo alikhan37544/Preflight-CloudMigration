@@ -15,8 +15,8 @@ Health check: `curl -s http://127.0.0.1:8000/api/health`.
 **Backup:** screenshots in `docs/presentation/assets/`; static packet snapshot in
 `docs/demo/preflight-review-packet.html`. The packet file is a frozen snapshot from the packaged
 build, not a live artifact from the run you just seeded: its audit head and hashes will not match a
-fresh `R-DEMO-001`. Do not run `verify-audit` against it. If the live server fails, show it as a
-static example and say so.
+fresh `R-DEMO-001`. Do not run `verify-packet` or `verify-audit` against it. If the live server fails,
+show it as a static example and say so.
 
 ---
 
@@ -31,16 +31,18 @@ Say:
 
 Point at the **summary strip**:
 
-> “31 evidence records, 12 distinct files, four artefact types, two tests, 11 references,
-> a 37-character type in this reconstruction slice against the 24-character APD limit, and three
-> estate-wide gaps.”
+> “31 evidence records, 12 distinct files, four artefact types, two tests, and 11 references
+> for PA-VEH-01. Separately, a 37-character type is a PA-VEH-02 dependency: it appears in two
+> files — the template and the product model — and is not one of those 11 references. Three gaps
+> are estate-wide.”
 
 Point at the **Feature spine** (all six columns fit at 1280, including Tests):
 
 > “One feature, traced across PCF, installed entity, typelist, extracted template, Gosu, and tests.
-> The long type is 37 characters; APD truncates type names at 24. Eleven references, four artefact
-> types, two tests. The three gaps are labelled estate-wide, not claimed as three missing links in
-> this feature. This is the kind of surprise that shows up at week five.”
+> The long type is 37 characters; APD truncates type names at 24. It is separate from PA-VEH-01’s
+> 11 references: the long type appears in two files and is a PA-VEH-02 dependency. The three gaps
+> are labelled estate-wide, not claimed as three missing links in this feature. This is the kind
+> of cross-feature scope that shows up at week five.”
 
 Click a spine node. A sticky evidence card appears beside the graph with file, line/pointer,
 excerpt, method, and hash; the full drawer stays below.
@@ -139,8 +141,9 @@ Open **Packet**; download the HTML.
 
 - The live packet's section count comes from its packet JSON (six in this seed); assumption register;
   current audit head; disclaimer.
-- Hash-chain verification only against the live run: `preflight verify-audit R-DEMO-001`.
-  The bundled `docs/demo/preflight-review-packet.html` is a static snapshot, so its audit head will
+- Two-step verification against the live run: `preflight verify-packet R-DEMO-001` checks the
+  packet and content digests; `preflight verify-audit R-DEMO-001` checks the audit chain only.
+  The bundled `docs/demo/preflight-review-packet.html` is a static snapshot, so its hashes will
   not match a freshly seeded run.
 
 ## 4:50 — Close

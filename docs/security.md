@@ -13,7 +13,8 @@
 | Source text | Prompt injection | No tools; evidence IDs; schema validation |
 | Draft output | Path traversal | Resolve under run directory; allowlist |
 | Packet/logs | Raw secret leakage | Redact at capture; fingerprint only; tests |
-| Audit log | Tampering | Hash chain; `preflight verify-audit` |
+| Packet | Tampering | Packet hash + content digests; `preflight verify-packet` |
+| Audit log | Tampering | Hash chain; `preflight verify-audit` (audit chain only) |
 | Browser session | CSRF, XSS | CSRF token; SameSite=Strict; autoescape; CSP |
 
 ## Controls

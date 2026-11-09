@@ -1,11 +1,11 @@
 package acme.negatives
 
-class CatchWithLogging {
+class CatchAndRethrow {
   function safe() {
     try {
       maybeFail()
     } catch (e : Exception) {
-      log.error(e.Message)
+      throw new RuntimeException("vehicle lookup failed", e)
     }
   }
 }

@@ -91,7 +91,14 @@ def test_assumptions_are_impact_rated(reconstruction) -> None:
     assert "rating" in statements
     long_type = next(a for a in reconstruction.assumptions if "24" in a.statement or "long type" in a.statement.lower())
     assert long_type.impact_range_days == (7.0, 9.0)
-    assert "11" in long_type.impact_basis and "4" in long_type.impact_basis and "2" in long_type.impact_basis
+    assert "two files" in long_type.impact_basis.lower()
+    assert "0 tests" in long_type.impact_basis.lower()
+    assert "heuristic" in long_type.impact_basis.lower()
+    assert "11" not in long_type.impact_basis
+    assert "PA-VEH-02" in long_type.statement
+    assert "product/template/LongTypeA.xml" in long_type.statement
+    assert "config/resources/productmodel/PersonalAuto.xml" in long_type.statement
+    assert "template and product-model change" in long_type.question_to_ask
     assert "not a quote" in long_type.impact_caveat.lower()
     assert all(a.status == "open" for a in reconstruction.assumptions)
 

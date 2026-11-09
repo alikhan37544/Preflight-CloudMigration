@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.config import REPO, Settings
 from app.services.intake import build_manifest, snapshot_hash
+from app.services.packet import verify_packet_artifacts
 from app.services.pipeline import execute_run
 from app.store import RunStore
 
@@ -110,6 +111,20 @@ def cmd_verify_audit(args) -> int:
     return 0 if ok else 1
 
 
+def cmd_verify_packet(args) -> int:
+    store = _store(args)
+    run_id = args.run_id
+    try:
+        store.read_status(run_id)
+    except Exception:
+        print(f"run not found: {run_id}")
+        return 1
+    ok, reason = verify_packet_artifacts(store, run_id, include_content=True)
+    detail = reason or "packet hash, content digests, and audit chain verified"
+    print(f"{run_id}: {'OK' if ok else 'TAMPERED'} - {detail}")
+    return 0 if ok else 1
+
+
 def cmd_claims_lint(args) -> int:
     from scripts.claims_lint import main as lint_main
 
@@ -147,6 +162,10 @@ def main(argv: list[str] | None = None) -> int:
     verify = sub.add_parser("verify-audit", help="verify the hash-chained review log")
     verify.add_argument("run_id", nargs="?")
     verify.set_defaults(func=cmd_verify_audit)
+
+    packet = sub.add_parser("verify-packet", help="verify the review packet hashes and content binding")
+    packet.add_argument("run_id")
+    packet.set_defaults(func=cmd_verify_packet)
 
     lint = sub.add_parser("claims-lint", help="lint the claims ledger and rule coverage")
     lint.set_defaults(func=cmd_claims_lint)

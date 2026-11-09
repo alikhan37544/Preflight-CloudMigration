@@ -68,12 +68,12 @@ FOCUS_CLIPS = {
     "workbench": {"x": 218, "y": 270, "width": 1212, "height": 630},
     # Excluded banner through pagination; the app footer is outside the crop.
     "manifest": {"x": 218, "y": 200, "width": 1212, "height": 620},
-    # Page heading, decision notice, tabs, and M-01..M-04 (post-decision).
-    "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 740},
+    # Page heading, decision notice, tabs, and M-01..M-03 (post-decision).
+    "reconstruction": {"x": 218, "y": 105, "width": 1212, "height": 755},
     # Banner, SBT flag, finding table, and the complete detail panel.
     "findings": {"x": 218, "y": 220, "width": 1212, "height": 1000},
     # Page heading, six section cards, and the first assumption row (A-01).
-    "packet": {"x": 218, "y": 95, "width": 1212, "height": 772},
+    "packet": {"x": 218, "y": 95, "width": 1212, "height": 752},
 }
 
 # Each crop is checked against the live DOM before it is written. ``full``

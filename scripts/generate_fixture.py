@@ -394,12 +394,12 @@ COMMON_FILES: dict[str, str] = {
     ),
     "gsrc/acme/negatives/CatchWithLogging.gs": (
         "package acme.negatives\n\n"
-        "class CatchWithLogging {\n"
+        "class CatchAndRethrow {\n"
         "  function safe() {\n"
         "    try {\n"
         "      maybeFail()\n"
         "    } catch (e : Exception) {\n"
-        "      log.error(e.Message)\n"
+        "      throw new RuntimeException(\"vehicle lookup failed\", e)\n"
         "    }\n"
         "  }\n"
         "}\n"

@@ -56,7 +56,7 @@ rules:
     standard_title: Do Not Suppress Exceptions
     standard_url: https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G
     access: public
-    remediation: Log or rethrow the exception with enough context to diagnose the failure.
+    remediation: Recover, rethrow, or throw a context-appropriate exception; logging alone is not recovery.
     detection:
       kind: empty_catch
   - rule_id: PF-GW-TX-001

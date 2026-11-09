@@ -38,7 +38,7 @@ Out of scope: `config/integration/apis/ext/policyperiod/v1/*.swagger.json`, `gsr
   "$id": "preflight-target-v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["modelYear", "make", "vin", "usage", "vehicleType", "garageLocation"],
+  "required": ["modelYear", "make", "vin", "usage", "vehicleType"],
   "properties": {
     "modelYear": {"type": "integer", "minimum": 1900, "maximum": 2100},
     "make": {"type": "string", "maxLength": 80},
@@ -96,6 +96,7 @@ types:
       Year:
         nameOverride: ModelYear
       GarageLocation:
+        nameOverride: GarageLocation_Ext
         requiredForCreate: false
   PADriver:
     nameOverride: VehicleDriver
