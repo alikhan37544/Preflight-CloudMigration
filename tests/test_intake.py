@@ -149,3 +149,121 @@ def test_classify_path_uses_path_segments_for_templates_and_tests() -> None:
     assert classify_path("gtest/adv/RatingChecks.gs")[0] == "gunit"
     assert classify_path("gsrc/adv/Contest.gs")[0] == "gosu"
     assert classify_path("config/resources/productmodel/X.xml")[0] == "product_xml"
+
+
+# -- intake hardening -------------------------------------------------------
+
+
+def test_manifest_lists_symlinks_as_unsupported(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    secret = tmp_path / "outside-secret.txt"
+    secret.write_text("must not be read", encoding="utf-8")
+    (root / "README.txt").write_text("hello\n", encoding="utf-8")
+    (root / "link.txt").symlink_to(secret)
+    (root / "dangling.txt").symlink_to(tmp_path / "missing.txt")
+
+    manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+    by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+    for name in ("link.txt", "dangling.txt"):
+        assert by_path[name].status.value == "unsupported"
+        assert by_path[name].kind == "symlink"
+        assert by_path[name].warnings
+        assert len(by_path[name].sha256) == 64
+        assert name in manifest.unsupported_paths
+        assert any(name in warning for warning in manifest.warnings)
+    assert by_path["README.txt"].status.value == "parsed"
+
+
+def test_malformed_json_and_yaml_are_corrupt_not_parsed(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "bad.json").write_text('{"broken": ', encoding="utf-8")
+    (root / "bad.yaml").write_text("types: [unterminated\n", encoding="utf-8")
+    (root / "tagged.yaml").write_text(
+        "value: !<tag:yaml.org,2002:python/object/apply:os.system> ['true']\n",
+        encoding="utf-8",
+    )
+    (root / "good.json").write_text('{"ok": true}\n', encoding="utf-8")
+    (root / "good.yaml").write_text("types:\n  PAVehicle:\n    nameOverride: PersonalVehicle\n",
+                                    encoding="utf-8")
+
+    manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+    by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+    for name in ("bad.json", "bad.yaml", "tagged.yaml"):
+        assert by_path[name].status.value == "corrupt"
+        assert by_path[name].warnings
+        assert name in manifest.unsupported_paths
+        assert any(name in warning for warning in manifest.warnings)
+    assert by_path["good.json"].status.value == "parsed"
+    assert by_path["good.yaml"].status.value == "parsed"
+
+
+def test_line_count_handles_trailing_newline(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "one.txt").write_text("a\n", encoding="utf-8")
+    (root / "two.txt").write_text("a\nb", encoding="utf-8")
+    (root / "two_nl.txt").write_text("a\nb\n", encoding="utf-8")
+    (root / "empty.txt").write_text("", encoding="utf-8")
+    manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+    by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+    assert by_path["one.txt"].line_count == 1
+    assert by_path["two.txt"].line_count == 2
+    assert by_path["two_nl.txt"].line_count == 2
+    assert by_path["empty.txt"].line_count == 0
+
+
+@pytest.mark.parametrize("name", ["", ".", "./", "a/./b", "a//b"])
+def test_safe_extract_rejects_empty_or_dot_entries(tmp_path: Path, name: str) -> None:
+    archive = tmp_path / "bad.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr(name, "boom")
+    with pytest.raises(UnsafeArchiveError):
+        safe_extract_zip(archive, tmp_path / "out")
+
+
+def test_safe_extract_rejects_hardlink_metadata(tmp_path: Path) -> None:
+    archive = tmp_path / "hardlink.zip"
+    info = zipfile.ZipInfo("hard.txt")
+    info.create_system = 3
+    info.external_attr = (stat.S_IFREG | 0o644) << 16
+    target = b"target.txt"
+    info.extra = (
+        (0x000D).to_bytes(2, "little")
+        + (12 + len(target)).to_bytes(2, "little")
+        + b"\x00" * 12
+        + target
+    )
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr(info, "data")
+    with pytest.raises(UnsafeArchiveError):
+        safe_extract_zip(archive, tmp_path / "out")
+
+
+def test_safe_extract_applies_ratio_to_small_entries(tmp_path: Path) -> None:
+    archive = tmp_path / "small-bomb.zip"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("zeros.txt", "0" * 2048)
+    with pytest.raises(UnsafeArchiveError):
+        safe_extract_zip(archive, tmp_path / "out", max_ratio=50)
+
+
+def test_safe_extract_enforces_per_entry_size_limit(tmp_path: Path) -> None:
+    archive = tmp_path / "big-entry.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("big.txt", "x" * 2048)
+    with pytest.raises(UnsafeArchiveError):
+        safe_extract_zip(archive, tmp_path / "out", max_entry_uncompressed=1024)
+
+
+def test_safe_extract_enforces_total_size_limit(tmp_path: Path) -> None:
+    archive = tmp_path / "big-total.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("a.txt", "x" * 800)
+        zf.writestr("b.txt", "y" * 800)
+    with pytest.raises(UnsafeArchiveError):
+        safe_extract_zip(
+            archive, tmp_path / "out",
+            max_entry_uncompressed=1000, max_uncompressed=1000,
+        )
