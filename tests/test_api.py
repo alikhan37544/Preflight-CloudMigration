@@ -113,7 +113,7 @@ def test_evaluation_summary_strip_and_charts(api, run_id) -> None:
     assert 'data-eval-summary' in text
     for fact in [
         "estimate-moving issues",
-        "finding F1",
+        "micro-F1 1.00",
         "holdout recall (not imported)",
         "top-8 allowance",
         "hard negatives silent",
@@ -121,7 +121,10 @@ def test_evaluation_summary_strip_and_charts(api, run_id) -> None:
     ]:
         assert fact in text, fact
     assert "6/6" in text
-    assert "48/48" in text
+    assert "24 findings" in text
+    assert "F1 1.00" in text
+    assert "24 TP / 0 FP / 0 FN" in text
+    assert "48/48" not in text
     assert "4/4" in text
     assert "6/8" in text
     assert "24/24" in text
@@ -150,6 +153,34 @@ def test_workbench_legend_caption_and_all_six_columns(api, run_id) -> None:
     assert "selected node" in text
     assert "data-spine-scroll-hint" in text
     assert "Spine table fallback" in text
+    assert 'role="group"' in text
+    assert 'role="img"' not in text.split('class="spine-svg"', 1)[1].split(">", 1)[0]
+    assert "Click a highlighted evidence-bearing node" in text
+    assert "structural nodes carry no evidence record" in text
+    assert text.count("node-structural") == 6
+    structural = text.split('class="spine-node node-config node-structural', 1)[1].split(">", 1)[0]
+    assert "tabindex" not in structural
+    assert 'role="button"' not in structural
+    assert 'role="note"' in structural
+
+
+def test_reconstruction_shows_cloud_retrofit_scope_note(api, run_id) -> None:
+    client, _ = api
+    for tab in ["mappings", "draft"]:
+        text = client.get(f"/reconstruction?run={run_id}&tab={tab}").text
+        assert "Cloud Retrofit without APD App" in text
+        assert "not Guidewire" in text
+        assert "local, non-deployable draft" in text
+
+
+def test_findings_show_standard_family(api, run_id) -> None:
+    client, _ = api
+    cloud = client.get(f"/findings?run={run_id}&selected=F-008").text
+    assert "Cloud Standard" in cloud
+    assert "IS-TLS-1191" in cloud
+    gosu = client.get(f"/findings?run={run_id}&selected=F-014").text
+    assert "Gosu Secure Coding" in gosu
+    assert "SEC00-G" in gosu
 
 
 def test_findings_table_columns_caption_and_source_title(api, run_id) -> None:
@@ -273,7 +304,9 @@ def test_packet_section_count_comes_from_the_packet(api, run_id) -> None:
     assert "six-section" not in text
     assert "review, challenge, and download" in text
     assert "review, challenge, and approve" not in text
-    assert "target changes /" in text
+    assert "5 target changes" in text
+    assert "0 of 5 approved" in text
+    assert "target changes /" not in text
 
 
 def test_manifest_no_match_shows_empty_state(api, run_id) -> None:
@@ -281,6 +314,8 @@ def test_manifest_no_match_shows_empty_state(api, run_id) -> None:
     text = client.get(f"/manifest?run={run_id}&q=zzzz-no-such-file").text
     assert "No files match these filters." in text
     assert 'class="data-table manifest-table"' not in text
+    assert 'href="/manifest?run=' in text
+    assert "Clear filters" in text
 
 
 def test_missing_run_hides_audit_and_copy_controls(api) -> None:
@@ -311,9 +346,24 @@ def test_decision_dialog_markup_is_present(api, run_id) -> None:
         assert 'data-decision-dialog' in text
         assert 'data-decision-reason' in text
         assert 'data-decision-confirm' in text
+        assert 'data-decision-title' in text
+        assert 'data-decision-object-id' in text
+        assert 'data-decision-object-summary' in text
+        assert 'data-decision-consequence' in text
+        assert 'placeholder="Why is this decision correct?"' in text
+        assert "Reviewed the cited evidence" not in text
     mapping = client.get(f"/reconstruction?run={run_id}").text
     assert 'data-object-label="mapping M-01"' in mapping
     assert 'aria-label="Accept mapping M-01 PAVehicle to' in mapping
+
+
+def test_footer_disclaimer_is_not_duplicated(api, run_id) -> None:
+    client, _ = api
+    text = client.get(f"/?run={run_id}&feature=PA-VEH-01").text
+    footer = text.split('<footer class="footer">', 1)[1].split("</footer>", 1)[0]
+    assert footer.count("independent academic research prototype") == 1
+    assert "Independent research prototype." not in footer
+    assert "Official Cloud Assurance: not run." in footer
 
 
 def test_precision_guard_counts_are_corpus_totals(api, run_id) -> None:

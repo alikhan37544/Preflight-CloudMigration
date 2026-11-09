@@ -262,7 +262,7 @@
     node.insertBefore(outline, box);
   }
 
-  document.querySelectorAll("[data-evidence-id]").forEach((node) => {
+  document.querySelectorAll("[data-evidence-id]:not([data-evidence-id=''])").forEach((node) => {
     const activate = () => {
       document.querySelectorAll(".spine-node.selected").forEach((item) => {
         item.classList.remove("selected");
@@ -535,11 +535,15 @@
     if (body.querySelector(`[data-assumption-id="${assumption.assumption_id}"]`)) return;
     const row = document.createElement("tr");
     row.dataset.assumptionId = assumption.assumption_id;
+    row.classList.add("assumption-new");
 
     const idCell = document.createElement("td");
     const id = document.createElement("code");
     id.textContent = assumption.assumption_id;
-    idCell.append(id);
+    const flag = document.createElement("span");
+    flag.className = "pill pill-info assumption-new-flag";
+    flag.textContent = "new";
+    idCell.append(id, flag);
 
     const statementCell = document.createElement("td");
     statementCell.textContent = assumption.statement || "";
@@ -565,14 +569,27 @@
     const questionCell = document.createElement("td");
     questionCell.textContent = assumption.question_to_ask || "";
     const ownerCell = document.createElement("td");
+    ownerCell.className = "assumption-owner";
     ownerCell.textContent = assumption.owner || "unassigned";
     const statusCell = document.createElement("td");
     statusCell.textContent = assumption.status || "open";
 
     row.append(idCell, statementCell, impactCell, rangeCell, questionCell, ownerCell, statusCell);
-    body.append(row);
+    body.prepend(row);
     const counter = document.querySelector('.tab[data-tab="assumptions"] .counter');
     if (counter) counter.textContent = String(body.querySelectorAll("[data-assumption-id]").length);
+  }
+
+  function focusAssumptionRow(assumptionId) {
+    const tab = document.querySelector('.tab[data-tab="assumptions"]');
+    if (tab) activateTab(tab);
+    if (!assumptionId) return;
+    const row = document.querySelector(`[data-assumption-id="${assumptionId}"]`);
+    if (!row) return;
+    row.classList.add("assumption-new");
+    row.setAttribute("tabindex", "-1");
+    row.scrollIntoView({ behavior: motionBehavior(), block: "center" });
+    row.focus({ preventScroll: true });
   }
 
   function showAssumptionNotice(assumption, mappingId) {
@@ -593,34 +610,64 @@
     }
     const link = document.createElement("a");
     link.href = `/reconstruction?run=${encodeURIComponent(runId)}&tab=assumptions`;
+    link.className = "btn btn-small btn-ghost";
     link.textContent = "View assumption register";
+    if (assumption) {
+      link.dataset.assumptionJump = assumption.assumption_id;
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        focusAssumptionRow(assumption.assumption_id);
+      });
+    }
     notice.append(title, label, document.createElement("br"), link);
     notice.hidden = false;
     const box = notice.getBoundingClientRect();
     if (box.top < 0 || box.bottom > window.innerHeight) {
-      notice.scrollIntoView({ behavior: motionBehavior(), block: "center" });
+      notice.scrollIntoView({ behavior: motionBehavior(), block: "nearest" });
     }
   }
 
   const decisionDialog = document.querySelector("[data-decision-dialog]");
   const decisionForm = document.querySelector("[data-decision-form]");
-  const decisionObject = document.querySelector("[data-decision-object]");
+  const decisionTitle = document.querySelector("[data-decision-title]");
+  const decisionObjectType = document.querySelector("[data-decision-object-type]");
+  const decisionObjectId = document.querySelector("[data-decision-object-id]");
+  const decisionObjectSummary = document.querySelector("[data-decision-object-summary]");
   const decisionReason = document.querySelector("[data-decision-reason]");
   const decisionEdit = document.querySelector("[data-decision-edit]");
   const decisionValue = document.querySelector("[data-decision-value]");
   const decisionValueLabel = document.querySelector("[data-decision-value-label]");
   const decisionError = document.querySelector("[data-decision-error]");
+  const decisionConsequence = document.querySelector("[data-decision-consequence]");
   const decisionConfirm = document.querySelector("[data-decision-confirm]");
   let pendingDecision = null;
   const ACTION_STATES = { accept: "accepted", reject: "rejected", defer: "deferred", edit: "edited" };
-
-  function defaultReason(action, label) {
-    if (action === "accept") return `Reviewed the cited evidence; ${label} preserves the intended behavior.`;
-    if (action === "reject") return `${label} does not preserve the intended behavior; a replacement decision is required.`;
-    if (action === "defer") return `${label} needs more evidence before a decision can be made.`;
-    if (action === "edit") return `Corrected ${label} after reviewing the source evidence.`;
-    return "Reviewer decision.";
-  }
+  const ACTION_UI = {
+    accept: {
+      verb: "Accept",
+      confirm: "Record acceptance",
+      consequence: "This records acceptance in the audit trail. No assumption is created.",
+      danger: false,
+    },
+    reject: {
+      verb: "Reject",
+      confirm: "Record rejection",
+      consequence: "This creates an assumption and records the rejection in the audit trail.",
+      danger: true,
+    },
+    defer: {
+      verb: "Defer",
+      confirm: "Record deferral",
+      consequence: "This records the deferral in the audit trail; the item stays pending.",
+      danger: false,
+    },
+    edit: {
+      verb: "Edit",
+      confirm: "Record edit",
+      consequence: "This records the corrected value and your reason in the audit trail.",
+      danger: false,
+    },
+  };
 
   function showDecisionError(message) {
     if (!decisionError) return;
@@ -641,13 +688,27 @@
     const objectId = button.dataset.objectId;
     const label = button.dataset.objectLabel || `${objectType} ${objectId}`;
     const summary = button.dataset.objectSummary || "";
-    pendingDecision = { action, objectType, objectId, label };
-    if (decisionObject) {
-      decisionObject.textContent = summary ? `${label}: ${summary}` : label;
-    }
+    const ui = ACTION_UI[action] || ACTION_UI.accept;
     const isEdit = action === "edit";
+    pendingDecision = { action, objectType, objectId, label };
+    if (decisionTitle) decisionTitle.textContent = `${ui.verb} ${label}`;
+    if (decisionObjectType) decisionObjectType.textContent = objectType;
+    if (decisionObjectId) decisionObjectId.textContent = objectId;
+    if (decisionObjectSummary) {
+      decisionObjectSummary.textContent = summary || "No source-to-target summary is available.";
+    }
+    if (decisionConsequence) {
+      decisionConsequence.textContent = (
+        action === "reject" && objectType !== "mapping"
+          ? "This records the rejection in the audit trail."
+          : ui.consequence
+      );
+    }
+    decisionDialog.classList.toggle("is-danger", ui.danger);
+    decisionForm.dataset.action = action;
     if (decisionReason) {
-      decisionReason.value = button.dataset.suggestedReason || defaultReason(action, label);
+      decisionReason.value = "";
+      decisionReason.placeholder = "Why is this decision correct?";
     }
     if (decisionEdit) decisionEdit.hidden = !isEdit;
     if (decisionValue) {
@@ -658,14 +719,15 @@
       decisionValueLabel.textContent = `${button.dataset.editLabel || "Edited value"} (required)`;
     }
     if (decisionConfirm) {
-      decisionConfirm.textContent = isEdit ? "Record edit" : "Record decision";
+      decisionConfirm.textContent = ui.confirm;
+      decisionConfirm.classList.toggle("btn-danger", ui.danger);
+      decisionConfirm.classList.toggle("btn-primary", !ui.danger);
     }
     clearDecisionError();
     decisionDialog.showModal();
     if (decisionReason) {
       decisionReason.focus();
-      const end = decisionReason.value.length;
-      decisionReason.setSelectionRange(end, end);
+      decisionReason.setSelectionRange(0, 0);
     }
   }
 
@@ -966,5 +1028,14 @@
       focusFindingDetail();
       window.history.replaceState({}, "", "#finding-detail-heading");
     });
+  });
+
+  /* Limitations disclosure label mirrors the open state. */
+  document.querySelectorAll("details.limitations").forEach((details) => {
+    const hint = details.querySelector("[data-details-hint], .details-hint");
+    if (!hint) return;
+    const sync = () => { hint.textContent = details.open ? "collapse" : "expand"; };
+    details.addEventListener("toggle", sync);
+    sync();
   });
 })();

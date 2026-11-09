@@ -31,12 +31,21 @@
   {% for metric in view.metrics.metrics if metric.primary %}
   <article class="metric-card" data-metric="{{ metric.metric_id }}">
     <div class="eyebrow">{{ metric.metric_id }}</div>
+    {% if metric.metric_id == 'M6' and evaluation.m6_counts %}
+    <div class="metric-value">F1 {{ evaluation.m6_counts.f1 }}</div>
+    {% else %}
     <div class="metric-value">{{ metric.value|percent }}</div>
+    {% endif %}
     <div class="metric-label">{{ metric.label }}</div>
     {% if metric.metric_id == 'M5' and evaluation.m5_top8 %}
     <div class="metric-facts" aria-label="M5 is reported as two facts">
       <div class="metric-fact"><strong>{{ metric.numerator }} / {{ metric.denominator }}</strong> estimate-moving recall</div>
       <div class="metric-fact metric-fact-allowance"><strong>{{ evaluation.m5_top8.fraction }}</strong> top-8 allowance</div>
+    </div>
+    {% elif metric.metric_id == 'M6' and evaluation.m6_counts %}
+    <div class="metric-facts" aria-label="M6 is reported as F1 and raw counts">
+      <div class="metric-fact"><strong>{{ evaluation.m6_counts.detail }}</strong></div>
+      <div class="metric-fact">{{ evaluation.m6_counts.findings }} findings in the scored corpus</div>
     </div>
     {% else %}
     <div class="metric-fraction">{{ metric.numerator }} / {{ metric.denominator }}{% if metric.interval_low is not none %} &middot; 95% CI {{ metric.interval_low|percent }}-{{ metric.interval_high|percent }}{% endif %}</div>
@@ -210,7 +219,7 @@
 <details class="panel limitations" id="limitations">
   <summary>
     <span class="details-title">Full limitations, caveats, and pre-registration notes</span>
-    <span class="details-hint">expand</span>
+    <span class="details-hint" data-details-hint>expand</span>
   </summary>
   <ul class="limitation-list">
     <li>One synthetic main fixture plus a naming-shift holdout. Not a benchmark and not a generalisation claim.</li>

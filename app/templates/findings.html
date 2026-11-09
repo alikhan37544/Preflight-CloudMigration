@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import claim, severity, confidence, scroll_region, state_pill, pluralize, locator %}
+{% from "_macros.html" import claim, severity, confidence, scroll_region, state_pill, pluralize, locator, standard_family %}
 {% set guard_rule_count = view.precision_guards|length %}
 {% set guard_negative_count = view.precision_guards|map(attribute='negatives')|map('length')|sum %}
 {% set guard_negatives_per_rule = view.precision_guards[0].negatives|length if view.precision_guards else 0 %}
@@ -100,7 +100,10 @@
               {% else %}<span class="muted">-</span>{% endif %}
             </td>
             <td>{{ severity(finding.severity) }}</td>
-            <td>{{ claim(finding.claim_strength) }}</td>
+            <td>
+              {{ claim(finding.claim_strength) }}
+              {{ standard_family(finding.standard_family) }}
+            </td>
             <td>
               {% if finding.standard_id %}
               <code class="rule-code">{{ finding.standard_id }}</code>
@@ -126,7 +129,8 @@
     <div class="panel-head"><h2 id="finding-detail-heading" tabindex="-1">Finding {{ selected_finding.finding_id if selected_finding else 'detail' }}</h2></div>
     {% if selected_finding %}
     <div class="detail-block">
-      <div class="finding-top">{{ severity(selected_finding.severity) }} {{ claim(selected_finding.claim_strength) }}</div>
+      <div class="finding-top">{{ severity(selected_finding.severity) }} {{ claim(selected_finding.claim_strength) }}
+        {{ standard_family(selected_finding.standard_family) }}</div>
       <div class="detail-state"><span class="muted">Recorded state</span> {{ state_pill(selected_finding.decision) }}</div>
       <h3>{{ selected_finding.title }}</h3>
       <p>{{ selected_finding.message }}</p>
@@ -150,6 +154,7 @@
       {% if selected_finding.standard_id or selected_finding.standard_title or selected_finding.standard_url %}
       <h4>Standard</h4>
       <p>
+        {{ standard_family(selected_finding.standard_family) }}
         {% if selected_finding.standard_id %}<code>{{ selected_finding.standard_id }}</code>{% endif %}
         {% if selected_finding.standard_title %}{% if selected_finding.standard_id %} - {% endif %}{{ selected_finding.standard_title }}{% endif %}
         {% if selected_finding.standard_url %}<br><a href="{{ selected_finding.standard_url }}" target="_blank" rel="noopener">public reference</a>{% endif %}
