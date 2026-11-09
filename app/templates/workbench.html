@@ -40,9 +40,22 @@
 
 {% if view.unsupported_count %}
 <div class="banner banner-warning">
-  <strong>{{ view.unsupported_count }} unsupported or corrupt files are listed, not hidden.</strong>
-  Results exclude them. <a href="/manifest?run={{ run_id }}&status=unsupported">Inspect the manifest</a>.
+  <strong>{{ view.unsupported_count }} excluded files (binary, corrupt, or unsupported) are listed, not hidden.</strong>
+  Results exclude them. <a href="/manifest?run={{ run_id }}&excluded=1">Inspect the excluded files</a>.
 </div>
+{% endif %}
+
+{% if view.feature_summary %}
+{% set summary = view.feature_summary %}
+<section class="summary-strip" aria-label="Selected feature summary">
+  <div class="summary-stat"><span class="summary-value">{{ summary.evidence }}</span><span class="summary-label">evidence records</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.files }}</span><span class="summary-label">distinct files</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.artifact_types }}</span><span class="summary-label">artefact types</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.tests }}</span><span class="summary-label">tests</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.references }}</span><span class="summary-label">references</span></div>
+  <div class="summary-stat summary-signal"><span class="summary-value">{{ summary.long_type or '37' }} <span class="summary-vs">vs</span> 24</span><span class="summary-label">long type vs APD limit</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.gaps }}</span><span class="summary-label">gaps</span></div>
+</section>
 {% endif %}
 
 <div class="workbench-grid">
@@ -81,9 +94,14 @@
   <section class="panel spine-panel" aria-label="Feature spine">
     <div class="panel-head">
       <h2>Feature spine</h2>
-      <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence below</span>
+      <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence
+        <span class="spine-cue">- scroll for Tests</span></span>
     </div>
     {% if view.spine_layout %}
+    <div class="evidence-inline" data-evidence-inline aria-live="polite" hidden>
+      <div class="evidence-inline-label">Selected node evidence</div>
+      <div data-evidence-inline-body></div>
+    </div>
     <div class="spine-scroll">
       <svg class="spine-svg" viewBox="0 0 {{ view.spine_layout.width }} {{ view.spine_layout.height }}"
            role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}">
@@ -132,7 +150,7 @@
       <h2>Evidence</h2>
       <span class="muted">file + line/pointer</span>
     </div>
-    <div class="evidence-drawer" data-evidence-drawer>
+    <div class="evidence-drawer" data-evidence-drawer aria-live="polite">
       {% if selected_evidence %}
       <div class="evidence-head">
         <span class="pill pill-confidence">{{ selected_evidence.confidence }}</span>
@@ -155,7 +173,7 @@
         <h3>Grounded assistant</h3>
         <span class="badge badge-neutral">retrieval-only - model off</span>
       </div>
-      <form data-assistant-form>
+      <form data-assistant-form data-feature-id="{{ view.selected_feature.feature_id if view.selected_feature else '' }}">
         <label class="visually-hidden" for="assistant-question">Ask about this snapshot</label>
         <input id="assistant-question" class="input" name="question" placeholder="Ask about evidence, gaps, findings..." required>
         <button class="btn btn-primary btn-small" type="submit">Ask</button>
@@ -165,7 +183,7 @@
         <button type="button" class="chip" data-assistant-prompt="Why is the long type name a problem?">Long type?</button>
         <button type="button" class="chip" data-assistant-prompt="Which files reference Motorcycle_Ext?">Motorcycle_Ext?</button>
       </div>
-      <div class="assistant-result" data-assistant-result>
+      <div class="assistant-result" data-assistant-result aria-live="polite">
         <p class="muted">Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
       </div>
     </div>

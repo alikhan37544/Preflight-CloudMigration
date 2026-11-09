@@ -100,7 +100,7 @@ def test_golden_path(server) -> None:
         page.goto(f"{BASE}/manifest?run=R-E2E", wait_until="networkidle")
         expect(page.locator("h1")).to_have_text("Manifest")
         expect(page.locator(".manifest-table tbody tr")).not_to_have_count(0)
-        expect(page.locator("body")).to_contain_text("unsupported or corrupt")
+        expect(page.locator("body")).to_contain_text("excluded files")
         page.screenshot(path=str(shots / "manifest-1440.png"), full_page=True)
 
         # Reconstruction: accept the first mapping
@@ -112,7 +112,10 @@ def test_golden_path(server) -> None:
         expect(page.locator("[data-mapping-row]").first.locator("[data-state]")).to_have_text("accepted")
         page.screenshot(path=str(shots / "reconstruction-1440.png"), full_page=True)
         page.locator('[data-decision="reject"][data-object-type="mapping"]').last.click()
-        page.wait_for_url("**/reconstruction?run=R-E2E&tab=assumptions", timeout=8000)
+        expect(page.locator("[data-assumption-notice]")).to_contain_text("A-DEC-", timeout=8000)
+        expect(page.locator("[data-assumption-notice]")).to_be_visible()
+        expect(page.locator("[data-mapping-row]").last.locator("[data-state]")).to_have_text("rejected")
+        page.locator('.tab[data-tab="assumptions"]').click()
         expect(page.locator("[data-tab-panel='assumptions']")).to_contain_text("A-DEC-")
 
         # Findings

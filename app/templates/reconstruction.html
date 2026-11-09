@@ -10,7 +10,7 @@
     non-deployable; <code>_gen</code> files are never edited. Every change starts pending.</p>
   </div>
   <div class="head-meta">
-    <span class="badge badge-neutral">local draft - not deployable</span>
+    <span class="badge badge-offline" data-gen-writes><code>_gen</code> writes: 0 · draft is local / non-deployable</span>
   </div>
 </div>
 
@@ -18,6 +18,8 @@
   <strong>Official Cloud Assurance: not run.</strong> These dispositions are reviewable proposals.
   Mapping provenance is shown per row: documented, PreFlight convention, or reviewer decision.
 </div>
+
+<div class="banner banner-info assumption-notice" data-assumption-notice aria-live="polite" hidden></div>
 
 <div class="tabs" role="tablist">
   <button class="tab {{ 'active' if tab == 'mappings' }}" type="button" data-tab="mappings" role="tab">Mappings <span class="counter">{{ view.mappings|length }}</span></button>
@@ -69,12 +71,12 @@
   <div class="panel">
     <div class="panel-head">
       <h2>Draft files</h2>
-      <span class="muted">{{ view.changes|length }} changes - all pending</span>
+      <span class="muted">{{ view.changes|length }} changes - every change starts pending</span>
     </div>
     {% if view.changes %}
     {% for change in view.changes %}
-    <details class="diff-block" {{ 'open' if loop.first }}>
-      <summary><code>{{ change.target_path }}</code> <span class="pill pill-state">{{ change.approval_state }}</span></summary>
+    <details class="diff-block" data-change-block="{{ change.change_id }}" {{ 'open' if loop.first }}>
+      <summary><code>{{ change.target_path }}</code> <span class="pill pill-state" data-state>{{ change.approval_state }}</span></summary>
       <div class="change-actions">
         <button class="btn btn-small" type="button" data-decision="accept" data-object-type="change" data-object-id="{{ change.change_id }}">Accept change</button>
         <button class="btn btn-small btn-danger-ghost" type="button" data-decision="reject" data-object-type="change" data-object-id="{{ change.change_id }}">Reject change</button>
@@ -98,9 +100,9 @@
     {% if view.assumptions %}
     <table class="data-table">
       <thead><tr><th>ID</th><th>Statement</th><th>Impact</th><th>Range</th><th>Question to ask</th><th>Owner</th><th>Status</th></tr></thead>
-      <tbody>
+      <tbody data-assumptions-body>
         {% for item in view.assumptions %}
-        <tr>
+        <tr data-assumption-id="{{ item.assumption_id }}">
           <td><code>{{ item.assumption_id }}</code></td>
           <td>{{ item.statement }}<div class="muted">{{ item.impact_basis }}</div></td>
           <td><span class="pill pill-impact impact-{{ item.impact }}">{{ item.impact }}</span></td>

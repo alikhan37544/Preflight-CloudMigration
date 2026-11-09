@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
-from app.models import Manifest, Spine
+from app.models import Confidence, Manifest, Spine, SpineNode
 from app.store import RunStore, StoreError
 
 COLUMNS = [
@@ -52,8 +53,11 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
     if not nodes:
         return None
 
+    # Six compact columns fit a 1280px workbench without hiding the Tests column.
+    spacing = 108
+    node_width = 100
     columns = {
-        key: {"key": key, "label": label, "nodes": [], "x": 25 + index * 145}
+        key: {"key": key, "label": label, "nodes": [], "x": 14 + index * spacing}
         for index, (key, label) in enumerate(COLUMNS)
     }
     for node in nodes:
@@ -62,7 +66,7 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
         columns[_column_for(node)]["nodes"].append(node)
 
     positions: dict[str, tuple[float, float]] = {}
-    width = 25 + len(COLUMNS) * 145 + 20
+    width = 14 + len(COLUMNS) * spacing + 8
     height = 120
     for key, column in columns.items():
         for row, node in enumerate(column["nodes"]):
@@ -77,11 +81,11 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
             x, y = positions[node["id"]]
             svg_nodes.append({
                 "id": node["id"],
-                "label": node.get("label", "")[:22],
+                "label": node.get("label", "")[:18],
                 "kind": node.get("kind", ""),
                 "x": x,
                 "y": y,
-                "w": 130,
+                "w": node_width,
                 "h": 38,
                 "artifact_path": node.get("artifact_path"),
                 "evidence_id": node.get("evidence_id"),
@@ -95,7 +99,7 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
         if not src or not dst:
             continue
         svg_edges.append({
-            "x1": src[0] + 130,
+            "x1": src[0] + node_width,
             "y1": src[1] + 19,
             "x2": dst[0],
             "y2": dst[1] + 19,
@@ -109,6 +113,165 @@ def spine_layout(spine: dict[str, Any] | Spine | None) -> dict[str, Any] | None:
         "width": width,
         "height": height,
     }
+
+
+PRECISION_GUARDS = [
+    {
+        "rule_id": "PF-GW-SQL-001",
+        "title": "Direct JDBC or SQL access",
+        "negatives": [
+            ("Query.make(PersonalVehicle).select()", "supported data-access API, not JDBC"),
+            ("DriverManager.getConnection(...) in a comment or string", "comments and strings are masked before matching"),
+            ('client.executeQuery("search")', "non-JDBC search call is not direct SQL access"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-SEC-001",
+        "title": "Hard-coded secret",
+        "negatives": [
+            ('password = "CHANGEME" / "<placeholder>" / "${API_KEY}"', "documented placeholders and env references are ignored"),
+            ('apiKey = System.getenv("API_KEY")', "environment lookup is not a hard-coded value"),
+            ('password = "hunter2" in a comment', "comments are masked before the assignment scan"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-PKG-001",
+        "title": "Hidden or internal package reference",
+        "negatives": [
+            ("uses com.guidewire.public.api.Thing", "public Guidewire namespace is allowed"),
+            ("// gw.internal.util in a comment", "comment prose is masked"),
+            ("uses gw.api.database.Query", "supported public data API is not an internal package"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-EXC-001",
+        "title": "Swallowed exception",
+        "negatives": [
+            ("catch (e : Exception) { log.error(e.Message) }", "logged exceptions are not swallowed"),
+            ("// catch (...) { } in prose", "commented code is masked"),
+            ("SafePatterns.gs with no catch block", "absence of a catch is not a finding"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-TX-001",
+        "title": "Explicit commit inside runWithNewBundle",
+        "negatives": [
+            ("bundle.commit() outside runWithNewBundle", "commit is only flagged inside the managed block"),
+            ("// bundle.commit() in a comment", "comment prose is masked"),
+            ("runWithNewBundle { bundle.add(vehicle) } with no commit", "managed block without an explicit commit is clean"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-SRV-001",
+        "title": "Custom servlet",
+        "negatives": [
+            ("// class X extends HttpServlet in prose", "comments are masked"),
+            ("com.guidewire.public.api.Thing", "public API integration is not a servlet"),
+            ("SearchClient.gs with no servlet import", "plain integration code is not flagged"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-NAM-001",
+        "title": "APD type name exceeds 24 characters",
+        "negatives": [
+            ("A" * 24, "exactly 24 characters is at the documented limit, not over it"),
+            ("PAVehicle / PACoverage", "short type names are untouched"),
+            ("ShortTypes.xml / ShortTypesB.xml", "short names in adjacent templates are not flagged"),
+        ],
+    },
+    {
+        "rule_id": "PF-GW-GUNIT-001",
+        "title": "Database access in a pure unit test",
+        "negatives": [
+            ("PersonalVehicleValidationTest.gs", "validation test has no DB calls"),
+            ("PersonalVehiclePureTest.gs", "pure math assertions only"),
+            ("PersonalVehiclePureTestB.gs", "pure math assertions only"),
+        ],
+    },
+]
+
+
+def _evidence_group(path: str) -> str:
+    lower = path.lower()
+    if lower.endswith(".pcf"):
+        return "pcf"
+    if lower.endswith((".eti", ".etx")):
+        return "entity"
+    if lower.endswith((".tti", ".ttx")):
+        return "typelist"
+    if "/template/" in lower or lower.startswith("product/template/"):
+        return "template"
+    if "/gtest/" in lower or lower.startswith("gtest/"):
+        return "test"
+    if lower.endswith(".gs"):
+        return "gosu"
+    return "other"
+
+
+def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
+    """Compact first-beat metrics derived from the selected feature's real evidence."""
+    feature = view.get("selected_feature")
+    if not feature:
+        return None
+    by_id = view.get("evidence_by_id", {})
+    items = [by_id[eid] for eid in feature.get("evidence_ids", []) if eid in by_id]
+    paths = {item.get("path", "") for item in items}
+    groups = {_evidence_group(path) for path in paths}
+    spine = view.get("selected_spine") or {}
+    if hasattr(spine, "model_dump"):
+        spine = spine.model_dump(mode="json")
+    edges = spine.get("edges", [])
+    long_type = None
+    for finding in view.get("findings", []):
+        if finding.get("rule_id") != "PF-GW-NAM-001":
+            continue
+        match = re.search(r"(\d+)\s+characters", finding.get("message", ""))
+        if match:
+            long_type = int(match.group(1))
+            break
+    return {
+        "feature_id": feature.get("feature_id", ""),
+        "feature_name": feature.get("name", ""),
+        "evidence": len(items),
+        "files": len(paths),
+        "artifact_types": len(groups & {"pcf", "entity", "typelist", "template"}),
+        "tests": len({path for path in paths if _evidence_group(path) == "test"}),
+        "references": len([edge for edge in edges if edge.get("kind") != "tested_by"]),
+        "long_type": long_type,
+        "gaps": len(view.get("gaps", [])),
+    }
+
+
+def _fallback_spine(feature: dict[str, Any], evidence_by_id: dict[str, Any]) -> Spine:
+    """Build an inventory spine from evidence for runs predating multi-spine output."""
+    nodes: list[SpineNode] = []
+    seen: set[str] = set()
+    for evidence_id in feature.get("evidence_ids", []):
+        item = evidence_by_id.get(evidence_id)
+        if not item:
+            continue
+        path = item.get("path", "")
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        lower = path.lower()
+        if "/gtest/" in lower or lower.startswith("gtest/"):
+            kind = "test"
+        elif lower.endswith(".gs"):
+            kind = "symbol"
+        elif lower.startswith("config/integration/"):
+            kind = "config"
+        else:
+            kind = "artifact"
+        nodes.append(SpineNode(
+            id=f"evidence:{path}",
+            kind=kind,
+            label=Path(path).stem.replace("PersonalVehicle", "Vehicle").replace("PersonalAuto", "Auto"),
+            artifact_path=path,
+            evidence_id=evidence_id,
+            confidence=Confidence(item.get("confidence", "linked")),
+        ))
+    return Spine(nodes=nodes, edges=[])
 
 
 def _read(store: RunStore, run_id: str, name: str, default: Any) -> Any:
@@ -139,12 +302,15 @@ def load_run_view(store: RunStore, run_id: str) -> dict[str, Any]:
 
     evidence_by_id = {item["evidence_id"]: item for item in evidence + review_evidence}
     selected_feature = features[0] if features else None
-    spines = spine_payload.get("spines", {})
+    spines = dict(spine_payload.get("spines", {}))
+    for feature in features:
+        if feature["feature_id"] not in spines:
+            spines[feature["feature_id"]] = _fallback_spine(feature, evidence_by_id).model_dump(mode="json")
     selected_spine = None
     if selected_feature:
         selected_spine = spines.get(selected_feature["feature_id"])
 
-    return {
+    view = {
         "status": status,
         "manifest": manifest,
         "features": features,
@@ -169,4 +335,7 @@ def load_run_view(store: RunStore, run_id: str) -> dict[str, Any]:
         "selected_spine": selected_spine,
         "spine_layout": spine_layout(selected_spine),
         "unsupported_count": len(manifest.get("unsupported_paths", [])),
+        "precision_guards": PRECISION_GUARDS,
     }
+    view["feature_summary"] = feature_summary(view)
+    return view

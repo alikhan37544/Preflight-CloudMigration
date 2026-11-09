@@ -89,6 +89,24 @@ def test_injected_instruction_does_not_invent_evidence(context) -> None:
     assert "SecretRatingTable.xml" not in answer.answer
 
 
+def test_tests_question_is_scoped_to_the_selected_feature(context) -> None:
+    _, discovery, reconstruction, review, _ = context
+    vehicle = next(f for f in discovery.features if f.feature_id == "PA-VEH-01")
+    answer = answer_question(
+        "Which tests cover vehicle validation?", discovery, review, reconstruction,
+        feature_id="PA-VEH-01",
+    )
+    assert answer.grounded is True
+    assert "PA-VEH-01" in answer.answer
+    assert set(answer.citations) <= set(vehicle.evidence_ids)
+    policy = answer_question(
+        "Which tests cover vehicle validation?", discovery, review, reconstruction,
+        feature_id="PA-POL-02",
+    )
+    assert policy.grounded is False
+    assert "PA-POL-02" in policy.answer
+
+
 def test_demo_question_set_has_answer_and_refusal_cases(context) -> None:
     _, discovery, reconstruction, review, _ = context
     assert len(DEMO_QUESTIONS) == 10

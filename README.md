@@ -134,13 +134,14 @@ The full runbook is in [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md).
 
 | Time | Screen | Beat |
 |---|---|---|
-| 0:00 | Workbench | 300 files, hashed and read-only; feature spine; click a node for evidence |
-| 0:50 | Manifest | 4 unsupported/corrupt files listed, not hidden; source hash unchanged |
-| 1:10 | Reconstruction | 12 dispositions; accept one, reject one; new assumption appears; audit |
-| 2:15 | Findings | 24 findings from 8 rules; claim strength; hard negative; SBT flag |
-| 3:10 | Assistant | Territory question refuses; `Motorcycle_Ext` question answers with citations |
-| 3:40 | Evaluation | Six metrics, intervals, baselines, per-rule table, limitations |
-| 4:25 | Packet | Six sections, owner/status, hashes, audit head, downloadable HTML |
+| 0:00 | Workbench | 300 files, hashed and read-only; summary strip; feature spine; click a node for evidence |
+| 0:30 | Manifest | 4 excluded files listed with reasons (2 binary, 1 corrupt, 1 unsupported); source hash unchanged |
+| 1:00 | Workbench | Eight feature inventories; PA-VEH-01 opens the territory gap |
+| 1:30 | Reconstruction | 12 dispositions; accept one, reject one; new assumption appears inline; audit |
+| 2:45 | Findings | 24 findings from 8 rules; claim strength; precision guards; SBT flag |
+| 3:30 | Assistant | Back on Workbench; territory question refuses; `Motorcycle_Ext` answer cites evidence cards |
+| 4:00 | Evaluation | Six metrics, intervals, baselines, per-rule table, limitations |
+| 4:30 | Packet | Six sections, owner/status, hashes, audit head, downloadable HTML |
 | 4:50 | Close | “Every claim has evidence; every unknown has a name; every change waits for a human.” |
 
 ## Architecture

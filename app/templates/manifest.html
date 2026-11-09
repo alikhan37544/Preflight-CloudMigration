@@ -16,8 +16,8 @@
 
 {% if view.unsupported_count %}
 <div class="banner banner-warning">
-  <strong>{{ view.unsupported_count }} unsupported or corrupt files could not be parsed.</strong> Results exclude them.
-  The source snapshot is unchanged; its hash is verified before and after analysis.
+  <strong>{{ view.unsupported_count }} excluded files (binary, corrupt, or unsupported) could not be parsed.</strong>
+  Results exclude them. The source snapshot is unchanged; its hash is verified before and after analysis.
 </div>
 {% endif %}
 
@@ -30,9 +30,18 @@
     Hash check recorded in the audit trail.
   </div>
   {% endif %}
+  {% if excluded %}
+  <div class="excluded-summary" role="status" aria-live="polite">
+    <strong>{{ excluded_artifacts|length }} excluded files</strong>
+    <span class="pill pill-state">{{ excluded_counts.binary }} binary</span>
+    <span class="pill pill-state">{{ excluded_counts.corrupt }} corrupt</span>
+    <span class="pill pill-state">{{ excluded_counts.unsupported }} unsupported</span>
+    <span class="muted">Listed with reasons; the source snapshot is unchanged.</span>
+  </div>
+  {% endif %}
+
   <form class="filter-row" method="get" action="/manifest">
     <input type="hidden" name="run" value="{{ run_id }}">
-    {% if excluded %}<input type="hidden" name="excluded" value="1">{% endif %}
     <label class="visually-hidden" for="manifest-q">Filter by path</label>
     <input id="manifest-q" class="input" type="search" name="q" value="{{ q }}" placeholder="Filter by path...">
     <label class="visually-hidden" for="manifest-status">Filter by status</label>
@@ -42,12 +51,13 @@
       <option value="{{ value }}" {{ 'selected' if status_filter == value }}>{{ value }}</option>
       {% endfor %}
     </select>
+    <label class="check-inline"><input type="checkbox" name="excluded" value="1" {{ 'checked' if excluded }}> Excluded ({{ view.unsupported_count }})</label>
     <button class="btn" type="submit">Apply</button>
     <span class="muted">{{ total }} matching{% if excluded %} (excluded files){% endif %} - page {{ page }} of {{ pages }}</span>
   </form>
 
   <table class="data-table manifest-table">
-    <thead><tr><th>Path</th><th>Kind</th><th>Parser</th><th>Status</th><th>Lines</th><th>Size</th><th>SHA-256</th></tr></thead>
+    <thead><tr><th>Path</th><th>Kind</th><th>Parser</th><th>Status</th><th>Why excluded</th><th>Lines</th><th>Size</th><th>SHA-256</th></tr></thead>
     <tbody>
       {% for artifact in artifacts %}
       <tr>
@@ -55,6 +65,12 @@
         <td>{{ artifact.kind }}</td>
         <td>{{ artifact.parser }}</td>
         <td>{{ status(artifact.status) }}</td>
+        <td class="muted">
+          {% if artifact.status == 'binary' %}Binary asset; content is not parsed as source.
+          {% elif artifact.status == 'corrupt' %}Parse failed{% if artifact.warnings %}: {{ artifact.warnings[0] }}{% endif %}
+          {% elif artifact.status == 'unsupported' %}No supported parser for this file type.
+          {% else %}-{% endif %}
+        </td>
         <td>{{ artifact.line_count }}</td>
         <td>{{ artifact.size }}</td>
         <td><code class="hash" title="{{ artifact.sha256 }}">{{ artifact.sha256|short }}</code></td>
