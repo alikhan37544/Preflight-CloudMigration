@@ -5,7 +5,10 @@ Written before the parser implementations.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
+
+import pytest
 
 from app.services.parsers.config import parse_config_yaml, parse_json_with_pointer
 from app.services.parsers.entity import parse_entity
@@ -99,6 +102,42 @@ def test_parse_config_yaml_reports_line_numbers(tmp_path: Path) -> None:
     assert doc.data["types"]["PAVehicle"]["nameOverride"] == "PersonalVehicle"
     assert doc.line_for("types.PAVehicle.nameOverride") == 3
     assert doc.line_for("types.PAVehicle.fields.Year.nameOverride") == 6
+
+
+def test_yaml_alias_bomb_is_rejected_quickly(tmp_path: Path) -> None:
+    lines = ['a0: &a0 ["x","x","x","x","x","x","x","x","x","x"]']
+    previous = "a0"
+    for level in range(1, 8):
+        current = f"a{level}"
+        lines.append(f"{current}: &{current} [" + ",".join([f"*{previous}"] * 10) + "]")
+        previous = current
+    path = tmp_path / "alias-bomb.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert len(path.read_bytes()) < 1024
+
+    started = time.monotonic()
+    with pytest.raises(ValueError, match="alias"):
+        parse_config_yaml(path)
+    assert time.monotonic() - started < 1.0
+
+
+def test_yaml_nesting_limit_is_enforced(tmp_path: Path) -> None:
+    lines = []
+    for level in range(70):
+        lines.append("  " * level + f"level{level}:")
+    lines.append("  " * 70 + "value: 1")
+    path = tmp_path / "deep.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="nesting limit"):
+        parse_config_yaml(path)
+
+
+def test_normal_yaml_with_anchors_but_no_aliases_still_parses(tmp_path: Path) -> None:
+    path = tmp_path / "anchors.yaml"
+    path.write_text("types: &types\n  PAVehicle:\n    nameOverride: PersonalVehicle\n",
+                    encoding="utf-8")
+    doc = parse_config_yaml(path)
+    assert doc.data["types"]["PAVehicle"]["nameOverride"] == "PersonalVehicle"
 
 
 def test_json_pointer_returns_value_and_excerpt(tmp_path: Path) -> None:

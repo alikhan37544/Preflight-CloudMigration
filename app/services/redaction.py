@@ -10,12 +10,21 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models import Evidence
 
 # Assignment forms used by Gosu and similar configuration code, including typed
 # declarations such as ``var secret : String = "..."`` and property writes.
 SECRET_KEYS = re.compile(
     r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"((?:\\.|[^"\\])*)"'
+)
+# YAML mapping form. Parser errors quote the offending source line, so warnings
+# such as ``password: "hunter2"`` must be filtered before they are persisted.
+YAML_SECRET_KEYS = re.compile(
+    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*"((?:\\.|[^"\\])*)"'
 )
 SECRET_PLACEHOLDERS = {
     "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
@@ -111,11 +120,32 @@ def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
         if not REDACTED_VALUE.match(value.strip()):
             text = text.replace(value, _marker(value))
     text = SECRET_KEYS.sub(_redact_assignment, text)
+    text = YAML_SECRET_KEYS.sub(_redact_assignment, text)
     text = LIVE_TOKEN.sub(_redact_live_token, text)
     text = BEARER_TOKEN.sub(_redact_bearer, text)
     if all_quoted_strings:
         text = QUOTED_STRING.sub(_redact_quoted, text)
     return text, text != original
+
+
+def redact_evidence(items: Sequence["Evidence"]) -> list["Evidence"]:
+    """Copy evidence with redacted excerpts and matching hashes.
+
+    Locators, IDs, paths, and confidence are unchanged. Callers persist the
+    returned copies; the original objects remain available to in-memory stages
+    that need the source text.
+    """
+    redacted: list["Evidence"] = []
+    for item in items:
+        excerpt, changed = redact_excerpt(item.excerpt)
+        if changed:
+            item = item.model_copy(update={
+                "excerpt": excerpt,
+                "excerpt_sha": hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
+                "redacted": True,
+            })
+        redacted.append(item)
+    return redacted
 
 
 # Descriptive alias for callers that prefer the longer name.

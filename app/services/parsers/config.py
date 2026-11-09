@@ -9,14 +9,41 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.error import YAMLError
-from ruamel.yaml.tokens import TagToken
+from ruamel.yaml.tokens import AliasToken, TagToken
+
+# Bounds applied before the recursive line-index walk. Configuration files are
+# small; anything beyond these limits is treated as hostile input.
+MAX_YAML_NODES = 100_000
+MAX_YAML_DEPTH = 64
+
+
+def _guard_yaml_tree(data: Any) -> None:
+    """Reject alias-expanded or deeply nested documents before walking them."""
+    nodes = 0
+    stack: list[tuple[Any, int]] = [(data, 1)]
+    while stack:
+        node, depth = stack.pop()
+        nodes += 1
+        if nodes > MAX_YAML_NODES:
+            raise ValueError(
+                f"YAML document exceeds the node limit ({MAX_YAML_NODES})"
+            )
+        if depth > MAX_YAML_DEPTH:
+            raise ValueError(
+                f"YAML document exceeds the nesting limit ({MAX_YAML_DEPTH})"
+            )
+        if isinstance(node, dict):
+            stack.extend((value, depth + 1) for value in node.values())
+        elif isinstance(node, (list, tuple)):
+            stack.extend((value, depth + 1) for value in node)
 
 
 def _load_yaml_text(raw: str) -> Any:
-    """Load YAML while rejecting every explicit tag.
+    """Load YAML while rejecting explicit tags and alias expansion.
 
-    Scanning tokens first catches ``!!python/...``, single-``!`` tags, and
-    verbatim ``!<...>`` tags without relying on a substring check.
+    Scanning tokens first catches ``!!python/...``, single-``!`` tags,
+    verbatim ``!<...>`` tags, and aliases. Aliases are rejected because a small
+    anchor/alias bomb expands exponentially when the parsed tree is walked.
     """
     yaml = YAML(typ="rt")
     yaml.preserve_quotes = True
@@ -24,9 +51,12 @@ def _load_yaml_text(raw: str) -> Any:
         for token in yaml.scan(raw):
             if isinstance(token, TagToken):
                 raise ValueError("YAML tags are not allowed in configuration files")
+            if isinstance(token, AliasToken):
+                raise ValueError("YAML aliases are not allowed in configuration files")
         data = yaml.load(raw)
     except YAMLError as exc:
         raise ValueError(f"invalid YAML: {exc}") from exc
+    _guard_yaml_tree(data)
     return data
 
 

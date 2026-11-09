@@ -18,6 +18,7 @@ from lxml import etree
 
 from app.models import Artifact, ArtifactStatus, Manifest
 from app.services.parsers.config import parse_config_yaml
+from app.services.redaction import redact_excerpt
 
 BINARY_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".bin", ".class", ".jar",
@@ -120,18 +121,35 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def snapshot_hash(root: Path) -> str:
-    """SHA-256 over sorted (relative_path, file_sha256) pairs.
+def _safe_warning(text: str) -> str:
+    """Remove secret-looking values from parser error text before persisting it."""
+    return redact_excerpt(text)[0]
 
-    Modification times are deliberately excluded so repeated runs are
-    reproducible across copies.
+
+def snapshot_hash(root: Path) -> str:
+    """SHA-256 over sorted path/content entries.
+
+    Regular files contribute ``(relative_path, file_sha256)``. Symlinks
+    contribute ``(relative_path, "symlink", target, mode)`` so retargeting a
+    link changes the hash without reading the target. Modification times are
+    deliberately excluded so repeated runs are reproducible across copies.
     """
-    pairs: list[tuple[str, str]] = []
+    entries: list[list] = []
     for path in sorted(root.rglob("*")):
-        if path.is_file() and not path.is_symlink():
-            data = path.read_bytes()
-            pairs.append((path.relative_to(root).as_posix(), _sha256_bytes(data)))
-    payload = json.dumps(pairs, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        rel = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            # Symlinks are listed as unsupported artifacts. Hash the link
+            # itself (path, target, mode) so retargeting changes the snapshot
+            # hash without following the target.
+            try:
+                target = os.readlink(path)
+            except OSError:
+                target = ""
+            mode = path.lstat().st_mode & 0o7777
+            entries.append([rel, "symlink", target, mode])
+        elif path.is_file():
+            entries.append([rel, _sha256_bytes(path.read_bytes())])
+    payload = json.dumps(entries, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -162,13 +180,13 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                     kind="symlink",
                     parser="none",
                     status=ArtifactStatus.UNSUPPORTED,
-                    warnings=["symlink entries are not followed"],
+                    warnings=[_safe_warning("symlink entries are not followed")],
                     line_count=0,
                 )
             )
             total_size += len(target_bytes)
             unsupported.append(rel)
-            warnings.append(f"{rel}: symlink not followed")
+            warnings.append(_safe_warning(f"{rel}: symlink not followed"))
             continue
         if not path.is_file():
             continue
@@ -195,12 +213,12 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 etree.fromstring(data, _safe_xml_parser())
             except etree.XMLSyntaxError as exc:
                 status = ArtifactStatus.CORRUPT
-                item_warnings.append(f"XML parse error: {exc}")
+                item_warnings.append(_safe_warning(f"XML parse error: {exc}"))
                 corrupt_label = "XML"
                 unsupported.append(rel)
             except ValueError as exc:  # e.g. encoding declaration problems
                 status = ArtifactStatus.CORRUPT
-                item_warnings.append(f"XML parse error: {exc}")
+                item_warnings.append(_safe_warning(f"XML parse error: {exc}"))
                 corrupt_label = "XML"
                 unsupported.append(rel)
         elif parser == "json":
@@ -208,7 +226,7 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 json.loads(data.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                 status = ArtifactStatus.CORRUPT
-                item_warnings.append(f"JSON parse error: {exc}")
+                item_warnings.append(_safe_warning(f"JSON parse error: {exc}"))
                 corrupt_label = "JSON"
                 unsupported.append(rel)
         elif parser == "config":
@@ -216,12 +234,12 @@ def build_manifest(root: Path, *, snapshot_id: str, project_id: str) -> Manifest
                 parse_config_yaml(path)
             except Exception as exc:  # malformed or tagged YAML must not abort intake
                 status = ArtifactStatus.CORRUPT
-                item_warnings.append(f"YAML parse error: {exc}")
+                item_warnings.append(_safe_warning(f"YAML parse error: {exc}"))
                 corrupt_label = "YAML"
                 unsupported.append(rel)
 
         if status is ArtifactStatus.CORRUPT:
-            warnings.append(f"{rel}: corrupt {corrupt_label or 'file'}")
+            warnings.append(_safe_warning(f"{rel}: corrupt {corrupt_label or 'file'}"))
 
         artifacts.append(
             Artifact(
@@ -335,10 +353,17 @@ def safe_extract_zip(
 
         total_uncompressed = 0
         seen_offsets: dict[int, str] = {}
+        seen_names: set[str] = set()
         for info in infos:
             _reject_unsafe_name(info.filename)
             if info.flag_bits & 0x1:
                 raise UnsafeArchiveError(f"encrypted archive entry: {info.filename!r}")
+            normalised = info.filename.rstrip("/")
+            if normalised in seen_names:
+                raise UnsafeArchiveError(
+                    f"duplicate archive entry name: {info.filename!r}"
+                )
+            seen_names.add(normalised)
             if info.header_offset in seen_offsets:
                 raise UnsafeArchiveError(
                     f"hardlink or duplicate archive entry: {info.filename!r}"

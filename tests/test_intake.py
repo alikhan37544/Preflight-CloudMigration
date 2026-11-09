@@ -6,8 +6,11 @@ Written before app/services/intake.py exists.
 from __future__ import annotations
 
 import io
+import json
 import os
 import stat
+import time
+import warnings
 import zipfile
 from pathlib import Path
 
@@ -21,6 +24,8 @@ from app.services.intake import (
     safe_extract_zip,
     snapshot_hash,
 )
+
+REPO = Path(__file__).resolve().parents[1]
 
 
 def test_manifest_lists_every_file_with_matching_hash(manifest_fixture: Path) -> None:
@@ -267,3 +272,108 @@ def test_safe_extract_enforces_total_size_limit(tmp_path: Path) -> None:
             archive, tmp_path / "out",
             max_entry_uncompressed=1000, max_uncompressed=1000,
         )
+
+
+def test_manifest_parser_warning_redacts_secrets_before_persisting(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+    from app.store import RunStore
+
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    live_secret = "sk-live-SECRET123"
+    plain_secret = "hunter2"
+    (root / "bad-live.yaml").write_text(
+        f'types: [unterminated\npassword: "{live_secret}"\n', encoding="utf-8"
+    )
+    (root / "bad-plain.yaml").write_text(
+        f'password: "{plain_secret}"\n  nested: bad\n', encoding="utf-8"
+    )
+    manifest = build_manifest(root, snapshot_id="S-LEAK", project_id="P-LEAK")
+
+    dumped = json.dumps(manifest.model_dump(mode="json"))
+    assert live_secret not in dumped
+    assert plain_secret not in dumped
+    assert "[REDACTED:" in dumped
+
+    store = RunStore(tmp_path / "data")
+    store.create_run("R-LEAK", project_id="demo", snapshot_id="S-LEAK")
+    store.write_artifact("R-LEAK", "manifest.json", manifest.model_dump(mode="json"))
+    store.update_status("R-LEAK", status="succeeded", stage="succeeded", percent=100.0)
+    client = TestClient(create_app(Settings(
+        data_dir=tmp_path / "data", fixtures_dir=REPO / "fixtures", secret_key="intake-test",
+    )))
+    response = client.get("/manifest?run=R-LEAK")
+    assert response.status_code == 200
+    assert live_secret not in response.text
+    assert plain_secret not in response.text
+    assert "[REDACTED:" in response.text
+
+
+def test_snapshot_hash_tracks_symlink_retargeting(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "README.txt").write_text("hello\n", encoding="utf-8")
+    first_target = tmp_path / "first.txt"
+    second_target = tmp_path / "second.txt"
+    first_target.write_text("same-content\n", encoding="utf-8")
+    second_target.write_text("same-content\n", encoding="utf-8")
+    link = root / "link.txt"
+    link.symlink_to(first_target)
+
+    first = snapshot_hash(root)
+    assert snapshot_hash(root) == first  # stable when nothing changes
+
+    link.unlink()
+    link.symlink_to(second_target)
+    second = snapshot_hash(root)
+    assert second != first
+
+    link.unlink()
+    link.symlink_to(first_target)
+    assert snapshot_hash(root) == first
+
+
+def test_safe_extract_rejects_duplicate_member_names(tmp_path: Path) -> None:
+    archive = tmp_path / "duplicate.zip"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        with zipfile.ZipFile(archive, "w") as zf:
+            zf.writestr("dup.txt", "first")
+            zf.writestr("dup.txt", "last")
+    with pytest.raises(UnsafeArchiveError, match="duplicate"):
+        safe_extract_zip(archive, tmp_path / "out")
+    assert not (tmp_path / "out" / "dup.txt").exists()
+
+
+def test_safe_extract_rejects_file_and_directory_name_collision(tmp_path: Path) -> None:
+    archive = tmp_path / "collision.zip"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        with zipfile.ZipFile(archive, "w") as zf:
+            zf.writestr("node", "file")
+            zf.writestr("node/", "directory")
+    with pytest.raises(UnsafeArchiveError, match="duplicate"):
+        safe_extract_zip(archive, tmp_path / "out")
+
+
+def test_safe_extract_rejects_many_small_bomb_entries_before_writing(tmp_path: Path) -> None:
+    archive = tmp_path / "many-small-bomb.zip"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for index in range(200):
+            zf.writestr(f"entry-{index}.txt", "0" * 2048)
+
+    out = tmp_path / "out"
+    started = time.monotonic()
+    with pytest.raises(UnsafeArchiveError, match="uncompressed archive exceeds"):
+        safe_extract_zip(
+            archive, out,
+            max_ratio=100_000,
+            max_entry_uncompressed=4096,
+            max_uncompressed=100_000,
+        )
+    elapsed = time.monotonic() - started
+    assert elapsed < 2.0
+    assert [path for path in out.rglob("*") if path.is_file()] == []
