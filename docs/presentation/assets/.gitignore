@@ -1,0 +1,3 @@
+# Walkthrough video is generated on demand with `--video` and stays local.
+*.webm
+_video/

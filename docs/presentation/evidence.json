@@ -1,0 +1,764 @@
+{
+  "schema_version": "1.0",
+  "deck": {
+    "path": "docs/presentation/index.html",
+    "slides": 16,
+    "aspect_ratio": "16:9",
+    "offline": true,
+    "external_requests": 0,
+    "print_pages": 16,
+    "pdf": "docs/presentation/PreFlight-deck.pdf",
+    "validation": "Playwright at 1920x1080, 1440x900, 390x844: 16 slides navigated; 0 console errors; 0 external requests; 0 overflow"
+  },
+  "generated_at": "2026-11-09T13:12:18+00:00",
+  "run": {
+    "run_id": "R-DEMO-001",
+    "fixture": "demo-slice-300",
+    "snapshot": "v1.0.0",
+    "date": "2026-11-08",
+    "files": 300,
+    "features": 8,
+    "evidence": 126,
+    "findings": 24,
+    "rules": 8,
+    "mappings": 12,
+    "changes": 5,
+    "assumptions": 3,
+    "assumptions_after_demo_reject": 4,
+    "excluded": {
+      "total": 4,
+      "binary": 2,
+      "corrupt": 1,
+      "unsupported": 1
+    },
+    "audit_events": 9,
+    "audit_verified": true,
+    "snapshot_hash": "20b5a25451f3427d450a361e7feb2ea983cc0844f871fa109ff3ab5c91145404",
+    "packet_hash": "09fac7ee737f40f9c4d7a5223464d137c0b1063868555e42d15743e53f206a5a",
+    "audit_head": "2567dbf4f3ded9b51b2afe0ef3dcd4b3171785464e80e14b1799a4d0f8383a4d",
+    "official_cloud_assurance": "not run",
+    "note": "packet/audit hashes are capture-time; reviewer decisions or a packet refresh change them"
+  },
+  "metrics": [
+    {
+      "id": "M1",
+      "label": "Feature discovery recall",
+      "numerator": 8,
+      "denominator": 8,
+      "value": 1.0,
+      "ci95": [
+        0.676,
+        1.0
+      ],
+      "note": "in-sample synthetic"
+    },
+    {
+      "id": "M2",
+      "label": "Feature discovery precision",
+      "numerator": 8,
+      "denominator": 8,
+      "value": 1.0,
+      "ci95": [
+        0.676,
+        1.0
+      ],
+      "note": "in-sample synthetic"
+    },
+    {
+      "id": "M3",
+      "label": "Evidence-link support precision (all links)",
+      "numerator": 101,
+      "denominator": 101,
+      "value": 1.0,
+      "ci95": [
+        0.963,
+        1.0
+      ],
+      "sample": {
+        "numerator": 30,
+        "denominator": 30
+      },
+      "note": "excerpt support, not semantic entailment"
+    },
+    {
+      "id": "M4",
+      "label": "Disposition correctness",
+      "numerator": 12,
+      "denominator": 12,
+      "value": 1.0,
+      "ci95": [
+        0.758,
+        1.0
+      ],
+      "note": "source+target+disposition; extras penalised"
+    },
+    {
+      "id": "M5",
+      "label": "Estimate-moving issue recall",
+      "numerator": 6,
+      "denominator": 6,
+      "value": 1.0,
+      "ci95": [
+        0.61,
+        1.0
+      ],
+      "allowance": {
+        "numerator": 6,
+        "denominator": 8
+      },
+      "note": "fixed two-decoy top-8 allowance, not a learned ranking"
+    },
+    {
+      "id": "M6",
+      "label": "Finding micro-F1",
+      "numerator": 48,
+      "denominator": 48,
+      "value": 1.0,
+      "ci95": null,
+      "tp": 24,
+      "fp": 0,
+      "fn": 0,
+      "note": "path-level matching; no interval at this n; bootstrap deferred"
+    }
+  ],
+  "supporting": {
+    "hard_negatives_silent": {
+      "numerator": 24,
+      "denominator": 24
+    },
+    "holdout": {
+      "numerator": 4,
+      "denominator": 4,
+      "ci95": [
+        0.51,
+        1.0
+      ],
+      "imported": false,
+      "note": "four-feature naming-shift fixture"
+    },
+    "tests": 330,
+    "freeze_hashes": {
+      "numerator": 21,
+      "denominator": 21
+    },
+    "raw_secret_values": 0
+  },
+  "slides": [
+    {
+      "number": 1,
+      "id": "slide-1",
+      "section": "Title",
+      "title": "Evidence before the estimate",
+      "key_points": [
+        "Offline, synthetic, independent",
+        "300 files, 8 features, 126 evidence, 24 findings, 12 dispositions, 9 audit events",
+        "Not affiliated with Guidewire; official Cloud Assurance not run"
+      ],
+      "sources": []
+    },
+    {
+      "number": 2,
+      "id": "slide-2",
+      "section": "The problem",
+      "title": "A migration estimate is a promise. The inventory is the proof.",
+      "key_points": [
+        "Four questions: what exists, which feature, what is disposed, what is unknown/owner",
+        "APD 24-char truncation",
+        "JDBC/commits/servlets/hidden packages",
+        "SBT lines cannot convert",
+        "Incomplete handover (premise, not measured)"
+      ],
+      "sources": [
+        "S-01",
+        "S-02",
+        "S-03",
+        "S-06"
+      ]
+    },
+    {
+      "number": 3,
+      "id": "slide-3",
+      "section": "The gap",
+      "title": "Existing tools each own a slice. Nobody hands you the review packet.",
+      "key_points": [
+        "Cloud Assurance = standards gate",
+        "CUE = official high-level estimate",
+        "SonarQube/GoQu = Gosu lint",
+        "CAST/ADDI/AWS = portfolio/infra",
+        "Gap = cross-artefact feature evidence + disposition ledger + assumption register + packet"
+      ],
+      "sources": [
+        "S-05",
+        "S-07",
+        "S-14"
+      ]
+    },
+    {
+      "number": 4,
+      "id": "slide-4",
+      "section": "Solution",
+      "title": "One pipeline. Nine stages. Every step leaves a trace.",
+      "key_points": [
+        "Snapshot \u2192 intake/hash \u2192 parse \u2192 discover \u2192 review \u2192 reconstruct \u2192 compare \u2192 evaluate \u2192 packet",
+        "Read-only; unsupported listed; every claim evidence; every change pending; no LLM/external calls",
+        "300 \u2192 126 evidence \u2192 24 findings \u2192 12 dispositions \u2192 1 packet"
+      ],
+      "sources": [
+        "S-15"
+      ]
+    },
+    {
+      "number": 5,
+      "id": "slide-5",
+      "section": "Evidence model",
+      "title": "A claim is only as strong as its locator, its label, and its open question.",
+      "key_points": [
+        "Claim fields: path, locator, excerpt, excerpt_sha, method, confidence",
+        "Claim strength: verified-id, verified-policy, verified-doc, secondary, heuristic",
+        "Assumption fields: ID, statement, owner, impact range, question, status",
+        "Packet hash + audit head; tamper-evident, not non-repudiation"
+      ],
+      "sources": [
+        "S-01",
+        "S-05"
+      ]
+    },
+    {
+      "number": 6,
+      "id": "slide-6",
+      "section": "Demo \u00b7 Workbench",
+      "title": "One feature, traced across six artefact families.",
+      "key_points": [
+        "31 evidence / 12 files / 4 artefact types / 2 tests / 11 references",
+        "37 vs 24 APD limit",
+        "3 estate-wide gaps",
+        "18-node spine; click node \u2192 EV-0001"
+      ],
+      "sources": [
+        "S-01"
+      ]
+    },
+    {
+      "number": 7,
+      "id": "slide-7",
+      "section": "Demo \u00b7 Manifest",
+      "title": "No silent omission. Four files are excluded \u2014 and named.",
+      "key_points": [
+        "300 files hashed",
+        "4 excluded: 2 binary, 1 corrupt, 1 unsupported",
+        "Source hash unchanged 20b5a25451f3 before/after",
+        "Excluded files stay in the packet"
+      ],
+      "sources": []
+    },
+    {
+      "number": 8,
+      "id": "slide-8",
+      "section": "Demo \u00b7 Reconstruction",
+      "title": "A decision queue, not a rename script.",
+      "key_points": [
+        "12 dispositions / 5 target changes",
+        "4 exact documented examples + 1 synthetic long-type mechanism + 6 API + 1 typelist",
+        "Accept M-01; reject M-12 (R-TYP-01) \u2192 A-DEC-04",
+        "_gen writes: 0; draft local/non-deployable"
+      ],
+      "sources": [
+        "S-15",
+        "S-16"
+      ]
+    },
+    {
+      "number": 9,
+      "id": "slide-9",
+      "section": "Demo \u00b7 Findings",
+      "title": "Precision is a feature. Restraint is the interface.",
+      "key_points": [
+        "24 findings / 8 rules",
+        "Claim strength: 12 verified-id, 3 verified-policy, 3 verified-doc, 3 secondary, 3 heuristic",
+        "IS-TLS-1238 / SEC00-G / IS-TLS-1191 / ERR00-G",
+        "SBT readiness flag separate",
+        "24 hard negatives silent; Query.make supported"
+      ],
+      "sources": [
+        "S-09",
+        "S-10",
+        "S-11",
+        "S-12"
+      ]
+    },
+    {
+      "number": 10,
+      "id": "slide-10",
+      "section": "Demo \u00b7 Assistant",
+      "title": "It would rather refuse than invent a source.",
+      "key_points": [
+        "Territory refusal names missing evidence",
+        "Motorcycle_Ext cites EV-0023, VehicleType.ttx, xpath, line 3",
+        "Retrieval-only, model off",
+        "Citations resolve to evidence records"
+      ],
+      "sources": []
+    },
+    {
+      "number": 11,
+      "id": "slide-11",
+      "section": "Demo \u00b7 Evaluation",
+      "title": "Perfect scores measure the instrument. The estate is still unproven.",
+      "key_points": [
+        "M1 8/8; M2 8/8; M3 101/101 + 30/30; M4 12/12; M5 6/6 with 6/8 allowance; M6 48/48",
+        "24/24 hard negatives silent",
+        "Holdout 4/4, 51.0\u2013100.0, not imported",
+        "In-sample; no human IAA; reference internally authored; support \u2260 entailment"
+      ],
+      "sources": []
+    },
+    {
+      "number": 12,
+      "id": "slide-12",
+      "section": "Demo \u00b7 Packet",
+      "title": "The review artifact is the product.",
+      "key_points": [
+        "6 sections",
+        "126 evidence items",
+        "1 separate readiness flag",
+        "9 audit events; audit verified",
+        "Packets/audit hashes; verify-audit R-DEMO-001",
+        "Downloadable HTML; local, not certification"
+      ],
+      "sources": []
+    },
+    {
+      "number": 13,
+      "id": "slide-13",
+      "section": "Engineering rigor",
+      "title": "The demo is the surface. The hardening is the work.",
+      "key_points": [
+        "330 tests collected",
+        "Playwright golden path",
+        "21/21 freeze hashes",
+        "0 raw secret values",
+        "12/12 concurrent accepts persist; forged evidence 0/48; packet 126 items"
+      ],
+      "sources": []
+    },
+    {
+      "number": 14,
+      "id": "slide-14",
+      "section": "Novelty & prior art",
+      "title": "The algorithms are not new. The integration and the evidence discipline are the contribution.",
+      "key_points": [
+        "Feature location, traceability, architecture conformance, GSN are established",
+        "Reversa 2026 is closest prior art",
+        "Integration + domain evidence model is the contribution",
+        "No first/only claim"
+      ],
+      "sources": []
+    },
+    {
+      "number": 15,
+      "id": "slide-15",
+      "section": "Viability",
+      "title": "The wedge is real. The evidence is not yet sufficient to call it a product.",
+      "key_points": [
+        "Synthetic in-sample; internally authored target; no human IAA",
+        "No real estate; CUE official; Assistants encroachment; gated corpus",
+        "Defensible wedge: independent offline pre-CUE file-level evidence for one LOB",
+        "Roadmap: real estate, second LOB, blind annotation, line-level, performance, import/export, compile validation"
+      ],
+      "sources": [
+        "S-19"
+      ]
+    },
+    {
+      "number": 16,
+      "id": "slide-16",
+      "section": "Close",
+      "title": "Every claim has evidence. Every unknown has a name. Every change waits for a human.",
+      "key_points": [
+        "Ask: pilot estate, SME annotation, feedback",
+        "Contact placeholders",
+        "Disclaimer: independent, synthetic, not affiliated, Cloud Assurance not run"
+      ],
+      "sources": []
+    }
+  ],
+  "sources": [
+    {
+      "id": "S-01",
+      "title": "Guidewire Cloud API \u2014 Correcting compile errors",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_correcting_compile_errors.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "APD 24-character type limit; nameOverride correction",
+      "gated": false
+    },
+    {
+      "id": "S-02",
+      "title": "Guidewire blog \u2014 Convert existing PolicyCenter products to APD",
+      "url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "6\u20138 week vendor estimate",
+      "gated": false,
+      "claim_type": "vendor claim"
+    },
+    {
+      "id": "S-03",
+      "title": "Guidewire Cloud release highlights (Olos)",
+      "url": "https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "SBT lines cannot be converted to APD-managed lines at this time",
+      "gated": false
+    },
+    {
+      "id": "S-04",
+      "title": "Guidewire Cloud API \u2014 LOB endpoints for non-APD-native products",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_generating_lob_specific_endpoints_for_non_apd_native_products.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "Cloud Retrofit scope boundary",
+      "gated": false
+    },
+    {
+      "id": "S-05",
+      "title": "Guidewire Cloud Assurance \u2014 automated cloud assurance and code compliance",
+      "url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "standards gate process; NEEDS WORK; threshold not public",
+      "gated": false,
+      "gated_detail": "numeric threshold and full corpus"
+    },
+    {
+      "id": "S-06",
+      "title": "Guidewire developer blog \u2014 lessons from Guidewire Cloud migrations",
+      "url": "https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "JDBC, explicit commits, servlets, hidden packages in migration experience",
+      "gated": false,
+      "claim_type": "secondary"
+    },
+    {
+      "id": "S-07",
+      "title": "SonarQube Server \u2014 Gosu",
+      "url": "https://docs.sonarsource.com/sonarqube-server/2026.4/analyzing-source-code/languages/gosu",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "generic Gosu lint positioning",
+      "gated": false
+    },
+    {
+      "id": "S-08",
+      "title": "Gosu grammar",
+      "url": "https://gosu-lang.github.io/grammar.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "Gosu scanner syntax assumptions",
+      "gated": false
+    },
+    {
+      "id": "S-09",
+      "title": "Guidewire Gosu secure coding \u2014 SEC00-G",
+      "url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "Do Not Hardcode Secrets",
+      "gated": true,
+      "gated_detail": "body may require login; public ID/title only"
+    },
+    {
+      "id": "S-10",
+      "title": "Guidewire Gosu secure coding \u2014 ERR00-G",
+      "url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "Do Not Suppress Exceptions",
+      "gated": true,
+      "gated_detail": "body may require login; public ID/title only"
+    },
+    {
+      "id": "S-11",
+      "title": "Guidewire Gosu secure coding \u2014 INJ00-G",
+      "url": "https://docs.guidewire.com/security/gosu-secure-coding-guidelines/INJ00-G",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "JDBC not supported on Guidewire Cloud",
+      "gated": true,
+      "gated_detail": "body may require login"
+    },
+    {
+      "id": "S-12",
+      "title": "Guidewire hardening guidance for InsuranceSuite",
+      "url": "https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "verified standard IDs/titles; custom servlet policy",
+      "gated": true,
+      "gated_detail": "rule bodies may require login"
+    },
+    {
+      "id": "S-13",
+      "title": "Guidewire APD \u2014 labels / short-name limits",
+      "url": "https://docs.guidewire.com/cloud/apd/niseko/create/topics/c_xmind-labels.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "APD short-name context",
+      "gated": false
+    },
+    {
+      "id": "S-14",
+      "title": "Guidewire Cloud Platform releases",
+      "url": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "release context (Qusar 2026.08)",
+      "gated": false
+    },
+    {
+      "id": "S-15",
+      "title": "Guidewire Cloud API \u2014 files that define LOB-specific endpoints",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_files_that_define_lob_specific_endpoints.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "_ext paths; _gen read-only invariant",
+      "gated": false
+    },
+    {
+      "id": "S-16",
+      "title": "Guidewire Cloud API \u2014 codegen config file syntax",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "documented nameOverride examples",
+      "gated": false
+    },
+    {
+      "id": "S-17",
+      "title": "Guidewire Cloud API \u2014 generating endpoints for Personal Auto",
+      "url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "API naming normalization",
+      "gated": false
+    },
+    {
+      "id": "S-18",
+      "title": "Sonar blog \u2014 four new languages in SonarQube Cloud",
+      "url": "https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "native Gosu analysis positioning",
+      "gated": false
+    },
+    {
+      "id": "S-19",
+      "title": "Guidewire blog \u2014 Developer Assistants",
+      "url": "https://www.guidewire.com/resources/blog/developers/accelerating-p-c-delivery-with-developer-assistants-from-guidewire",
+      "status": "200 OK",
+      "accessed": "2026-11-09",
+      "used_for": "Developer Assistants GA; encroachment risk",
+      "gated": false
+    }
+  ],
+  "prior_art": [
+    {
+      "id": "P-01",
+      "citation": "Dit et al., Feature location in source code: a taxonomy and survey, JSEP 2013",
+      "doi": "10.1002/smr.572",
+      "role": "feature location survey"
+    },
+    {
+      "id": "P-02",
+      "citation": "Marcus et al., An information retrieval approach to concept location in source code, WCRE 2004",
+      "role": "IR concept location"
+    },
+    {
+      "id": "P-03",
+      "citation": "Antoniol et al., Recovering traceability links between code and documentation, IEEE TSE 2002",
+      "role": "traceability recovery"
+    },
+    {
+      "id": "P-04",
+      "citation": "Murphy et al., Software reflexion models, FSE 1995 / IEEE TSE 2001",
+      "role": "architecture conformance"
+    },
+    {
+      "id": "P-05",
+      "citation": "Kelly & Weaver, The goal structuring notation, 2004",
+      "role": "assurance cases"
+    },
+    {
+      "id": "P-06",
+      "citation": "Hey et al., FTLR, ICSME 2021",
+      "doi": "10.1109/ICSME52107.2021.00008",
+      "role": "fine-grained traceability link recovery"
+    },
+    {
+      "id": "P-07",
+      "citation": "Fuch\u00df et al., LiSSA, ICSE 2025",
+      "doi": "10.1109/ICSE55347.2025.00186",
+      "role": "RAG traceability link recovery"
+    },
+    {
+      "id": "P-08",
+      "citation": "TraceLLM, Requirements Engineering 31, 2026",
+      "doi": "10.1007/s00766-026-00460-1",
+      "role": "LLM prompt engineering for traceability"
+    },
+    {
+      "id": "P-09",
+      "citation": "de Macedo & da Costa, Reversa, arXiv:2605.18684, 2026",
+      "url": "https://arxiv.org/abs/2605.18684",
+      "role": "closest prior art: traceable operational specs, confidence marking, gaps, SHA-256 manifest"
+    },
+    {
+      "id": "P-10",
+      "citation": "GoQu (Sollers), CAST, IBM ADDI, Moderne/OpenRewrite, Guidewire CUE/Lighthouse/SurePath/Developer Assistants",
+      "role": "adjacent commercial tooling"
+    }
+  ],
+  "assets": [
+    {
+      "file": "assets/assistant-citation-1440x900.png",
+      "bytes": 124876,
+      "sha256": "f214ee8ae5eda81daa3c51f5001b9a1966627ddac916fb6046bc3905d5576772"
+    },
+    {
+      "file": "assets/assistant-citation-panel.png",
+      "bytes": 32737,
+      "sha256": "a9a53c5325f6a9a569bd4bd8eaf06174150a17bf13b0078515a5ecb586fe36c5"
+    },
+    {
+      "file": "assets/assistant-refusal-1440x900.png",
+      "bytes": 129423,
+      "sha256": "3f6547c924bbdb99e711749049077e8ffb6ce4c66e8a8957b265976abe5607b7"
+    },
+    {
+      "file": "assets/assistant-refusal-panel.png",
+      "bytes": 28889,
+      "sha256": "e4924cd3348219a5a4482009102c06ba3e7f5dad571257010e861f644db33e3f"
+    },
+    {
+      "file": "assets/deck-slide-01-1440x900.png",
+      "bytes": 97336,
+      "sha256": "6d3ded85247f657c3e88f39a706ba5976c69c31a5b0c3272b43ba2f916cf7c5a"
+    },
+    {
+      "file": "assets/deck-slide-11-1440x900.png",
+      "bytes": 165326,
+      "sha256": "c5a8ad876c604d24848bad884a66345744496e9496d1718a98eb9c3f672709d0"
+    },
+    {
+      "file": "assets/evaluation-1440x900.png",
+      "bytes": 183397,
+      "sha256": "c7e4c4aef5935199c2783ff865ed589f6d2509562fdd23f6c45668cc1435b3d6"
+    },
+    {
+      "file": "assets/evaluation-full-1440.png",
+      "bytes": 523024,
+      "sha256": "be889cc3d49e70ce7711b3a62387244b740672df8b5b2b12fc639884814499ab"
+    },
+    {
+      "file": "assets/evaluation-intervals.png",
+      "bytes": 35379,
+      "sha256": "4643a49d1901dd83e5c76ae63936c74ba108a3f5a2183906e1c4dca13ba24023"
+    },
+    {
+      "file": "assets/findings-1440x900.png",
+      "bytes": 181788,
+      "sha256": "fe2e8cbb632121c80a9f6d4b184bb2ae1369626717cc95e340e2365cb4c1684b"
+    },
+    {
+      "file": "assets/findings-full-1440.png",
+      "bytes": 601113,
+      "sha256": "34e2070a84f0c5152e6c84695497a3024e0ec61ea5a1a1dfa0bd4808710f9a1a"
+    },
+    {
+      "file": "assets/manifest-excluded-1280x900.png",
+      "bytes": 149979,
+      "sha256": "9dd6b0bee2d97247eda1fae04cf8ddc91912ac0a95eccaca372ee73ab68a8424"
+    },
+    {
+      "file": "assets/manifest-excluded-1440x900.png",
+      "bytes": 164302,
+      "sha256": "6cba0441d25c25326688e6640e3872ec693db532ed6861b7bd083a54ee18e7e5"
+    },
+    {
+      "file": "assets/packet-1440x900.png",
+      "bytes": 192160,
+      "sha256": "0c1f1049f1ac27d050faa2e19d558d5ac9d3a5900ace405fe47170958842f78a"
+    },
+    {
+      "file": "assets/packet-full-1440.png",
+      "bytes": 593506,
+      "sha256": "dd567f437f87b37b0550089cbecf20816f274b98c98e059b3c6cbab210565a29"
+    },
+    {
+      "file": "assets/reconstruction-1440x900.png",
+      "bytes": 186166,
+      "sha256": "fa11d5b5f6c75eb4e545d7de1cb49beee6f45047528ff6bf2099ea01fc7401a5"
+    },
+    {
+      "file": "assets/reconstruction-after-decision-1440x900.png",
+      "bytes": 182025,
+      "sha256": "03babb5dd2f26c21d2cd1f31508820cea9dea430ffee353c22ba53b04fffd144"
+    },
+    {
+      "file": "assets/reconstruction-after-decision-full.png",
+      "bytes": 336809,
+      "sha256": "afd0ceb6dca8750755d791e859856ae114f8f7d8ab629e36190e09d4664a089d"
+    },
+    {
+      "file": "assets/reconstruction-assumptions-1440x900.png",
+      "bytes": 189877,
+      "sha256": "c9c1ba73ca3bfff95c4e7f9ce441d5c20c8be01bd7c50f344bc8aa7e367b9ff7"
+    },
+    {
+      "file": "assets/reconstruction-full-1440.png",
+      "bytes": 318112,
+      "sha256": "a86a1787fc6f86a67ff7465ece62c8f143a6bb976ff3d44758e9793b861c880e"
+    },
+    {
+      "file": "assets/workbench-1280x900.png",
+      "bytes": 166363,
+      "sha256": "db3f13a17389142c92069c36549f362b9cb5baf745f11a2aa2a7b64ad67343ef"
+    },
+    {
+      "file": "assets/workbench-1440x900.png",
+      "bytes": 167872,
+      "sha256": "d8b21cf67bb4f157313107a6c02e004c3e1a0a05433fb3382b9b622e0d2f6db5"
+    },
+    {
+      "file": "assets/workbench-390x844-full.png",
+      "bytes": 300845,
+      "sha256": "296ddf3e750b4b0b16e89cdea5430d9fcada9210bd948ede3373049d4fee868f"
+    },
+    {
+      "file": "assets/workbench-390x844.png",
+      "bytes": 67952,
+      "sha256": "1edf0d4e3d9ff59ef9b32a35955b1222cec1c59962bdb738b13ca0e022d751ca"
+    },
+    {
+      "file": "assets/workbench-evidence-1440x900.png",
+      "bytes": 181435,
+      "sha256": "489b1bec435050dec590d6723bd4ffc2d440c4c35402eaeb2b978a729a45a1f2"
+    },
+    {
+      "file": "assets/workbench-evidence-drawer.png",
+      "bytes": 17830,
+      "sha256": "c449006d0723160c7b3596b483cc1daddd36b8d99529e198cb895866535b39be"
+    },
+    {
+      "file": "assets/workbench-evidence-panel.png",
+      "bytes": 41164,
+      "sha256": "49a63880db751b5a0fa07dd6def429a34c262124f45f1c125548ad0731eaffb3"
+    },
+    {
+      "file": "assets/workbench-full-1440.png",
+      "bytes": 336270,
+      "sha256": "68ec050d263b53130b93aa212ed634bfb0033c39aab8239e00e072e0eb392088"
+    }
+  ]
+}
