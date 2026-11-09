@@ -139,4 +139,4 @@ No score is claimed in this log; the independent reviewer panel decides.
 - Mobile capability matrix scrolls with keyboard/touch without advancing the slide.
 - Findings standard IDs are no longer truncated; connector arrows meet contrast.
 - `evidence.json` run hashes are synchronized with the capture manifest and live seed packet.
-- Final counts: **416 tests**, packte verify OK, audit verify OK, 18/18 freeze hashes, 16-page PDF.
+- Final counts: **416 tests**, packet verify OK, audit verify OK, 18/18 freeze hashes, 16-page PDF.
