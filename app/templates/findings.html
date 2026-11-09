@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import claim, severity, confidence %}
+{% from "_macros.html" import claim, severity, confidence, scroll_region %}
 {% set guard_rule_count = view.precision_guards|length %}
 {% set guard_negative_count = view.precision_guards|map(attribute='negatives')|map('length')|sum %}
 {% set guard_negatives_per_rule = view.precision_guards[0].negatives|length if view.precision_guards else 0 %}
@@ -57,7 +57,7 @@
 
 <div class="finding-layout">
   <section class="panel findings-table-panel">
-    <div class="table-scroll" role="region" aria-label="Findings table, horizontally scrollable if needed" tabindex="0">
+    {% call scroll_region("Findings table, horizontally scrollable if needed", "Scroll horizontally to see the remaining finding columns.") %}
       <table class="data-table findings-table" data-findings-table>
         <caption class="table-caption">Advisory findings: {{ view.findings|length }} rows across {{ view.findings|groupby('rule_id')|length }} rules. Source paths are truncated with the full path in the tooltip.</caption>
         <colgroup>
@@ -87,8 +87,8 @@
           {% set ev = view.evidence_by_id.get(finding.evidence_ids[0]) if finding.evidence_ids else None %}
           {% set is_selected = selected_finding and selected_finding.finding_id == finding.finding_id %}
           <tr class="{{ 'selected' if is_selected }}" data-finding-row="{{ finding.finding_id }}">
-            <td>
-              {% if is_selected %}<span class="visually-hidden">Selected row.</span>{% endif %}
+            <td{% if is_selected %} aria-current="true" data-selected="true"{% endif %}>
+              {% if is_selected %}<span class="selected-flag" title="Currently selected finding">selected</span>{% endif %}
               <code class="rule-code">{{ finding.rule_id }}</code>
             </td>
             <td><span class="finding-title" title="{{ finding.title }}">{{ finding.title }}</span></td>
@@ -107,7 +107,6 @@
               {% else %}<span class="muted">none</span>{% endif %}
             </td>
             <td>
-              {% if is_selected %}<span class="selected-flag">selected</span>{% endif %}
               <span class="pill pill-state" data-state>{{ finding.decision }}</span>
             </td>
             <td class="actions-col">
@@ -117,7 +116,7 @@
           {% endfor %}
         </tbody>
       </table>
-    </div>
+    {% endcall %}
   </section>
 
   <aside class="panel detail-panel">

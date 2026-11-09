@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import confidence, status %}
+{% from "_macros.html" import confidence, status, scroll_region %}
 
 {% block content %}
 {% set evidence_query = request.query_params.get('evidence', '') %}
@@ -172,15 +172,17 @@
     <p class="spine-scroll-hint" data-spine-scroll-hint hidden>This graph is wider than the window. Scroll horizontally to see all six columns, including Tests.</p>
     <details class="table-fallback">
       <summary>Spine table fallback</summary>
-      <table class="data-table compact">
-        <caption>Spine nodes with kind, file, and confidence.</caption>
-        <thead><tr><th scope="col">Node</th><th scope="col">Kind</th><th scope="col">File</th><th scope="col">Confidence</th></tr></thead>
-        <tbody>
-          {% for node in view.spine_layout.nodes %}
-          <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% call scroll_region("Spine table fallback, horizontally scrollable if needed") %}
+        <table class="data-table compact spine-table">
+          <caption>Spine nodes with kind, file, and confidence.</caption>
+          <thead><tr><th scope="col">Node</th><th scope="col">Kind</th><th scope="col">File</th><th scope="col">Confidence</th></tr></thead>
+          <tbody>
+            {% for node in view.spine_layout.nodes %}
+            <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endcall %}
     </details>
     {% else %}
     <div class="empty-inline">

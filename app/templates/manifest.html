@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status %}
+{% from "_macros.html" import status, scroll_region %}
 
 {% block content %}
 <div class="page-head">
@@ -56,29 +56,31 @@
     <span class="muted">{{ total }} matching{% if excluded %} (excluded files){% endif %} - page {{ page }} of {{ pages }}</span>
   </form>
 
-  <table class="data-table manifest-table">
-    <caption>Snapshot artifacts with parser, status, and exclusion reason.</caption>
-    <thead><tr><th scope="col">Path</th><th scope="col">Kind</th><th scope="col">Parser</th><th scope="col">Status</th><th scope="col">Why excluded</th><th scope="col">Lines</th><th scope="col">Size</th><th scope="col">SHA-256</th></tr></thead>
-    <tbody>
-      {% for artifact in artifacts %}
-      <tr>
-        <td><code>{{ artifact.path }}</code>{% if artifact.warnings %}<div class="muted">{{ artifact.warnings|join('; ') }}</div>{% endif %}</td>
-        <td>{{ artifact.kind }}</td>
-        <td>{{ artifact.parser }}</td>
-        <td>{{ status(artifact.status) }}</td>
-        <td class="muted">
-          {% if artifact.status == 'binary' %}Binary asset; content is not parsed as source.
-          {% elif artifact.status == 'corrupt' %}Parse failed{% if artifact.warnings %}: {{ artifact.warnings[0] }}{% endif %}
-          {% elif artifact.status == 'unsupported' %}No supported parser for this file type.
-          {% else %}-{% endif %}
-        </td>
-        <td>{{ artifact.line_count }}</td>
-        <td>{{ artifact.size }}</td>
-        <td><code class="hash" title="{{ artifact.sha256 }}">{{ artifact.sha256|short }}</code></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Manifest artifacts table, horizontally scrollable if needed", "Scroll horizontally to see path, size, and hash columns.") %}
+    <table class="data-table manifest-table">
+      <caption>Snapshot artifacts with parser, status, and exclusion reason.</caption>
+      <thead><tr><th scope="col">Path</th><th scope="col">Kind</th><th scope="col">Parser</th><th scope="col">Status</th><th scope="col">Why excluded</th><th scope="col">Lines</th><th scope="col">Size</th><th scope="col">SHA-256</th></tr></thead>
+      <tbody>
+        {% for artifact in artifacts %}
+        <tr>
+          <td><code>{{ artifact.path }}</code>{% if artifact.warnings %}<div class="muted">{{ artifact.warnings|join('; ') }}</div>{% endif %}</td>
+          <td>{{ artifact.kind }}</td>
+          <td>{{ artifact.parser }}</td>
+          <td>{{ status(artifact.status) }}</td>
+          <td class="muted">
+            {% if artifact.status == 'binary' %}Binary asset; content is not parsed as source.
+            {% elif artifact.status == 'corrupt' %}Parse failed{% if artifact.warnings %}: {{ artifact.warnings[0] }}{% endif %}
+            {% elif artifact.status == 'unsupported' %}No supported parser for this file type.
+            {% else %}-{% endif %}
+          </td>
+          <td>{{ artifact.line_count }}</td>
+          <td>{{ artifact.size }}</td>
+          <td><code class="hash" title="{{ artifact.sha256 }}">{{ artifact.sha256|short }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
 
   <div class="pagination">
     {% if page > 1 %}<a class="btn btn-small" href="/manifest?run={{ run_id }}&page={{ page - 1 }}&q={{ q }}&status={{ status_filter }}&excluded={{ excluded }}">Previous</a>{% endif %}

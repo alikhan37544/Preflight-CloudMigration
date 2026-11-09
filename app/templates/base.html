@@ -47,23 +47,29 @@
 
   <div class="shell">
     <aside class="sidebar" aria-label="Primary navigation">
-      <div class="side-group">
-        <div class="side-label">Review</div>
-        <a class="side-link {{ 'active' if title == 'Workbench' }}" href="/{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Workbench' %} aria-current="page"{% endif %}>Workbench</a>
-        <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Manifest' %} aria-current="page"{% endif %}>Manifest</a>
-        <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Reconstruction' %} aria-current="page"{% endif %}>Reconstruction</a>
-        <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Findings' %} aria-current="page"{% endif %}>Findings</a>
-      </div>
-      <div class="side-group">
-        <div class="side-label">Evidence</div>
-        <a class="side-link {{ 'active' if title == 'Evaluation' }}" href="/evaluation{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Evaluation' %} aria-current="page"{% endif %}>Evaluation</a>
-        <a class="side-link {{ 'active' if title == 'Packet' }}" href="/packet{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Packet' %} aria-current="page"{% endif %}>Review packet</a>
-      </div>
-      <div class="side-group">
-        <div class="side-label">Workspace</div>
-        <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs"{% if title == 'Runs' %} aria-current="page"{% endif %}>Runs</a>
-        <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings"{% if title == 'Settings' %} aria-current="page"{% endif %}>Settings</a>
-        <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about"{% if title == 'About and boundaries' %} aria-current="page"{% endif %}>About</a>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="primary-nav-links">
+        <span class="nav-toggle-title"><span class="nav-toggle-icon" aria-hidden="true">&#9776;</span> Sections</span>
+        <span class="nav-toggle-hint" data-nav-toggle-hint>Menu</span>
+      </button>
+      <div class="side-groups" id="primary-nav-links" data-nav-groups>
+        <div class="side-group">
+          <div class="side-label">Review</div>
+          <a class="side-link {{ 'active' if title == 'Workbench' }}" href="/{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Workbench' %} aria-current="page"{% endif %}>Workbench</a>
+          <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Manifest' %} aria-current="page"{% endif %}>Manifest</a>
+          <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Reconstruction' %} aria-current="page"{% endif %}>Reconstruction</a>
+          <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Findings' %} aria-current="page"{% endif %}>Findings</a>
+        </div>
+        <div class="side-group">
+          <div class="side-label">Evidence</div>
+          <a class="side-link {{ 'active' if title == 'Evaluation' }}" href="/evaluation{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Evaluation' %} aria-current="page"{% endif %}>Evaluation</a>
+          <a class="side-link {{ 'active' if title == 'Packet' }}" href="/packet{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Packet' %} aria-current="page"{% endif %}>Review packet</a>
+        </div>
+        <div class="side-group">
+          <div class="side-label">Workspace</div>
+          <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs"{% if title == 'Runs' %} aria-current="page"{% endif %}>Runs</a>
+          <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings"{% if title == 'Settings' %} aria-current="page"{% endif %}>Settings</a>
+          <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about"{% if title == 'About and boundaries' %} aria-current="page"{% endif %}>About</a>
+        </div>
       </div>
       <div class="side-foot">
         <div class="offline-note">Local only. No tenant, no telemetry.</div>

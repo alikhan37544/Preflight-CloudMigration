@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status %}
+{% from "_macros.html" import status, scroll_region %}
 
 {% block content %}
 <div class="page-head">
@@ -17,23 +17,25 @@
 
 {% if runs %}
 <section class="panel" data-runs-table>
-  <table class="data-table">
-    <caption>Local analysis runs with project, fixture, status, stage, and creation time.</caption>
-    <thead><tr><th scope="col">Run</th><th scope="col">Project</th><th scope="col">Fixture</th><th scope="col">Status</th><th scope="col">Stage</th><th scope="col">Created</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
-    <tbody>
-      {% for run in runs %}
-      <tr data-run-row="{{ run.run_id }}">
-        <td><code>{{ run.run_id }}</code></td>
-        <td>{{ run.project_id }}</td>
-        <td>{{ run.fixture_id or 'demo-slice-300' }}</td>
-        <td>{{ status(run.status) }}</td>
-        <td>{{ run.stage }}</td>
-        <td class="muted">{{ run.created_at }}</td>
-        <td><a class="btn btn-small" href="/?run={{ run.run_id }}">Open</a> <button class="btn btn-small btn-danger-ghost" type="button" data-delete-run="{{ run.run_id }}">Delete</button></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Local analysis runs table, horizontally scrollable if needed", "Scroll horizontally to see Created and Actions.") %}
+    <table class="data-table runs-table">
+      <caption>Local analysis runs with project, fixture, status, stage, and creation time.</caption>
+      <thead><tr><th scope="col">Run</th><th scope="col">Project</th><th scope="col">Fixture</th><th scope="col">Status</th><th scope="col">Stage</th><th scope="col">Created</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for run in runs %}
+        <tr data-run-row="{{ run.run_id }}">
+          <td><code>{{ run.run_id }}</code></td>
+          <td>{{ run.project_id }}</td>
+          <td>{{ run.fixture_id or 'demo-slice-300' }}</td>
+          <td>{{ status(run.status) }}</td>
+          <td>{{ run.stage }}</td>
+          <td class="muted runs-created">{{ run.created_at }}</td>
+          <td class="runs-actions"><a class="btn btn-small" href="/?run={{ run.run_id }}">Open</a> <button class="btn btn-small btn-danger-ghost" type="button" data-delete-run="{{ run.run_id }}">Delete</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
 </section>
 {% endif %}
 <section class="panel empty-inline" data-runs-empty {{ 'hidden' if runs }}>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status %}
+{% from "_macros.html" import status, scroll_region %}
 
 {% block content %}
 {% set evaluation = view.evaluation %}
@@ -139,64 +139,72 @@
 <div class="grid-2">
   <section class="panel">
     <div class="panel-head"><h2>Baselines</h2><span class="muted">independent or naive comparators</span></div>
-    <table class="data-table compact">
-      <caption>Comparison baselines, shown as percentages.</caption>
-      <thead><tr><th scope="col">Baseline</th><th scope="col">Value</th></tr></thead>
-      <tbody>
-        {% for row in evaluation.baseline_rows %}
-        <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Comparison baselines table, horizontally scrollable if needed") %}
+      <table class="data-table compact">
+        <caption>Comparison baselines, shown as percentages.</caption>
+        <thead><tr><th scope="col">Baseline</th><th scope="col">Value</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.baseline_rows %}
+          <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     <p class="muted table-note">{{ evaluation.baseline_footnote }}</p>
     {% if evaluation.margin_rows %}
-    <table class="data-table compact">
-      <caption>Pre-registered margins against selected baselines.</caption>
-      <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
-      <tbody>
-        {% for row in evaluation.margin_rows %}
-        <tr>
-          <td>{{ row.id }} {{ row.label }}</td>
-          <td>{{ row.baseline_pct }} <span class="muted">({{ row.baseline_label }})</span></td>
-          <td>{{ row.delta_pp }}</td>
-          <td>{{ row.required_pp }}</td>
-          <td><span class="pill {{ 'pill-verified-id' if row.pass else 'pill-error' }}">{{ 'PASS' if row.pass else 'NOT SUPPORTED' }}</span></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Pre-registered margins table, horizontally scrollable if needed") %}
+      <table class="data-table compact margin-table">
+        <caption>Pre-registered margins against selected baselines.</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.margin_rows %}
+          <tr>
+            <td>{{ row.id }} {{ row.label }}</td>
+            <td>{{ row.baseline_pct }} <span class="muted">({{ row.baseline_label }})</span></td>
+            <td>{{ row.delta_pp }}</td>
+            <td>{{ row.required_pp }}</td>
+            <td><span class="pill {{ 'pill-verified-id' if row.pass else 'pill-error' }}">{{ 'PASS' if row.pass else 'NOT SUPPORTED' }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     {% endif %}
   </section>
   <section class="panel">
     <div class="panel-head"><h2>Supporting metrics</h2><span class="muted">ratios shown as percentages</span></div>
-    <table class="data-table compact">
-      <caption>Supporting metrics with numerator and denominator.</caption>
-      <thead><tr><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">n / d</th></tr></thead>
-      <tbody>
-        {% for row in evaluation.supporting_rows %}
-        <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td><td>{{ row.fraction }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Supporting metrics table, horizontally scrollable if needed") %}
+      <table class="data-table compact">
+        <caption>Supporting metrics with numerator and denominator.</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">n / d</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.supporting_rows %}
+          <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td><td>{{ row.fraction }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
   </section>
 </div>
 
 <section class="panel">
   <div class="panel-head"><h2>Per-rule findings</h2><span class="muted">TP / FP / FN; precision and recall as percentages</span></div>
-  <table class="data-table compact">
-    <caption>Per-rule finding counts and percentages.</caption>
-    <thead><tr><th scope="col">Rule</th><th scope="col">TP</th><th scope="col">FP</th><th scope="col">FN</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
-    <tbody>
-      {% for row in evaluation.per_rule_rows %}
-      <tr>
-        <td><code>{{ row.rule_id }}</code></td>
-        <td>{{ row.tp }}</td><td>{{ row.fp }}</td><td>{{ row.fn }}</td>
-        <td>{{ row.precision_pct }}</td>
-        <td>{{ row.recall_pct }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% call scroll_region("Per-rule findings table, horizontally scrollable if needed") %}
+    <table class="data-table compact per-rule-table">
+      <caption>Per-rule finding counts and percentages.</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">TP</th><th scope="col">FP</th><th scope="col">FN</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
+      <tbody>
+        {% for row in evaluation.per_rule_rows %}
+        <tr>
+          <td><code>{{ row.rule_id }}</code></td>
+          <td>{{ row.tp }}</td><td>{{ row.fp }}</td><td>{{ row.fn }}</td>
+          <td>{{ row.precision_pct }}</td>
+          <td>{{ row.recall_pct }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
 </section>
 
 <details class="panel limitations" id="limitations">
