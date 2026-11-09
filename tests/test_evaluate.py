@@ -60,7 +60,9 @@ def test_demo_tier_counts(evaluation) -> None:
     by_id = {m.metric_id: m for m in result.metrics}
     assert (by_id["M1"].numerator, by_id["M1"].denominator) == (8, 8)
     assert (by_id["M2"].numerator, by_id["M2"].denominator) == (8, 8)
-    assert (by_id["M3"].numerator, by_id["M3"].denominator) == (30, 30)
+    assert (by_id["M3"].numerator, by_id["M3"].denominator) == (101, 101)
+    sample = next(m for m in result.supporting if m.metric_id == "M3-SAMPLE")
+    assert (sample.numerator, sample.denominator) == (30, 30)
     assert (by_id["M4"].numerator, by_id["M4"].denominator) == (12, 12)
     assert (by_id["M5"].numerator, by_id["M5"].denominator) == (6, 6)
     assert by_id["M6"].value == pytest.approx(1.0)
