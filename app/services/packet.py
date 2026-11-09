@@ -436,7 +436,8 @@ def build_packet(*, store, run_id: str, project_id: str, fixture_id: str, releas
 
     executive_summary = (
         f"{feature_count} feature candidates were assembled from {manifest.file_count} files. "
-        f"{finding_count} advisory findings and {readiness_count} readiness flags were recorded, "
+        f"{finding_count} advisory findings and {readiness_count} "
+        f"{'readiness flag' if readiness_count == 1 else 'readiness flags'} were recorded, "
         f"each with evidence and a claim-strength label. {mapping_count} source properties received "
         f"an explicit disposition and {change_count} target changes await approval; unresolved items "
         f"became assumptions instead of silent gaps."

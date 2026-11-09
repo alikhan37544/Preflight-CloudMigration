@@ -572,6 +572,14 @@ summary:focus-visible, .feature-row:focus-visible {
 .fixtures-table { min-width: 600px; }
 .claim-legend-table { min-width: 520px; }
 .packet-assumptions-table { min-width: 820px; }
+@media (max-width: 1500px) {
+  .packet-notes-grid { grid-template-columns: 1fr; }
+  .packet-notes-grid .packet-assumptions-table { min-width: 0; }
+  .packet-notes-grid .packet-assumptions-table th:nth-child(2),
+  .packet-notes-grid .packet-assumptions-table td:nth-child(2) { min-width: 220px; }
+  .packet-notes-grid .packet-assumptions-table th:nth-child(4),
+  .packet-notes-grid .packet-assumptions-table td:nth-child(4) { min-width: 240px; }
+}
 .packet-mappings-table { min-width: 820px; }
 .changes-table { min-width: 560px; }
 .spine-table { min-width: 540px; }

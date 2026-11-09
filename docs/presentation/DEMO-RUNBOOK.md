@@ -347,7 +347,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
 - Packet/audit hashes change with reviewer decisions and packet refreshes; read the live screen. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
-- Tests: 367 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
+- Tests: 393 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
 ---
 
@@ -391,7 +391,7 @@ PACKET        /packet?run=R-DEMO-001
               verify: preflight verify-audit R-DEMO-001
               static docs/demo packet = historical, not hash-verifiable
 
-BUILD         367 tests · 18/18 freeze hashes · 9 seed audit events
+BUILD         393 tests · 18/18 freeze hashes · 9 seed audit events
 
 CLOSE         “Every claim has evidence; every unknown has a name;
                every change waits for a human.”

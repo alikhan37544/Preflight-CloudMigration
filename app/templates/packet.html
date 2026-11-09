@@ -68,7 +68,7 @@
   {% endfor %}
 </section>
 
-<div class="grid-2">
+<div class="grid-2 packet-notes-grid">
   <section class="panel">
     <div class="panel-head"><h2>Assumption register</h2></div>
     {% if view.assumptions %}
@@ -159,7 +159,7 @@
     </table>
   {% endcall %}
   <p class="muted">Audit events: {{ view.packet.audit_event_count|default(counts.get('audit_events', 0), true) }}.
-  Packet hash covers the canonical packet JSON payload, excluding the hash itself and the rendered HTML.
+  The packet hash covers the rendered HTML; content digests cover findings, mappings, assumptions, and evidence.
   This is a local tamper-evident log, not non-repudiation. Verify with
   <code>preflight verify-audit {{ run_id }}</code>.</p>
 </section>

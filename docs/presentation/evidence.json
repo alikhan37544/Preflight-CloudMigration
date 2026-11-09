@@ -145,7 +145,7 @@
       "imported": false,
       "note": "four-feature naming-shift fixture"
     },
-    "tests": 367,
+    "tests": 393,
     "freeze_hashes": {
       "numerator": 18,
       "denominator": 18,
@@ -353,7 +353,7 @@
       "section": "Engineering rigor",
       "title": "The demo is the surface. The hardening is the work.",
       "key_points": [
-        "367 tests collected",
+        "393 tests collected",
         "1 Playwright golden path",
         "18/18 recorded freeze hashes recompute",
         "0 raw secret values in artifacts",

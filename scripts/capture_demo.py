@@ -290,12 +290,12 @@ class Capture:
         print("Assistant citation")
         self.answer("Motorcycle_Ext?", "Motorcycle_Ext appears")
         self.shot("assistant-citation-1440x900.png")
-        self.shot("assistant-citation-panel.png", locator=".assistant")
+        self.shot("assistant-citation-panel.png", locator="[data-assistant-transcript]")
 
         print("Assistant refusal")
         self.answer("Territory rating?", "Cannot determine")
         self.shot("assistant-refusal-1440x900.png")
-        self.shot("assistant-refusal-panel.png", locator=".assistant")
+        self.shot("assistant-refusal-panel.png", locator="[data-assistant-transcript]")
 
         print("Evaluation")
         self.open("/evaluation")
@@ -320,26 +320,30 @@ class Capture:
         self.base_url = isolated_url
         self.page.set_viewport_size(FOLD)
         self.open("/reconstruction")
-        with self.page.expect_response(
-            lambda response: "/api/runs/" in response.url
-            and response.request.method == "POST"
-            and response.url.endswith("/decisions")
-        ):
-            self.page.locator('[data-mapping-row="M-01"] [data-decision="accept"]').click()
-        self.page.wait_for_function(
-            "() => document.querySelector('[data-mapping-row=\"M-01\"]')?.classList.contains('row-accepted')",
-            timeout=self.timeout,
-        )
-        with self.page.expect_response(
-            lambda response: "/api/runs/" in response.url
-            and response.request.method == "POST"
-            and response.url.endswith("/decisions")
-        ):
-            self.page.locator('[data-mapping-row="M-12"] [data-decision="reject"]').click()
-        self.page.wait_for_function(
-            "() => document.querySelector('[data-mapping-row=\"M-12\"]')?.classList.contains('row-rejected')",
-            timeout=self.timeout,
-        )
+
+        def decide(row_id: str, action: str, reason: str, expected_class: str) -> None:
+            self.page.locator(
+                f'[data-mapping-row="{row_id}"] [data-decision="{action}"]'
+            ).click()
+            dialog = self.page.locator("[data-decision-dialog]")
+            dialog.wait_for(state="visible", timeout=self.timeout)
+            self.page.fill("[data-decision-reason]", reason)
+            with self.page.expect_response(
+                lambda response: "/api/runs/" in response.url
+                and response.request.method == "POST"
+                and response.url.endswith("/decisions"),
+                timeout=self.timeout,
+            ):
+                self.page.locator("[data-decision-confirm]").click()
+            dialog.wait_for(state="hidden", timeout=self.timeout)
+            self.page.wait_for_function(
+                f"() => document.querySelector('[data-mapping-row=\"{row_id}\"]')?"
+                f".classList.contains('{expected_class}')",
+                timeout=self.timeout,
+            )
+
+        decide("M-01", "accept", "Reviewed against the documented codegen override.", "row-accepted")
+        decide("M-12", "reject", "Typelist convention needs a target-release check.", "row-rejected")
         notice = self.page.locator("[data-assumption-notice]")
         notice.wait_for(state="visible", timeout=self.timeout)
         self.page.wait_for_function(

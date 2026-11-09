@@ -41,7 +41,7 @@
   },
   "slide9.marker2": {
     "left": 34.5,
-    "top": 73.6,
+    "top": 75.0,
     "selector": ".findings-table tr.selected"
   },
   "slide9.marker3": {
@@ -66,7 +66,7 @@
   },
   "slide8.marker3": {
     "left": 86.1,
-    "top": 3.9,
+    "top": 2.8,
     "selector": "[data-gen-writes]"
   },
   "slide12.marker1": {

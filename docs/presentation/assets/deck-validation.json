@@ -24,12 +24,12 @@
     },
     "console_errors": [],
     "external_requests": [],
-    "generated_at": "2026-11-09T15:51:41+00:00"
+    "generated_at": "2026-11-09T16:20:34+00:00"
   },
   "pdf": {
-    "pdf": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo-deck/docs/presentation/PreFlight-deck.pdf",
-    "bytes": 928803,
-    "sha256": "bfb47326fe2a5842769efaf2e802c87731fb332cbefaca4dc26ac9c7c66ecb38",
+    "pdf": "/home/understressengineer/programming/Preflight-CloudMigration/docs/presentation/PreFlight-deck.pdf",
+    "bytes": 917890,
+    "sha256": "754bb980b9447fa1dd5b098d9c42abc92e37eeca3daa2d5b26047d862ae14f4f",
     "pages": 16,
     "page_size": "1200 x 675.12 pts"
   }

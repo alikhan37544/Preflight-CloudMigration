@@ -35,8 +35,33 @@
   .group { margin:18px 0 6px; }
   footer { margin-top:36px; border-top:1px solid var(--line); padding-top:12px; font-size:11px; color:var(--muted); }
   .pagebreak { page-break-before: always; }
-  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media print { body { background:#fff; } .page { border:0; margin:0; max-width:none; padding:0; } h2 { page-break-after:avoid; } table { page-break-inside:auto; } tr { page-break-inside:avoid; } }
+  table { table-layout: fixed; }
+  th, td { overflow-wrap: anywhere; }
+  @media screen and (max-width: 1200px) {
+    .page { margin: 12px; padding: 22px; max-width: none; }
+    table { display: block; width: 100%; overflow-x: auto; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media screen and (max-width: 600px) {
+    body { font-size: 13px; }
+    .page { margin: 0; padding: 14px; border: 0; }
+    h2 { font-size: 17px; }
+    .grid { grid-template-columns: 1fr; }
+    tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    th, td { display: block; border: 0; padding: 2px 0; }
+    thead { display: none; }
+  }
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    body { background:#fff; font-size: 9px; }
+    .page { border:0; margin:0; max-width:none; padding:0; }
+    h1 { font-size:20px; } h2 { font-size:15px; margin-top:18px; page-break-after:avoid; }
+    table { display: table; font-size:8px; page-break-inside:auto; }
+    th, td { padding:3px 4px; }
+    thead { display: table-header-group; }
+    tr { page-break-inside:avoid; }
+    footer { font-size:8px; }
+  }
 </style>
 </head>
 <body>
@@ -75,7 +100,7 @@
   <div class="grid">
     <div class="kpi"><div class="n">{{ feature_count }}</div><div class="l">features assembled</div></div>
     <div class="kpi"><div class="n">{{ finding_count }}</div><div class="l">advisory findings</div></div>
-    <div class="kpi"><div class="n">{{ readiness_count }}</div><div class="l">readiness flags</div></div>
+    <div class="kpi"><div class="n">{{ readiness_count }}</div><div class="l">readiness {{ 'flag' if readiness_count == 1 else 'flags' }}</div></div>
     <div class="kpi"><div class="n">{{ mapping_count }}</div><div class="l">explicit dispositions</div></div>
   </div>
   <p>{{ executive_summary }}</p>
