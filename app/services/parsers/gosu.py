@@ -17,6 +17,7 @@ from app.services.parsers.base import (
     ParsedGUnit,
     ParsedGosu,
 )
+from app.services.textindex import TextIndex
 
 _PACKAGE = re.compile(r"(?m)^\s*package\s+([\w.]+)")
 _IMPORT = re.compile(r"(?m)^\s*(?:uses|import)\s+([\w.*]+)")
@@ -111,8 +112,10 @@ def mask_comments(source: str) -> str:
     return "".join(out)
 
 
-def _line_at(source: str, position: int) -> int:
-    return source.count("\n", 0, position) + 1
+def _line_at(source: str, position: int, index: TextIndex | None = None) -> int:
+    if index is None:
+        index = TextIndex(source)
+    return index.line_at(position)
 
 
 def _match_brace(masked: str, open_index: int) -> int:
@@ -128,7 +131,10 @@ def _match_brace(masked: str, open_index: int) -> int:
     return -1
 
 
-def _blocks(source: str, masked: str, call: str = "runWithNewBundle") -> list[GosuBlock]:
+def _blocks(source: str, masked: str, call: str = "runWithNewBundle",
+            index: TextIndex | None = None) -> list[GosuBlock]:
+    if index is None:
+        index = TextIndex(source)
     blocks: list[GosuBlock] = []
     for match in re.finditer(r"\b" + re.escape(call) + r"\s*\(", masked):
         prefix = masked[max(0, match.start() - 40):match.start()]
@@ -143,10 +149,10 @@ def _blocks(source: str, masked: str, call: str = "runWithNewBundle") -> list[Go
         close_index = _match_brace(masked, open_index)
         if close_index == -1:
             continue
-        start_line = _line_at(source, match.start())
-        end_line = _line_at(source, close_index)
+        start_line = _line_at(source, match.start(), index)
+        end_line = _line_at(source, close_index, index)
         commit_lines = [
-            _line_at(source, match.start() + commit.start())
+            _line_at(source, match.start() + commit.start(), index)
             for commit in re.finditer(r"\bcommit\s*\(", masked[match.start():close_index])
         ]
         blocks.append(
@@ -164,6 +170,7 @@ def _blocks(source: str, masked: str, call: str = "runWithNewBundle") -> list[Go
 
 def scan_gosu(path: Path) -> ParsedGosu:
     raw = Path(path).read_text(encoding="utf-8", errors="replace")
+    index = TextIndex(raw)
     masked = mask_source(raw)
     package_match = _PACKAGE.search(masked)
     imports = [m.group(1) for m in _IMPORT.finditer(masked)]
@@ -180,11 +187,12 @@ def scan_gosu(path: Path) -> ParsedGosu:
             continue
         body = masked[open_index:close_index]
         methods = [
-            GosuMethod(name=m.group(1), line=_line_at(raw, open_index + m.start()))
+            GosuMethod(name=m.group(1), line=_line_at(raw, open_index + m.start(), index))
             for m in _FUNCTION.finditer(body)
         ]
         classes.append(
-            GosuClass(name=name, base=base, line=_line_at(raw, match.start()), methods=methods)
+            GosuClass(name=name, base=base, line=_line_at(raw, match.start(), index),
+                      methods=methods)
         )
 
     calls = [f"{m.group(1)}.{m.group(2)}" for m in _CALL.finditer(masked)]
@@ -196,7 +204,7 @@ def scan_gosu(path: Path) -> ParsedGosu:
         masked=masked,
         classes=classes,
         calls=calls,
-        blocks=_blocks(raw, masked),
+        blocks=_blocks(raw, masked, index=index),
     )
 
 
