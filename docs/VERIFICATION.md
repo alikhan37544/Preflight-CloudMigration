@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 416 passed
+pytest -q                                 418 passed
 pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
@@ -53,7 +53,7 @@ Playwright golden path                    passes (accept/reject dialog, mobile l
 
 ## Final status
 
-**Current internal gate: PASS for the demo path.** 416 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 418 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 
@@ -65,3 +65,33 @@ Playwright golden path                    passes (accept/reject dialog, mobile l
 - No human inter-annotator study; no reviewer-effort or real-estate generalisation claim.
 - The Cloud API extension draft is local and non-deployable; it is not compiled or tenant-validated.
 - Official Cloud Assurance was not run.
+
+## Demo-readiness panel (10 November 2026)
+
+Four independent reviewers inspected the live app and the offline deck with
+their own screenshots at 1440x900, 1280x900, 1024x768, and 390x844. Each scored
+the demo separately after five hardening loops.
+
+| Reviewer | Loop 3 | Loop 4 final | Main evidence checked |
+|---|---:|---:|---|
+| Judge / demo | 7.0 | **8.0** | Full script on an isolated copy; live seed intact; packet/audit verification; deck/PDF |
+| UX / accessibility | 7.5 | **8.2** | 0 axe violations; 1280/390 layouts; dialogs; packet export semantics; keyboard |
+| Guidewire domain | 6.0 | **8.5** | ERR00-G, A-03 counts, CUE, APD conversion scope, GarageLocation_Ext, verify-packet |
+| Engineering | 7.5 | **8.0** | 418 tests, 92/92 asset hashes, packet tamper/audit checks, CSRF, redaction |
+
+The panel found no remaining demo blockers. Residual limitations are the
+synthetic in-sample evaluation, internally authored reference target, no human
+inter-annotator study, non-deployable draft, and the demo-tier scope. See
+`docs/EVALUATION-SCOPE.md` and `docs/presentation/ITERATION-LOG.md`.
+
+### Evaluation hardening after the demo
+
+- M1/M2 anchors require locator-supported evidence.
+- M3 audits every discovery link and rejects invalid XPath rather than falling
+  back to a line match.
+- M6 requires every evidence link on a finding to be supported; findings from
+  extra (non-gold) rules count as false positives in the `UNLABELLED` row.
+- `annotation_concordance.json` no longer reports kappa; it is an aggregate
+  AI-assisted pass, not human IAA.
+- The PCF baseline is labelled "PCF filename baseline", not "PCF+grep".
+- Holdout is labelled capability recall under a naming-shift fixture.

@@ -1304,7 +1304,7 @@
           <p class="guard-line"><b>Guard count, not a seventh metric:</b> 24/24 hard negatives silent.</p>
         </div>
         <div class="panel holdout" style="padding:8px 10px">
-          <p class="small" style="margin:0"><b>Holdout:</b> 4/4 feature recall, 95% Wilson 51.0%–100.0%, four-feature naming-shift fixture. <b>Not imported</b> into the demo or used for tuning.</p>
+          <p class="small" style="margin:0"><b>Holdout:</b> 4/4 capability recall, 95% Wilson 51.0%–100.0%, four-feature naming-shift fixture. <b>Not imported</b> into the demo or used for tuning.</p>
         </div>
       </div>
       <div class="cols cols-2 eval-cols grow">
@@ -1368,7 +1368,7 @@
             <table class="mini-table" aria-label="Pre-registered margins against selected baselines">
               <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
               <tbody>
-                <tr><td>M1 feature recall</td><td>PCF + grep: 87.5%</td><td>+12.5 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+                <tr><td>M1 feature recall</td><td>PCF filename baseline: 87.5%</td><td>+12.5 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
                 <tr><td>M4 dispositions</td><td>Identity mapper: 50.0%</td><td>+50.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
                 <tr><td>M6 finding micro-F1</td><td>Grep-only F1: 84.0%</td><td>+16.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
               </tbody>
@@ -1462,12 +1462,12 @@
         <div class="slide-head-main">
           <p class="kicker">Engineering rigor</p>
           <h2>The demo is the surface. The hardening is the work.</h2>
-          <p class="slide-lede"><b>416 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+          <p class="slide-lede"><b>418 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
         </div>
         <span class="head-badge">Internal adversarial review</span>
       </div>
       <div class="rigor-top">
-        <span class="rigor-badge"><b>416</b> tests collected</span>
+        <span class="rigor-badge"><b>418</b> tests collected</span>
         <span class="rigor-badge"><b>1</b> Playwright golden path</span>
         <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
         <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
@@ -1491,7 +1491,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 416 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 418 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
       <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
       <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
     </div>

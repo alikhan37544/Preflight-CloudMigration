@@ -6,8 +6,9 @@
   "evidence_links": 30,
   "findings": 20,
   "mappings": 12,
-  "cohen_kappa": 1.0,
+  "cohen_kappa": null,
   "adjudicated_items": 0,
   "guide": "ground_truth/ANNOTATION_GUIDE.md",
-  "caveat": "Synthetic fixtures; AI-assisted only; no human inter-annotator study."
+  "caveat": "Synthetic fixtures; AI-assisted only; no human inter-annotator study.",
+  "status": "aggregate only; item-level labels and adjudication log are not published; not human IAA"
 }

@@ -150,7 +150,6 @@ def test_unlabelled_finding_lowers_m6(demo_eval) -> None:
     bad.findings.append(extra)
     bad.evidence.append(evidence)
     changed = _evaluate(manifest, discovery, reconstruction, bad, comparison)
-    assert changed.metrics[5].numerator == result.metrics[5].numerator
     assert changed.metrics[5].denominator == result.metrics[5].denominator + 1
     assert changed.metrics[5].value < result.metrics[5].value
 
@@ -509,7 +508,7 @@ def test_grep_baseline_ignores_unlabelled_matching_files(demo_eval, tmp_path: Pa
     assert changed.baselines["grep_only_findings_f1"] == result.baselines["grep_only_findings_f1"]
 
 
-def test_m6_finding_with_one_valid_evidence_link_still_counts(demo_eval) -> None:
+def test_m6_finding_with_a_forged_extra_link_is_not_fully_supported(demo_eval) -> None:
     manifest, discovery, reconstruction, review, comparison, result = demo_eval
     changed_review = copy.deepcopy(review)
     target = next(
@@ -528,8 +527,30 @@ def test_m6_finding_with_one_valid_evidence_link_still_counts(demo_eval) -> None
         confidence=Confidence.PARSED,
     )
     changed_review.evidence.append(forged)
-    target.evidence_ids = list(target.evidence_ids) + [forged.evidence_id]
+    target.evidence_ids = [forged.evidence_id]
     changed = _evaluate(
         manifest, discovery, reconstruction, changed_review, comparison
     )
-    assert changed.metrics[5].numerator == result.metrics[5].numerator
+    assert changed.metrics[5].numerator < result.metrics[5].numerator
+
+
+def test_m6_finding_from_an_extra_rule_is_a_false_positive(demo_eval) -> None:
+    manifest, discovery, reconstruction, review, comparison, result = demo_eval
+    source = next(f for f in review.findings if f.rule_id == "PF-GW-NAM-001")
+    extra = copy.deepcopy(source)
+    extra.finding_id = "F-BOGUS-RULE"
+    extra.rule_id = "PF-GW-BOGUS-999"
+    bad = copy.deepcopy(review)
+    bad.findings.append(extra)
+    changed = _evaluate(manifest, discovery, reconstruction, bad, comparison)
+    assert changed.per_rule["UNLABELLED"]["fp"] >= 1
+    assert changed.metrics[5].denominator > result.metrics[5].denominator
+    assert changed.metrics[5].value < result.metrics[5].value
+
+
+def test_invalid_xpath_locator_fails_instead_of_line_fallback(demo_eval) -> None:
+    _, discovery, _, _, _, _ = demo_eval
+    source = next(item for item in discovery.evidence if item.locator.kind is LocatorKind.LINE)
+    forged = source.model_copy(deep=True)
+    forged.locator = Locator(kind=LocatorKind.XPATH, value="not a valid xpath [[[", line=source.locator.line)
+    assert audit_evidence_support(DEMO, forged) is False

@@ -402,9 +402,9 @@ def audit_evidence_support(root: Path, evidence,
     if text is None or lines is None:
         return False
     if evidence.locator.kind is LocatorKind.XPATH and not redacted:
-        resolved = _xpath_supports(path, evidence.locator.value, excerpt, cache=cache)
-        if resolved is not None:
-            return resolved
+        # An XPath claim must resolve and support the excerpt. An invalid or
+        # unevaluable expression is a failed locator, not a line fallback.
+        return bool(_xpath_supports(path, evidence.locator.value, excerpt, cache=cache))
     return _line_window_supports(lines, evidence.locator.line, excerpt)
 
 
@@ -834,10 +834,11 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
     }
     finding_paths: dict[str, set[str]] = defaultdict(set)
     for finding in review.findings:
-        for evidence_id in finding.evidence_ids:
-            ev = review_evidence_by_id.get(evidence_id)
-            if ev and review_supported.get(evidence_id):
-                finding_paths[finding.rule_id].add(ev.path)
+        links = [review_evidence_by_id.get(evidence_id) for evidence_id in finding.evidence_ids]
+        if not links or any(ev is None or not review_supported.get(ev.evidence_id) for ev in links):
+            continue
+        for ev in links:
+            finding_paths[finding.rule_id].add(ev.path)
     mapping_outputs: dict[str, set[str]] = defaultdict(set)
     for mapping, grounded in zip(reconstruction.mappings, grounded_flags):
         if not grounded:
@@ -887,6 +888,12 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         f1_scores.append(2 * precision * recall / (precision + recall) if precision + recall else 0.0)
+    extra_rule_fp = sum(
+        len(paths) for rule_id, paths in finding_paths.items() if rule_id not in gold_findings
+    )
+    if extra_rule_fp:
+        per_rule["UNLABELLED"] = {"tp": 0, "fp": extra_rule_fp, "fn": 0}
+        fp_total += extra_rule_fp
     macro_f1 = sum(f1_scores) / len(f1_scores) if f1_scores else 0.0
     f1_den = 2 * tp_total + fp_total + fn_total
 
@@ -986,7 +993,7 @@ def evaluate_run(*, fixture_id: str, manifest: Manifest, discovery: DiscoveryRes
                 )
                 warnings.append("Invalid holdout aggregate; clamped for display.")
     supporting.append(
-        _metric("HOLDOUT-RECALL", "Holdout feature recall (pre-computed; not imported)",
+        _metric("HOLDOUT-RECALL", "Holdout capability recall (pre-computed; naming-shift only; not imported)",
                 holdout_num, holdout_den,
                 fixture_id=holdout_fixture, tier=tier, primary=False,
                 caveat=holdout_caveat)

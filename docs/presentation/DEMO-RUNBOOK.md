@@ -355,7 +355,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
 - Packet (`packet`/`packet_json`), content digests, and audit head change with reviewer decisions and packet refreshes; read the live screen. The snapshot hash is the stable fixture hash. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
-- Tests: 416 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
+- Tests: 418 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
 ---
 
@@ -403,7 +403,7 @@ PACKET        /packet?run=R-DEMO-001
               content digests bind findings/mappings/evidence; audit head = chain
               static docs/demo packet = historical, not hash-verifiable
 
-BUILD         416 tests · 18/18 freeze hashes · 9 seed audit events
+BUILD         418 tests · 18/18 freeze hashes · 9 seed audit events
 
 CLOSE         “Every claim has evidence; every unknown has a name;
                every change waits for a human.”

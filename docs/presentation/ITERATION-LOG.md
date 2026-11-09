@@ -129,7 +129,7 @@ No score is claimed in this log; the independent reviewer panel decides.
 | Judge / demo | 7.0 | **8.0** | Full script works on a copied run; seed intact; no blockers |
 | UX / accessibility | 7.5 | **8.2** | 0 axe violations, 1280/390 layouts clean, dialogs and packet export semantics fixed |
 | Guidewire domain | 6.0 | **8.5** | ERR00-G, A-03, CUE, APD-conversion scope, GarageLocation_Ext, and verify-packet all corrected |
-| Engineering | 7.5 | **8.0** | 416 tests, 92/92 asset hashes, PDF hash, packet tamper/audit checks, seed state |
+| Engineering | 7.5 | **8.0** | 418 tests, 92/92 asset hashes, PDF hash, packet tamper/audit checks, seed state |
 
 ## Loop 5 — Residual polish (no new review round)
 
@@ -139,4 +139,4 @@ No score is claimed in this log; the independent reviewer panel decides.
 - Mobile capability matrix scrolls with keyboard/touch without advancing the slide.
 - Findings standard IDs are no longer truncated; connector arrows meet contrast.
 - `evidence.json` run hashes are synchronized with the capture manifest and live seed packet.
-- Final counts: **416 tests**, packet verify OK, audit verify OK, 18/18 freeze hashes, 16-page PDF.
+- Final counts: **418 tests**, packet verify OK, audit verify OK, 18/18 freeze hashes, 16-page PDF.

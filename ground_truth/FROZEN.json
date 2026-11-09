@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-09T21:05:10Z",
-  "commit": "5bd7a105a4b3c04c46b31749adcaae8669b7bd42",
+  "frozen_at": "2026-11-09T22:27:03Z",
+  "commit": "95d179e1494de1f0d1ba1e0ee1a4eb97c31433ab",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
@@ -20,7 +20,7 @@
   },
   "reference_target_sha256": "7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541",
   "annotation_guide_sha256": "5aa49b80a242acd203994498a26886c42c32df0a834ff9d77b065e236ae4db4a",
-  "annotation_concordance_sha256": "5aba02843e4780d9857857036e6a0eb64a56c2e7ee6f369cba38af3d9c885182",
+  "annotation_concordance_sha256": "f553bd463cdfe1151089de5a0438a0e290591f2e7764a263146b2af1a3ce9515",
   "rulepack_sha256": "d84a4b7e744613ce1ff787dc4ca97c6e91a554563cf5f5bc030a13c4b3d49232",
   "pre_registration_sha256": "6cca8f43a56f7e3f5c7c146503038cad60e874e950cd3d3cd17cb491b73309cc",
   "claims_ledger_sha256": "bb527576e24fd1b989e399de51e24543b823b9219d551d242b33d8b5d09f9ebd",
@@ -33,7 +33,7 @@
     "holdout_metrics.json": "c9750e8b8abfd27bf616fbf11ad34610340aad6be06d6006b00b976faebdbb37",
     "holdout_features.json": "033d44a725114d8d1284db20b48d92cccf27da25a61b876e4181a4f200aa7d63",
     "pa_veh_01_edges.json": "e9727f7f130c5d57512bd16a70dc080f419aa578f0cacd9c8be0e04a27cd0e90",
-    "annotation_concordance.json": "5aba02843e4780d9857857036e6a0eb64a56c2e7ee6f369cba38af3d9c885182"
+    "annotation_concordance.json": "f553bd463cdfe1151089de5a0438a0e290591f2e7764a263146b2af1a3ce9515"
   },
   "change_log": [
     {

@@ -390,7 +390,7 @@ def feature_summary(view: dict[str, Any]) -> dict[str, Any] | None:
 BASELINE_LABELS = {
     "identity_mapper": "Identity mapper",
     "normalized_name_mapper": "Normalized-name mapper",
-    "pcf_grep_discovery": "PCF+grep discovery",
+    "pcf_grep_discovery": "PCF filename baseline",
     "grep_only_findings": "Grep-only findings (precision)",
     "grep_only_findings_f1": "Grep-only F1",
     "all_unresolved": "All-unresolved",

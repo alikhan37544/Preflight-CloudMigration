@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T22:19:08+00:00",
+  "generated_at": "2026-11-09T22:33:47+00:00",
   "base_url": "http://127.0.0.1:8000",
   "run_id": "R-DEMO-001",
   "viewports": {
@@ -29,8 +29,8 @@
     "audit_events": 11,
     "assumptions": 4,
     "snapshot_hash": "bd4a8a4b338af3698c5fa2c6f4232456e3810a337b79e19e1bd07e36a9c46c6f",
-    "audit_head": "5a28adf7002774f1fb4ae7d76eb770a99b24e4921cdfe676f9a418d5fa8f0534",
-    "packet_hash": "3569ee2d6b64f640b39c19dd7264ff275b7ea213efb2399858d6ce61ee0ef9bc",
+    "audit_head": "ce42ca81d6b0f8ef0482480eaa9e2a88e7e6435de263dc3e851d98f090cc905f",
+    "packet_hash": "e44218d0a00c2b726e4e001be8ac3b28024ca11edf8bbfdcd83d2f84468e2e58",
     "packet_hash_scope": "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.",
     "packet_audit_event_count": 11,
     "packet_assumptions": 4
@@ -39,7 +39,7 @@
     "snapshot_short": "bd4a8a4b338a",
     "snapshot_hash": "bd4a8a4b338af3698c5fa2c6f4232456e3810a337b79e19e1bd07e36a9c46c6f",
     "packet_cover_snapshot": "bd4a8a4b338a",
-    "packet_cover_packet": "3569ee2d6b64"
+    "packet_cover_packet": "e44218d0a00c"
   },
   "crop_checks": [
     {
@@ -187,14 +187,14 @@
     },
     {
       "file": "workbench-1280x900.png",
-      "bytes": 174571,
-      "sha256": "d61a4c31d16ee8a12101d24fc6a07322f0b7fe0ae542a69c167122bd8a7035c3",
+      "bytes": 174535,
+      "sha256": "ebd4449f72f31faa06670c071a17df26b463fb39bc1e1ffd9b0f1eb10f1868c6",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
       "file": "workbench-1280x720.png",
-      "bytes": 149533,
-      "sha256": "6154264e79c704c6898c8819ec97db6bf0e39c40c3270d3f72732063a59dd972",
+      "bytes": 149570,
+      "sha256": "ef44414aef60a663cd5a66d4175938211f397422c1d8eb07f0e30d20dc81f077",
       "path": "http://127.0.0.1:8000/?feature=PA-VEH-01&run=R-DEMO-001"
     },
     {
@@ -363,49 +363,49 @@
       "file": "reconstruction-after-decision-1440x900.png",
       "bytes": 172701,
       "sha256": "b8e7b41d27625d040764f35f2ca30d6ded3233be89cf2fb35cc40d5212271b90",
-      "path": "http://127.0.0.1:40043/reconstruction?run=R-DEMO-001"
+      "path": "http://127.0.0.1:42077/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-after-decision-focus-1440x900.png",
       "bytes": 120905,
       "sha256": "40085e56e6bd835cdc3e5c638968813ada88fac0fdb69cdd7c822412d79d9c07",
-      "path": "http://127.0.0.1:40043/reconstruction?run=R-DEMO-001"
+      "path": "http://127.0.0.1:42077/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-m12-row.png",
       "bytes": 15973,
       "sha256": "e659cc7ff0f1d26db6317eca114adca349532ee6196d2ee9fd44514dc2ddac17",
-      "path": "http://127.0.0.1:40043/reconstruction?run=R-DEMO-001"
+      "path": "http://127.0.0.1:42077/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-after-decision-full.png",
       "bytes": 341407,
       "sha256": "355a0127d35db97c832e0a9ab678e5ea972bebc619d7c4baca4407af555e5373",
-      "path": "http://127.0.0.1:40043/reconstruction?run=R-DEMO-001"
+      "path": "http://127.0.0.1:42077/reconstruction?run=R-DEMO-001"
     },
     {
       "file": "reconstruction-assumptions-1440x900.png",
       "bytes": 161897,
       "sha256": "e71764ffbe160a8997598f174cfa374841c5e4a7c780af3817821db0ac91600b",
-      "path": "http://127.0.0.1:40043/reconstruction?tab=assumptions&run=R-DEMO-001"
+      "path": "http://127.0.0.1:42077/reconstruction?tab=assumptions&run=R-DEMO-001"
     },
     {
       "file": "packet-1440x900.png",
-      "bytes": 190902,
-      "sha256": "2bd1604480590de656208a6e06d87670dd4ed9ac87d05b24882dfdd60cc31e80",
-      "path": "http://127.0.0.1:40043/packet?run=R-DEMO-001"
+      "bytes": 190366,
+      "sha256": "4bfb30c4e967393f2a44f604a6f69de5c634e845b7ab84b4dee377e2466ff087",
+      "path": "http://127.0.0.1:42077/packet?run=R-DEMO-001"
     },
     {
       "file": "packet-focus-1440x900.png",
-      "bytes": 138370,
-      "sha256": "7acf41888dfb82ce28b35cdadb0187f28b3a774668d06c5fd1b694e7ef39868f",
-      "path": "http://127.0.0.1:40043/packet?run=R-DEMO-001"
+      "bytes": 138305,
+      "sha256": "74fa9b897c7fac7a005e9dba2e909ade9a391d23e84e139194d3537a1d4440b1",
+      "path": "http://127.0.0.1:42077/packet?run=R-DEMO-001"
     },
     {
       "file": "packet-full-1440.png",
-      "bytes": 732133,
-      "sha256": "388c3d3527ca892cea9960fbdfa4dd23d3075c0d31f2682890a69fea8da14b80",
-      "path": "http://127.0.0.1:40043/packet?run=R-DEMO-001"
+      "bytes": 732636,
+      "sha256": "adf7f3cab64d0bf0a712bde1244d1a0241151aa6887956501ef4f361b477e9e1",
+      "path": "http://127.0.0.1:42077/packet?run=R-DEMO-001"
     }
   ]
 }
