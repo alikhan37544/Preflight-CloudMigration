@@ -23,8 +23,15 @@ SECRET_KEYS = re.compile(
 )
 # YAML mapping form. Parser errors quote the offending source line, so warnings
 # such as ``password: "hunter2"`` must be filtered before they are persisted.
-YAML_SECRET_KEYS = re.compile(
-    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*:\s*"((?:\\.|[^"\\])*)"'
+# The RHS is deliberately not constrained to one quote style: malformed YAML
+# errors reproduce single-quoted and unquoted scalars just as readily.
+YAML_SECRET_LINE = re.compile(
+    r"""(?ix)
+    ^[ \t]*(?:-[ \t]+)?
+    (?P<key>["']?[A-Za-z_][A-Za-z0-9_.-]*["']?)
+    [ \t]*:[ \t]*
+    (?P<rhs>.*)$
+    """
 )
 SECRET_PLACEHOLDERS = {
     "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
@@ -103,6 +110,90 @@ def _redact_quoted(match: re.Match[str]) -> str:
     return f'"{_marker(value)}"'
 
 
+def _quoted_scalar(rhs: str) -> tuple[int, str] | None:
+    """Return ``(end_index, inner_value)`` for a quoted YAML scalar.
+
+    ``None`` means the quote was never closed (a common way for malformed YAML
+    parser errors to reproduce the offending line). Single-quoted YAML escapes
+    an embedded quote by doubling it; double-quoted YAML uses a backslash.
+    """
+    quote = rhs[0]
+    index = 1
+    while index < len(rhs):
+        char = rhs[index]
+        if quote == '"' and char == "\\":
+            index += 2
+            continue
+        if char == quote:
+            if quote == "'" and index + 1 < len(rhs) and rhs[index + 1] == "'":
+                index += 2
+                continue
+            return index + 1, rhs[1:index]
+        index += 1
+    return None
+
+
+def _comment_start(rhs: str) -> int | None:
+    """Index of a YAML comment marker outside a scalar, if any."""
+    for index, char in enumerate(rhs):
+        if char == "#" and (index == 0 or rhs[index - 1] in " \t"):
+            return index
+    return None
+
+
+def _redact_yaml_line(line: str) -> str:
+    """Redact one YAML mapping line without changing its key or indentation."""
+    match = YAML_SECRET_LINE.match(line)
+    if match is None:
+        return line
+    key = match.group("key").strip("\"'")
+    if not is_sensitive_secret_key(key):
+        return line
+    rhs = match.group("rhs")
+    if not rhs:
+        return line
+
+    if rhs[0] in "\"'":
+        parsed = _quoted_scalar(rhs)
+        if parsed is None:
+            # Unterminated quote: everything after the opener is scalar text.
+            value = rhs[1:]
+            if not value or REDACTED_VALUE.match(value.strip()):
+                return line
+            replacement = _marker(value)
+        else:
+            end, value = parsed
+            if not value or REDACTED_VALUE.match(value.strip()):
+                return line
+            replacement = rhs[0] + _marker(value) + rhs[0] + rhs[end:]
+    else:
+        comment = _comment_start(rhs)
+        scalar = rhs if comment is None else rhs[:comment]
+        trimmed = scalar.rstrip(" \t")
+        value = trimmed
+        if not value.strip() or value.strip() in {"|", "|-", "|+", ">", ">-", ">+"}:
+            return line
+        if REDACTED_VALUE.match(value.strip()):
+            return line
+        replacement = _marker(value) + rhs[len(trimmed):]
+
+    return line[:match.start("rhs")] + replacement + line[match.end("rhs"):]
+
+
+def _redact_yaml_lines(text: str) -> str:
+    """Apply :func:`_redact_yaml_line` while preserving every line ending."""
+    pieces: list[str] = []
+    for line in text.splitlines(keepends=True):
+        if line.endswith("\r\n"):
+            body, ending = line[:-2], "\r\n"
+        elif line.endswith(("\n", "\r")):
+            body, ending = line[:-1], line[-1]
+        else:
+            body, ending = line, ""
+        pieces.append(_redact_yaml_line(body) + ending)
+    return "".join(pieces)
+
+
 def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
                    extra_values: Iterable[str] = ()) -> tuple[str, bool]:
     """Redact secret values in ``text`` and report whether anything changed.
@@ -119,8 +210,8 @@ def redact_excerpt(text: str, *, all_quoted_strings: bool = False,
     for value in sorted({value for value in extra_values if value}, key=len, reverse=True):
         if not REDACTED_VALUE.match(value.strip()):
             text = text.replace(value, _marker(value))
+    text = _redact_yaml_lines(text)
     text = SECRET_KEYS.sub(_redact_assignment, text)
-    text = YAML_SECRET_KEYS.sub(_redact_assignment, text)
     text = LIVE_TOKEN.sub(_redact_live_token, text)
     text = BEARER_TOKEN.sub(_redact_bearer, text)
     if all_quoted_strings:

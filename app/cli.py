@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from app.config import REPO, Settings
-from app.services.intake import build_manifest
+from app.services.intake import build_manifest, snapshot_hash
 from app.services.pipeline import execute_run
 from app.store import RunStore
 
@@ -34,6 +35,34 @@ def cmd_seed(args) -> int:
     return 0
 
 
+def _frozen_fixture_hash(fixture_id: str) -> str | None:
+    try:
+        payload = json.loads(
+            (REPO / "ground_truth" / "FROZEN.json").read_text(encoding="utf-8")
+        )
+        entry = payload.get("fixtures", {}).get(fixture_id, {})
+        digest = entry.get("sha256") if isinstance(entry, dict) else None
+    except (OSError, ValueError, TypeError):
+        return None
+    return digest if isinstance(digest, str) else None
+
+
+def _evaluation_snapshot_matches(fixture: Path, fixture_id: str) -> bool:
+    """Evaluation labels are only trustworthy for the frozen fixture or its canonical path."""
+    try:
+        if fixture.resolve() == (REPO / "fixtures" / fixture_id).resolve():
+            return True
+    except OSError:
+        pass
+    frozen = _frozen_fixture_hash(fixture_id)
+    if frozen is None or not fixture.is_dir():
+        return False
+    try:
+        return snapshot_hash(fixture) == frozen
+    except OSError:
+        return False
+
+
 def cmd_analyze(args) -> int:
     store = _store(args)
     run_id = args.run_id or "R-CLI"
@@ -43,9 +72,19 @@ def cmd_analyze(args) -> int:
                      fixture_id=args.fixture)
     fixture = Path(args.fixture_path) if args.fixture_path else REPO / "fixtures" / args.fixture
     reference = REPO / "ground_truth" / "reference_target" / "pa_veh_01_reference.json"
+    if args.fixture in {"demo-slice-300", "acme-pc-2026.10"} and not _evaluation_snapshot_matches(
+        fixture, args.fixture
+    ):
+        print(
+            f"warning: refusing to evaluate {fixture}: it is neither the canonical "
+            f"fixtures/{args.fixture} snapshot nor a copy matching ground_truth/FROZEN.json; "
+            "no metrics will be written",
+            file=sys.stderr,
+        )
+        reference = None
     result = execute_run(fixture, store, run_id, project_id=args.project,
                          fixture_id=args.fixture, tier=args.tier,
-                         reference_path=reference if args.fixture in {"demo-slice-300", "acme-pc-2026.10"} else None)
+                         reference_path=reference)
     print(f"{run_id}: {len(result.discovery.features)} features, "
           f"{len(result.review.findings)} findings")
     return 0

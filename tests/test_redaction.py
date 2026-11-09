@@ -58,6 +58,67 @@ def test_yaml_mapping_does_not_over_redact_safe_names() -> None:
     assert redacted == text
 
 
+def test_yaml_unquoted_secret_is_redacted() -> None:
+    text, changed = redact_excerpt("types:\n  password: Zx9Qw2Lm7Pk4Vn8Rt: extra\n")
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert "password: [REDACTED:" in text
+
+
+def test_yaml_single_quoted_secret_is_redacted() -> None:
+    text, changed = redact_excerpt("  api_key: 'Zx9Qw2Lm7Pk4Vn8Rt'\n")
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert "api_key: '[REDACTED:" in text
+
+
+def test_yaml_double_quoted_secret_is_redacted() -> None:
+    text, changed = redact_excerpt('  client_secret: "Zx9Qw2Lm7Pk4Vn8Rt"\n')
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert 'client_secret: "[REDACTED:' in text
+
+
+def test_yaml_secret_with_colons_and_comment_is_redacted() -> None:
+    text, changed = redact_excerpt(
+        "  password: user:Zx9Qw2Lm7Pk4Vn8Rt:more # staging\n"
+    )
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert "user:" not in text
+    assert " # staging" in text
+
+
+def test_yaml_tab_indented_secret_is_redacted() -> None:
+    text, changed = redact_excerpt("\tcredential:\tZx9Qw2Lm7Pk4Vn8Rt\n")
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert "\tcredential:\t[REDACTED:" in text
+
+
+def test_yaml_bad_escape_and_unterminated_quote_are_redacted() -> None:
+    text, changed = redact_excerpt(
+        '  token: "bad\\qZx9Qw2Lm7Pk4Vn8Rt"\n'
+        '  password: "unterminated-Zx9Qw2Lm7Pk4Vn8Rt\n'
+    )
+    assert changed is True
+    assert "Zx9Qw2Lm7Pk4Vn8Rt" not in text
+    assert text.count("[REDACTED:") == 2
+
+
+def test_yaml_redaction_is_idempotent_for_all_quote_styles() -> None:
+    text = (
+        "password: hunter2\n"
+        "api_key: 'sk-live-abc123'\n"
+        'client_secret: "cs-live-def456"\n'
+    )
+    once, first = redact_excerpt(text)
+    twice, second = redact_excerpt(once)
+    assert first is True
+    assert second is False
+    assert twice == once
+
+
 def test_redact_evidence_preserves_locator_and_updates_fingerprint() -> None:
     evidence = make_evidence(
         evidence_id="EV-0001",

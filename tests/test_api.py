@@ -957,6 +957,47 @@ def test_concurrent_mapping_accepts_persist_every_decision(api) -> None:
     assert store.verify_audit(run_id) is True
 
 
+def test_cli_refuses_evaluation_for_mismatched_fixture_path(tmp_path: Path, capsys) -> None:
+    from app.cli import main as cli_main
+
+    data = tmp_path / "cli-mismatch-data"
+    # A real demo snapshot labelled as a different frozen fixture: without the
+    # guard this run would persist metrics labelled acme-pc-2026.10.
+    status = cli_main([
+        "--data", str(data),
+        "analyze",
+        "--fixture", "acme-pc-2026.10",
+        "--fixture-path", str(DEMO),
+        "--run-id", "R-CLI-MISMATCH",
+    ])
+    assert status == 0
+    captured = capsys.readouterr()
+    assert "refusing to evaluate" in captured.err
+    store = RunStore(data)
+    assert store.read_status("R-CLI-MISMATCH")["status"] == "succeeded"
+    assert not store.exists("R-CLI-MISMATCH", "metrics.json")
+
+
+def test_cli_frozen_demo_still_evaluates(tmp_path: Path) -> None:
+    from app.cli import main as cli_main
+
+    data = tmp_path / "cli-demo-data"
+    status = cli_main([
+        "--data", str(data),
+        "analyze",
+        "--fixture", "demo-slice-300",
+        "--run-id", "R-CLI-FROZEN",
+    ])
+    assert status == 0
+    store = RunStore(data)
+    assert store.read_status("R-CLI-FROZEN")["status"] == "succeeded"
+    metrics = store.read_artifact("R-CLI-FROZEN", "metrics.json")
+    assert metrics["fixture_id"] == "demo-slice-300"
+    assert [metric["metric_id"] for metric in metrics["metrics"]] == [
+        "M1", "M2", "M3", "M4", "M5", "M6",
+    ]
+
+
 def test_delete_waits_for_direct_draft_writer(tmp_path: Path, monkeypatch) -> None:
     """A worker writing files directly (not through RunStore) must not resurrect."""
     import time

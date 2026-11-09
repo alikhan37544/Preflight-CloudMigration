@@ -8,6 +8,8 @@ from __future__ import annotations
 import io
 import json
 import os
+import shutil
+import socket
 import stat
 import time
 import warnings
@@ -274,6 +276,123 @@ def test_safe_extract_enforces_total_size_limit(tmp_path: Path) -> None:
         )
 
 
+def test_unreadable_file_is_recorded_and_does_not_abort(tmp_path: Path) -> None:
+    if os.geteuid() == 0:
+        pytest.skip("root can read chmod-000 files")
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "README.txt").write_text("ok\n", encoding="utf-8")
+    unreadable = root / "locked.txt"
+    unreadable.write_text("secret\n", encoding="utf-8")
+    os.chmod(unreadable, 0)
+    try:
+        manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+        by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+        artifact = by_path["locked.txt"]
+        assert artifact.status.value == "unsupported"
+        assert "unreadable: PermissionError" in artifact.warnings[0]
+        assert "locked.txt" in manifest.unsupported_paths
+        assert any("unreadable: PermissionError" in warning for warning in manifest.warnings)
+        assert by_path["README.txt"].status.value == "parsed"
+        assert snapshot_hash(root) == manifest.sha256
+    finally:
+        os.chmod(unreadable, 0o600)
+
+
+def test_unreadable_directory_is_recorded_and_does_not_abort(tmp_path: Path) -> None:
+    if os.geteuid() == 0:
+        pytest.skip("root can list chmod-000 directories")
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "README.txt").write_text("ok\n", encoding="utf-8")
+    locked = root / "locked"
+    locked.mkdir()
+    (locked / "inside.txt").write_text("hidden\n", encoding="utf-8")
+    os.chmod(locked, 0)
+    try:
+        manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+        by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+        artifact = by_path["locked"]
+        assert artifact.kind == "directory"
+        assert artifact.status.value == "unsupported"
+        assert "unreadable: PermissionError" in artifact.warnings[0]
+        assert "locked" in manifest.unsupported_paths
+        assert any("unreadable: PermissionError" in warning for warning in manifest.warnings)
+        assert by_path["README.txt"].status.value == "parsed"
+        assert snapshot_hash(root) == manifest.sha256
+    finally:
+        os.chmod(locked, 0o700)
+
+
+def test_special_files_are_recorded_as_unsupported(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "README.txt").write_text("ok\n", encoding="utf-8")
+    os.mkfifo(root / "pipe")
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.bind(str(root / "socket"))
+        manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+    finally:
+        sock.close()
+
+    by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+    for name, kind in (("pipe", "fifo"), ("socket", "socket")):
+        artifact = by_path[name]
+        assert artifact.kind == kind
+        assert artifact.status.value == "unsupported"
+        assert "special file type" in artifact.warnings[0]
+        assert name in manifest.unsupported_paths
+    assert by_path["README.txt"].status.value == "parsed"
+    assert snapshot_hash(root) == manifest.sha256
+
+
+def test_non_utf8_filename_is_sanitized_not_crashing(tmp_path: Path) -> None:
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    raw_path = os.fsencode(str(root)) + b"/bad-\xff.txt"
+    descriptor = os.open(raw_path, os.O_WRONLY | os.O_CREAT, 0o600)
+    try:
+        os.write(descriptor, b"content\n")
+    finally:
+        os.close(descriptor)
+
+    manifest = build_manifest(root, snapshot_id="S-1", project_id="P-1")
+    by_path = {artifact.path: artifact for artifact in manifest.artifacts}
+    assert "bad-\\xff.txt" in by_path
+    assert by_path["bad-\\xff.txt"].status.value == "parsed"
+    payload = manifest.model_dump(mode="json")
+    assert payload["artifacts"][0]["path"] == "bad-\\xff.txt"
+    assert json.dumps(payload)
+    assert snapshot_hash(root) == manifest.sha256
+
+
+def test_safe_extract_rejects_deep_entry_without_partial_files(tmp_path: Path) -> None:
+    archive = tmp_path / "deep.zip"
+    deep_name = "/".join(["d"] * 900) + "/x.txt"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("normal.txt", "ok")
+        zf.writestr(deep_name, "boom")
+
+    out = tmp_path / "out"
+    with pytest.raises(UnsafeArchiveError, match="path exceeds"):
+        safe_extract_zip(archive, out)
+    assert not out.exists()
+    assert [path for path in tmp_path.rglob("*") if path.is_file()] == [archive]
+
+
+def test_safe_extract_converts_oserror_and_cleans_up(tmp_path: Path) -> None:
+    archive = tmp_path / "long-name.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("normal.txt", "ok")
+        zf.writestr("a" * 300 + ".txt", "boom")
+
+    out = tmp_path / "out"
+    with pytest.raises(UnsafeArchiveError, match="could not be extracted"):
+        safe_extract_zip(archive, out)
+    assert not out.exists()
+
+
 def test_manifest_parser_warning_redacts_secrets_before_persisting(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
@@ -309,6 +428,66 @@ def test_manifest_parser_warning_redacts_secrets_before_persisting(tmp_path: Pat
     assert response.status_code == 200
     assert live_secret not in response.text
     assert plain_secret not in response.text
+    assert "[REDACTED:" in response.text
+
+
+def test_yaml_secret_styles_never_reach_manifest_or_packet_html(
+    tmp_path: Path, tiny_snapshot: Path
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+    from app.services.pipeline import execute_run
+    from app.store import RunStore
+
+    root = tmp_path / "leak-snapshot"
+    shutil.copytree(tiny_snapshot, root)
+    leaked = {
+        "leak-unquoted.yaml": ("Zx9Qw2Lm7Pk4Vn8Rt", "types:\n  password: Zx9Qw2Lm7Pk4Vn8Rt: extra\n"),
+        "leak-single.yaml": ("Pl8Kj3Hn5Gf2Ds9Wq", "password: 'Pl8Kj3Hn5Gf2Ds9Wq'\n  bad: [\n"),
+        "leak-double.yaml": ("Mn4Bv7Cx1Za6Qw2E", 'api_key: "Mn4Bv7Cx1Za6Qw2E"\n  bad: [\n'),
+        "leak-colon.yaml": (
+            "Vc5RtY8Ui3Op2As",
+            "password: user:Vc5RtY8Ui3Op2As:more: extra\n",
+        ),
+        "leak-tab.yaml": ("Tb6Yh9Nj4Mk1Lp3Q", "\tcredential:\tTb6Yh9Nj4Mk1Lp3Q\n"),
+        "leak-escape.yaml": (
+            "Bd3Fg6Hj9Kl2Zx5C",
+            'client_secret: "Bd3Fg6Hj9Kl2Zx5C\\qtail"\n',
+        ),
+        "leak-unterminated.yaml": (
+            "Un7Term8Inated0Value",
+            'password: "Un7Term8Inated0Value\n',
+        ),
+    }
+    for name, (_, text) in leaked.items():
+        (root / name).write_text(text, encoding="utf-8")
+
+    manifest = build_manifest(root, snapshot_id="S-YAML", project_id="P-YAML")
+    dumped = json.dumps(manifest.model_dump(mode="json"))
+    for secret, _ in leaked.values():
+        assert secret not in dumped
+    assert "[REDACTED:" in dumped
+
+    data = tmp_path / "data"
+    store = RunStore(data)
+    store.create_run("R-YAML-LEAK", project_id="demo", snapshot_id="S-YAML")
+    execute_run(root, store, "R-YAML-LEAK", project_id="demo",
+                fixture_id="uploaded", tier="demo")
+    run_dir = store.run_dir("R-YAML-LEAK")
+    for name in ("manifest.json", "packet.json", "packet.html"):
+        text = (run_dir / name).read_text(encoding="utf-8")
+        for secret, _ in leaked.values():
+            assert secret not in text, (name, secret)
+
+    client = TestClient(create_app(Settings(
+        data_dir=data, fixtures_dir=REPO / "fixtures", secret_key="yaml-leak-test",
+    )))
+    response = client.get("/manifest?run=R-YAML-LEAK")
+    assert response.status_code == 200
+    for secret, _ in leaked.values():
+        assert secret not in response.text
     assert "[REDACTED:" in response.text
 
 
