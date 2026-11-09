@@ -6,7 +6,6 @@ carries a claim-strength label; heuristics never claim a standard ID.
 
 from __future__ import annotations
 
-import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -28,19 +27,18 @@ from app.models import (
 from app.services.discovery import DiscoveryResult
 from app.services.parsers.gosu import mask_comments, mask_source, parse_gunit, scan_gosu
 from app.services.parsers.product import parse_template_xml
+from app.services.redaction import (
+    SECRET_KEYS,
+    SECRET_PLACEHOLDERS,
+    fingerprint,
+    is_sensitive_secret_key,
+    redact_excerpt,
+)
 
 RULES_PATH = Path(__file__).resolve().parents[2] / "rules" / "review_rules.yaml"
 
 THEME_RULES = {"PF-GW-LOG-001", "PF-GW-LOG-002"}
 
-SECRET_KEYS = re.compile(
-    r'(?i)\b([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_.<>\[\]]*)?\s*=\s*"((?:\\.|[^"\\])*)"'
-)
-SECRET_PLACEHOLDERS = {
-    "changeme", "<placeholder>", "placeholder", "***", "", "redacted", "example",
-    "${secret}", "{{secret}}", "replace_me", "replaceme", "todo", "tbd", "n/a",
-    "none", "null", "********", "bearer", "basic", "prefix",
-}
 SENSITIVE_LOGGED = re.compile(
     r"(?i)\.(?:get)?(VIN|SSN|password|licence|license|dateOfBirth|apiKey|secret|token)\b"
 )
@@ -49,11 +47,6 @@ LOG_CALL = re.compile(
     r"\bSystem\.(?:out|err)\.print\w*\s*\(|"
     r"(?<!\.)\bprint\s*\("
 )
-SENSITIVE_NAME_PARTS = {
-    "secret", "password", "passwd", "token", "credential", "apikey",
-    "privatekey", "accesskey", "secretkey", "clientsecret", "authtoken", "apitoken",
-}
-SAFE_KEY_SUFFIXES = {"timeout", "length", "name", "url", "uri", "endpoint", "count", "type", "policy"}
 
 
 @dataclass
@@ -76,14 +69,15 @@ class _Evidence:
 
     def add(self, *, path: str, line: int, excerpt: str, method: str,
             confidence: Confidence = Confidence.PARSED, redacted: bool = False) -> Evidence:
+        clean, detected = redact_excerpt(excerpt)
         ev = make_evidence(
             evidence_id=f"REV-{len(self.items) + 1:04d}",
             path=path,
             locator=Locator(kind=LocatorKind.LINE, value=f"line {line}", line=max(1, line)),
-            excerpt=excerpt,
+            excerpt=clean,
             method=method,
             confidence=confidence,
-            redacted=redacted,
+            redacted=redacted or detected,
         )
         self.items.append(ev)
         return ev
@@ -179,14 +173,7 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                 code_only = mask_comments(raw)
                 for match in SECRET_KEYS.finditer(code_only):
                     name = match.group(1)
-                    normalized = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
-                    parts = [part for part in re.split(r"[_\-\s]+", normalized) if part]
-                    if parts and parts[-1] in SAFE_KEY_SUFFIXES:
-                        continue
-                    sensitive = any(part in SENSITIVE_NAME_PARTS for part in parts)
-                    if not sensitive and normalized.endswith("_key"):
-                        sensitive = bool(set(parts[:-1]) & {"api", "private", "access", "secret", "client", "signing", "encryption"})
-                    if not sensitive:
+                    if not is_sensitive_secret_key(name):
                         continue
                     value = match.group(2)
                     lowered = value.strip().lower()
@@ -205,22 +192,22 @@ def run_review(root: Path, manifest: Manifest, discovery: DiscoveryResult,
                     following = code_only[match.end():match.end() + 12].lstrip()
                     if following.startswith("+") and not re.search(r"[A-Za-z0-9]{8,}", value):
                         continue
-                    fingerprint = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
+                    value_fingerprint = fingerprint(value)
                     line = _line_at(raw, match.start())
-                    excerpt = _excerpt_at(raw, line)
-                    all_values = sorted(
-                        {m.group(2) for m in SECRET_KEYS.finditer(code_only) if m.group(2) and len(m.group(2)) >= 3},
-                        key=len, reverse=True,
+                    all_values = {
+                        item.group(2) for item in SECRET_KEYS.finditer(code_only)
+                        if item.group(2) and len(item.group(2)) >= 3
+                    }
+                    excerpt, _ = redact_excerpt(
+                        _excerpt_at(raw, line), all_quoted_strings=True,
+                        extra_values=all_values,
                     )
-                    for secret_value in all_values:
-                        excerpt = excerpt.replace(secret_value, "[REDACTED]")
-                    excerpt = re.sub(r'"(?:\\.|[^"\\])*"', '"[REDACTED]"', excerpt)
                     ev = collector.add(path=rel, line=line, excerpt=excerpt,
                                        method="regex_masked", redacted=True)
                     emit("PF-GW-SEC-001", evidence=ev,
                          message=(
                              f"Hard-coded value assigned to '{name}' at {rel}:{line}. "
-                             f"Value redacted (fingerprint {fingerprint})."
+                             f"Value redacted (fingerprint {value_fingerprint})."
                          ), bucket=findings)
 
             if "PF-GW-EXC-001" in rules:

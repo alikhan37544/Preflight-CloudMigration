@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 from app.config import REPO, Settings
 from app.models import (
     Assumption,
+    Change,
     ComparisonRow,
     Evidence,
     Feature,
@@ -43,6 +45,7 @@ from app.views import feature_summary, load_run_view, spine_layout
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 STATIC = Path(__file__).resolve().parent / "static"
+logger = logging.getLogger(__name__)
 
 
 def _now() -> str:
@@ -120,36 +123,48 @@ def _assistant_context(store: RunStore, run_id: str):
     evidence_payload = _read(store, run_id, "evidence.json", {"evidence": []})["evidence"]
     gaps_payload = _read(store, run_id, "gaps.json", {"gaps": []})["gaps"]
     review_evidence = _read(store, run_id, "review_evidence.json", {"evidence": []})["evidence"]
-    findings_payload = _read(store, run_id, "findings.json", {"findings": []})["findings"]
+    findings_payload = _read(
+        store, run_id, "findings.json", {"findings": [], "readiness": []}
+    )
     mappings_payload = _read(store, run_id, "mappings.json", {"mappings": []})["mappings"]
+    changes_payload = _read(store, run_id, "changes.json", {"changes": []})["changes"]
     assumptions_payload = _read(store, run_id, "assumptions.json", {"assumptions": []})["assumptions"]
 
     features = [Feature.model_validate(item) for item in feature_payload]
     evidence = [Evidence.model_validate(item) for item in evidence_payload]
     gaps = [Gap.model_validate(item) for item in gaps_payload]
     r_evidence = [Evidence.model_validate(item) for item in review_evidence]
-    findings = [Finding.model_validate(item) for item in findings_payload]
+    findings = [Finding.model_validate(item) for item in findings_payload.get("findings", [])]
+    readiness = [
+        Finding.model_validate(item) for item in findings_payload.get("readiness", [])
+    ]
     mappings = [Mapping.model_validate(item) for item in mappings_payload]
+    changes = [Change.model_validate(item) for item in changes_payload]
     assumptions = [Assumption.model_validate(item) for item in assumptions_payload]
 
     discovery = DiscoveryResult(features=features, evidence=evidence, gaps=gaps)
-    review = ReviewResult(findings=findings, evidence=r_evidence)
+    review = ReviewResult(findings=findings, readiness=readiness, evidence=r_evidence)
     reconstruction = ReconstructionResult(
-        feature_id="PA-VEH-01", mappings=mappings, changes=[], assumptions=assumptions,
+        feature_id="PA-VEH-01", mappings=mappings, changes=changes, assumptions=assumptions,
         draft_root=Path("."), draft_files={}, patch_diff="", spines={},
     )
     return discovery, review, reconstruction
 
 
-def _refresh_packet(store: RunStore, run_id: str, settings: Settings) -> None:
-    """Rebuild the packet from current artifacts so its audit head is never stale."""
+def _refresh_packet(store: RunStore, run_id: str,
+                    settings: Settings) -> tuple[bool, str | None]:
+    """Rebuild the packet from current artifacts so its audit head is never stale.
+
+    Returns ``(True, None)`` on success and ``(False, reason)`` when the artifact
+    could not be refreshed. Callers must not present a stale export as current.
+    """
     try:
         status = store.read_status(run_id)
         if status.get("status") != "succeeded":
-            return
+            return False, f"run status is {status.get('status')!r}, not 'succeeded'"
         manifest_payload = _read(store, run_id, "manifest.json", None)
         if not manifest_payload:
-            return
+            return False, "manifest.json is missing"
         manifest = Manifest.model_validate(manifest_payload)
         discovery, review, reconstruction = _assistant_context(store, run_id)
         comparison_payload = _read(store, run_id, "comparison.json", {"rows": [], "macro_f1": 0.0, "confusion": {}})
@@ -172,15 +187,30 @@ def _refresh_packet(store: RunStore, run_id: str, settings: Settings) -> None:
                 per_rule=evaluation_payload.get("per_rule", {}),
                 m5_precision=evaluation_payload.get("m5_precision", 0.0),
             )
+        # Use the persisted release context/reference from the original run. Legacy
+        # runs without metadata fall back to settings for compatibility.
+        release_context = status.get("release_context") or settings.release_context
+        if "reference_path" in status:
+            reference_path = Path(status["reference_path"]) if status["reference_path"] else None
+            reference_sha256 = status.get("reference_sha256")
+        elif status.get("fixture_id") in {"demo-slice-300", "acme-pc-2026.10"}:
+            reference_path = settings.reference_path
+            reference_sha256 = None
+        else:
+            reference_path = None
+            reference_sha256 = None
         build_packet(
             store=store, run_id=run_id, project_id=status.get("project_id", "demo"),
             fixture_id=status.get("fixture_id", "demo-slice-300"),
-            release_context=settings.release_context, manifest=manifest, discovery=discovery,
+            release_context=release_context, manifest=manifest, discovery=discovery,
             review=review, reconstruction=reconstruction, comparison=comparison,
-            evaluation=evaluation, reference_path=settings.reference_path,
+            evaluation=evaluation, reference_path=reference_path,
+            reference_sha256=reference_sha256,
         )
-    except Exception:
-        return
+        return True, None
+    except Exception as exc:
+        logger.warning("packet refresh failed for %s: %s", run_id, exc)
+        return False, f"{type(exc).__name__}: {exc}"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -411,18 +441,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         view, response = guard(request, run_id, "Packet")
         if response:
             return response
-        _refresh_packet(app.state.store, run_id, settings)
+        refreshed, refresh_error = _refresh_packet(app.state.store, run_id, settings)
         view = load_run_view(app.state.store, run_id)
         return templates.TemplateResponse(
             request=request, name="packet.html",
-            context=context(request, run_id, view, "Packet"),
+            context=context(request, run_id, view, "Packet",
+                            packet_refresh_error=None if refreshed else refresh_error),
         )
 
     @app.get("/packet/export")
     def packet_export(run: str = Query(...)):
         store: RunStore = app.state.store
-        _status_or_404(store, run)
-        _refresh_packet(store, run, settings)
+        status = _status_or_404(store, run)
+        if status.get("status") != "succeeded":
+            raise HTTPException(
+                status_code=503,
+                detail=f"packet is unavailable for run status {status.get('status')!r}",
+            )
+        refreshed, refresh_error = _refresh_packet(store, run, settings)
+        if not refreshed:
+            raise HTTPException(
+                status_code=503,
+                detail=f"review packet refresh failed; refusing to export a stale artifact: {refresh_error}",
+            )
         try:
             html = store.read_artifact(run, "packet.html")
         except StoreError:
@@ -670,7 +711,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/runs/{run_id}/packet")
     def packet_api(run_id: str):
         _status_or_404(app.state.store, run_id)
-        _refresh_packet(app.state.store, run_id, settings)
+        refreshed, refresh_error = _refresh_packet(app.state.store, run_id, settings)
+        if not refreshed:
+            raise HTTPException(
+                status_code=503,
+                detail=f"review packet refresh failed: {refresh_error}",
+            )
         packet = _read(app.state.store, run_id, "packet.json", None)
         if packet is None:
             raise HTTPException(status_code=404, detail="packet not generated")

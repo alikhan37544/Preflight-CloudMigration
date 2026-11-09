@@ -10,11 +10,20 @@
     not a certification, not a deployment.</p>
   </div>
   <div class="head-meta">
-    {% if view.packet %}<a class="btn btn-primary" href="/packet/export?run={{ run_id }}">Download packet HTML</a>{% endif %}
+    {% if view.packet and not packet_refresh_error %}<a class="btn btn-primary" href="/packet/export?run={{ run_id }}">Download packet HTML</a>{% endif %}
   </div>
 </div>
 
+{% if packet_refresh_error %}
+<div class="banner banner-error" role="alert">
+  <strong>Packet refresh failed; this artifact may be stale.</strong>
+  {{ packet_refresh_error }}. Export is blocked until the packet can be regenerated from a verified
+  audit chain.
+</div>
+{% endif %}
 {% if view.packet %}
+{% set counts = view.packet.get('counts', {}) %}
+{% set packet_hash = view.packet.hashes.get('packet') or view.packet.get('packet_sha256') or '' %}
 <div class="banner banner-info">
   <strong>Official Cloud Assurance: not run.</strong> Synthetic demonstration estate. Findings are advisory
   and the extension draft is non-deployable.
@@ -27,21 +36,31 @@
     <h2>{{ page }}</h2>
     {% if loop.index == 1 %}
     <p class="muted">{{ view.status.project_id }} / {{ view.status.fixture_id }} / {{ run_id }}</p>
-    <p>Snapshot <code>{{ view.packet.hashes.snapshot|short }}</code></p>
+    <p>Snapshot <code>{{ view.packet.hashes.snapshot|short }}</code>; packet
+    <code>{{ packet_hash|short }}</code>.</p>
+    <p>Audit chain verified: <strong>{{ 'yes' if view.audit_verified else 'no' }}</strong>
+    ({{ view.packet.audit_event_count|default(counts.get('audit_events', 0), true) }} events).</p>
     {% elif loop.index == 2 %}
     <p>{{ view.features|length }} features, {{ view.findings|length }} advisory findings,
-    {{ view.mappings|length }} dispositions, {{ view.assumptions|length }} assumptions.</p>
+    {{ view.readiness|length }} separate readiness flags, {{ view.mappings|length }} dispositions,
+    {{ view.changes|length }} approvals, {{ view.assumptions|length }} assumptions.</p>
     {% elif loop.index == 3 %}
-    <p>{{ view.manifest.file_count }} files read; {{ view.unsupported_count }} unsupported/corrupt listed.
-    Confidence labels are shown on every feature and in the manifest.</p>
+    <p>{{ view.manifest.file_count }} files read; {{ view.unsupported_count }} unsupported/corrupt files
+    appear in the packet's excluded-files table with path, status, and reason. Confidence labels are shown
+    on every feature and in the manifest.</p>
     {% elif loop.index == 4 %}
-    <p>{{ view.assumptions|length }} assumptions, each with impact range and a question to ask.</p>
+    <p>{{ view.assumptions|length }} assumptions with impact ranges and questions to ask.
+    {{ view.mappings|length }} mappings list source, target, disposition, provenance, and reviewer state;
+    {{ view.changes|length }} target changes list their approval state and path.</p>
     {% elif loop.index == 5 %}
-    <p>{{ view.findings|length }} findings from {{ view.findings|map(attribute='rule_id')|unique|list|length }} rules.
-    Claim strength is shown per finding.</p>
+    <p>{{ view.findings|length }} findings from {{ view.findings|map(attribute='rule_id')|unique|list|length }} rules,
+    grouped by rule with source path:line and redacted evidence excerpts. Readiness flags are reported
+    separately, not mixed into advisory findings.</p>
     {% elif loop.index == 6 %}
-    <p>Evidence sample (first 20), unsupported list, audit head, and disclaimers.
-    Audit verified: <strong>{{ 'yes' if view.audit_verified else 'no' }}</strong>.</p>
+    <p>Complete evidence set ({{ counts.get('evidence', (view.evidence|length) + (view.review_evidence|length)) }}
+    items: full discovery evidence plus review evidence linked to findings), the full hash-chained audit
+    trail, and all artifact hashes including the reproducible packet hash. Audit verified:
+    <strong>{{ 'yes' if view.audit_verified else 'no' }}</strong>.</p>
     {% endif %}
   </article>
   {% endfor %}
@@ -75,8 +94,43 @@
       </tbody>
     </table>
     {% else %}<p class="muted">No findings.</p>{% endif %}
+    <h3>Readiness flags ({{ view.readiness|length }})</h3>
+    {% if view.readiness %}
+    <table class="data-table compact">
+      <thead><tr><th>Flag</th><th>Rule</th><th>Claim</th><th>Standard</th><th>State</th></tr></thead>
+      <tbody>
+        {% for finding in view.readiness %}
+        <tr><td><code>{{ finding.finding_id }}</code> {{ finding.title }}</td><td><code>{{ finding.rule_id }}</code></td><td>{{ claim(finding.claim_strength) }}</td><td>{{ finding.standard_id or finding.standard_title or 'none' }}</td><td>{{ finding.decision }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">No separate readiness flags.</p>{% endif %}
   </section>
 </div>
+
+<section class="panel">
+  <div class="panel-head"><h2>Dispositions and approvals</h2><span class="muted">{{ view.mappings|length }} mappings / {{ view.changes|length }} changes</span></div>
+  {% if view.mappings %}
+  <table class="data-table compact">
+    <thead><tr><th>ID</th><th>Source</th><th>Target</th><th>Disposition</th><th>Provenance</th><th>Reviewer state</th></tr></thead>
+    <tbody>
+      {% for item in view.mappings %}
+      <tr><td><code>{{ item.mapping_id }}</code></td><td>{{ item.source_ref }}</td><td>{{ item.target_path }}</td><td>{{ item.disposition }}</td><td>{{ item.provenance }}</td><td>{{ item.reviewer_state }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">No mappings.</p>{% endif %}
+  {% if view.changes %}
+  <table class="data-table compact">
+    <thead><tr><th>Change</th><th>Approval state</th><th>Target path</th></tr></thead>
+    <tbody>
+      {% for item in view.changes %}
+      <tr><td><code>{{ item.change_id }}</code></td><td>{{ item.approval_state }}</td><td>{{ item.target_path }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">No target changes.</p>{% endif %}
+</section>
 
 <section class="panel">
   <div class="panel-head"><h2>Hashes and audit</h2><span class="muted">{{ 'tamper-evident local log' if view.audit_verified else 'audit verification FAILED' }}</span></div>
@@ -89,7 +143,9 @@
       {% endfor %}
     </tbody>
   </table>
-  <p class="muted">This is a local tamper-evident log, not non-repudiation. Verify with
+  <p class="muted">Audit events: {{ view.packet.audit_event_count|default(counts.get('audit_events', 0), true) }}.
+  Packet hash covers the canonical packet JSON payload, excluding the hash itself and the rendered HTML.
+  This is a local tamper-evident log, not non-repudiation. Verify with
   <code>preflight verify-audit {{ run_id }}</code>.</p>
 </section>
 {% else %}
