@@ -107,7 +107,7 @@ Point at the **feature spine**:
 
 **Click a spine node** (for example the leftmost `PAVehicleDV` node). The inline **Selected node evidence** panel appears above the graph; the full evidence drawer is below the fold.
 
-> “EV-0001. PCF path, xpath, line 4, excerpt, method `xml_xpath`, excerpt SHA-256. Every node resolves to a file and a locator.”
+> “EV-0001. PCF path, xpath, line 4, excerpt, method `xml_xpath`, excerpt SHA-256. Every highlighted evidence-bearing node resolves to a file and a locator.”
 
 If the inline panel does not appear, open the direct evidence URL shown above. Do not scroll-hunt on stage.
 
@@ -355,7 +355,7 @@ One authorised, anonymised pilot estate for one LOB; two blind SME annotators; a
 - No real estate, customer code, live tenant, deployment, or official Cloud Assurance run.
 - Packet (`packet`/`packet_json`), content digests, and audit head change with reviewer decisions and packet refreshes; read the live screen. The snapshot hash is the stable fixture hash. The seed is 9 events / 3 assumptions; the runbook actions make 11 / 4.
 - The audit chain is local and tamper-evident, not non-repudiation.
-- Tests: 412 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
+- Tests: 416 passing; freeze manifest: 18/18 recorded hashes; these are build facts, not domain-validation evidence.
 
 ---
 
@@ -403,7 +403,7 @@ PACKET        /packet?run=R-DEMO-001
               content digests bind findings/mappings/evidence; audit head = chain
               static docs/demo packet = historical, not hash-verifiable
 
-BUILD         412 tests · 18/18 freeze hashes · 9 seed audit events
+BUILD         416 tests · 18/18 freeze hashes · 9 seed audit events
 
 CLOSE         “Every claim has evidence; every unknown has a name;
                every change waits for a human.”

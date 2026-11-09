@@ -14,5 +14,5 @@ First public snapshot.
 - Impact-rated assumption register and six-section review packet.
 - Frozen evaluation fixtures, gold labels, reference target, and holdout aggregate.
 - Hash-chained audit log, CSRF, CSP, host/origin checks, safe archive/XML/YAML handling, secret redaction.
-- 410 tests including Playwright golden path.
+- 414 tests including Playwright golden path.
 - Internal QA: core flow, packet, and audit gates pass; independent demo reviewers are scoring the presentation.

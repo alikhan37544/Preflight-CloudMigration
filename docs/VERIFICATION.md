@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 412 passed
+pytest -q                                 416 passed
 pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
@@ -53,7 +53,7 @@ Playwright golden path                    passes (accept/reject dialog, mobile l
 
 ## Final status
 
-**Current internal gate: PASS for the demo path.** 412 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 416 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 

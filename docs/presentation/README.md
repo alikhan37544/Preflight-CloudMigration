@@ -102,7 +102,7 @@ The stylesheet sets `@page { size: 1600px 900px; margin: 0; }` and prints every 
 | `assets/deck-slide-03-1280x720.png` etc. | Validation proof at 1280 × 720, 1024 × 768, and 390 × 844 for the dense slides. |
 | `assets/capture-manifest.json` | Capture timestamp, URLs, sizes, SHA-256, and post-decision facts. |
 | `assets/deck-validation.json` | Per-viewport navigation/overflow/console/external-request results and PDF facts. |
-| `assets/marker-hints.json` | Measured marker positions for the annotated screenshots. |
+| `assets/marker-hints.json` | Measured element positions used by the capture script (debug); callouts are text-only and do not overlay evidence. |
 | `assets/.gitignore` | Keeps generated `.webm` walkthroughs local. |
 
 All application screenshots are from run `R-DEMO-001` (`demo-slice-300`) on 2026-11-10. The main set is live from a loopback server (`assets/capture-manifest.json` records the capture URL); the after-decision set uses an isolated temporary copy so the demo run stays at 12 pending dispositions. Post-decision state: **11 audit events, 4 assumptions, A-DEC-04**. Slide 12 deliberately shows no packet or audit-head value: both change with reviewer decisions and packet refresh, so the deck says “read live.” The only visible digest is the stable fixture snapshot hash (`bd4a8a4b338a…`). The main packet hash covers rendered packet HTML; `packet_json` covers canonical JSON; content digests bind findings, mappings, and evidence; the audit head covers the chain.
@@ -162,7 +162,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 | 10 | Demo: Assistant | Territory refusal; Motorcycle_Ext citation; retrieval-only, model off. |
 | 11 | Demo: Evaluation | Six metrics M1–M6; M6 F1 1.00 (24 TP / 0 FP / 0 FN); 24/24 guard count separate; intervals, baselines, holdout, limitations. |
 | 12 | Demo: Packet | 126 evidence, post-decision 11 audit events / 4 assumptions; packet/audit hashes labelled read live; snapshot hash stable; two-step verify-packet + verify-audit. |
-| 13 | Engineering rigor | 412 tests, Playwright, 18/18 freeze hashes, 9 seed audit events, security, flaws found and fixed. |
+| 13 | Engineering rigor | 416 tests, Playwright, 18/18 freeze hashes, 9 seed audit events, security, flaws found and fixed. |
 | 14 | Novelty & prior art | Feature location, traceability, Reversa, GSN, honest scorecard. |
 | 15 | Viability | Kill risks, vendor-independent wedge (not independently validated), acceptance tests, roadmap. |
 | 16 | Close | The three-line standard, pilot ask, Saundarya Singh / repository / MIT. |
@@ -176,7 +176,7 @@ If the live data directory is elsewhere, pass its parent as `--data-source` (the
 - At 390 px the capability matrix is a labelled, keyboard-focusable scroll region (`tabindex="0"`, `role="region"`). At 1920 px the stage-label column sizes to content so “RECONSTRUCT” cannot collide with the mapped text.
 - Charts are inline SVG with a text caption and equivalent numbers in the surrounding slide.
 - Validation was run with Playwright at **1920 × 1080, 1440 × 900, 1280 × 720, 1024 × 768, and 390 × 844**: all 16 slides navigated, zero console errors, zero external requests, zero clipping/overflow at desktop viewports, zero horizontal overflow at 390, zero stage-label overlaps at 1920, and a focusable mobile matrix. The capture script also validates every focus crop against the live DOM (no footer slices, no section crossing) and checks that slide 7’s visible snapshot hash matches the immutability banner. Print produced **16 pages at 1200 × 675 pt**. See `assets/deck-validation.json`, `assets/capture-manifest.json`, and `evidence.json`.
-- Repository checks on 2026-11-10: `pytest -q` — **412 passed**; `scripts/claims_lint.py` — **OK**; `preflight verify-packet R-DEMO-001` — **OK (packet hash, content digests, audit head)**; `preflight verify-audit R-DEMO-001` — **OK (9 seed events; 11 after the two runbook actions; audit chain only)**; freeze manifest — **18/18 recorded hashes recompute**.
+- Repository checks on 2026-11-10: `pytest -q` — **416 passed**; `scripts/claims_lint.py` — **OK**; `preflight verify-packet R-DEMO-001` — **OK (packet hash, content digests, audit head)**; `preflight verify-audit R-DEMO-001` — **OK (9 seed events; 11 after the two runbook actions; audit chain only)**; freeze manifest — **18/18 recorded hashes recompute**.
 
 ## Boundaries
 

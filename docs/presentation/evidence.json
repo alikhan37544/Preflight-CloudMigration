@@ -11,10 +11,10 @@
     "validation": "Playwright at 1920x1080, 1440x900, 1280x720, 1024x768, 390x844: 16 slides; 0 viewport overflow failures; 0 console errors; 0 external requests; crop validation enforced by the capture script; PDF 16 pages at 1200 x 675.12 pts",
     "pdf_pages": 16,
     "pdf_page_size": "1200 x 675.12 pts",
-    "pdf_sha256": "bd2df7fef947757a8e97669a80cea9154624e4280a6abddf9caf34f8c596492f",
-    "pdf_bytes": 962305
+    "pdf_sha256": "51cd25f3523470f1abc0b1aa31fc15985c337e66d9c8704ca606092be75877be",
+    "pdf_bytes": 912318
   },
-  "generated_at": "2026-11-09T21:17:27Z",
+  "generated_at": "2026-11-09T21:27:06Z",
   "run": {
     "run_id": "R-DEMO-001",
     "fixture": "demo-slice-300",
@@ -44,9 +44,12 @@
     "audit_events_after_actions": 11,
     "packet_hash_predecision": "2a89f910127500307f328177976f7a1cc10c43a5f83da467e16d8d170ccfa964",
     "audit_head_predecision": "b9e3c56873b628f5df6520aff9dee6f692a206632d966715c62a1d1f1c6ee177",
-    "packet_hash_after_actions": "6dbc1d383b8c3b4d0c465648537c2c637fd2146381666e7b7118a102bae5c98c",
-    "audit_head_after_actions": "fe1c32f6789df3cbc1e8f536b05e1d8fd0fdada831f35b8ec78e477c0aa08feb",
-    "packet_hash_scope": "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet."
+    "packet_hash_after_actions": "8d3eca59769ff642fd16c9a41e1e33ce42c39993138f5fcbcd3fbf7dc650ffe8",
+    "audit_head_after_actions": "95743bb26a6e80a1bd61319829efd53306486e9bef74ee7f873181075ef13774",
+    "packet_hash_scope": "SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.",
+    "snapshot_short": "bd4a8a4b338a",
+    "packet_hash_seed": "8d3eca59769f",
+    "packet_cover_snapshot": "bd4a8a4b338a"
   },
   "metrics": [
     {
@@ -146,7 +149,7 @@
       "imported": false,
       "note": "four-feature naming-shift fixture"
     },
-    "tests": 412,
+    "tests": 416,
     "freeze_hashes": {
       "numerator": 18,
       "denominator": 18,
@@ -360,7 +363,7 @@
       "section": "Engineering rigor",
       "title": "The demo is the surface. The hardening is the work.",
       "key_points": [
-        "412 tests collected",
+        "416 tests collected",
         "1 Playwright golden path",
         "18/18 recorded freeze hashes recompute",
         "0 raw secret values in artifacts",
@@ -804,63 +807,63 @@
     },
     {
       "file": "assets/deck-slide-06-1024x768.png",
-      "bytes": 178886,
-      "sha256": "c9b21be88acea973dff6d08f394bed51e41bf5edfdf89f11ec01bd2dc532def7"
+      "bytes": 175924,
+      "sha256": "b1cf189655419942389da126706b47e36e0db1f9e7bc034ada5bf9cfdbf709b0"
     },
     {
       "file": "assets/deck-slide-06-1280x720.png",
-      "bytes": 195324,
-      "sha256": "555b1878a7a02ea569381c921be6c879bd8e90a3c368e8cb0080dc04d1087d20"
+      "bytes": 192564,
+      "sha256": "0aaf6ffebafcce78221f0465571708a0a60ebadf40edf3a4be1c97579bee6775"
     },
     {
       "file": "assets/deck-slide-06-1440x900.png",
-      "bytes": 247509,
-      "sha256": "6c3a36b52130eed5b9f9391a42ba712088dbd511882d6fa8fdd25328e52db5bd"
+      "bytes": 243067,
+      "sha256": "cae6f88e03e7c9c4f6cf58b0cc4f9c1d295583e2d844935cae04450ba9adce66"
     },
     {
       "file": "assets/deck-slide-06-390x844.png",
-      "bytes": 151795,
-      "sha256": "585e90846779791697b8e1a8c48abd174d467cc492c9420b3b6448408d72d1b8"
+      "bytes": 148410,
+      "sha256": "bf5f5815960faee822ba0aee7abbbfe4af74a7f4100ea3adb4bb1e94319c2819"
     },
     {
       "file": "assets/deck-slide-07-1280x720.png",
-      "bytes": 146526,
-      "sha256": "3b7d1ca4c838019b42310b8ec046b97359835332a6f18bcecf098de0b3c007d3"
+      "bytes": 144377,
+      "sha256": "d37f01bf554547ecb222be18c2e9dfcf4a06022d7a56832ed6160d4d84b72f8d"
     },
     {
       "file": "assets/deck-slide-07-1440x900.png",
-      "bytes": 188995,
-      "sha256": "b4757dc912dcd475c9c78ae42807cfdc1aa928fd7a75ec487f36d748763abdd8"
+      "bytes": 185453,
+      "sha256": "8522de8ca5eff10d6823a5ef98013258488c6c0eb6bbdde7755f3000538cb47c"
     },
     {
       "file": "assets/deck-slide-08-1280x720.png",
-      "bytes": 168575,
-      "sha256": "7afadf4816ed5ac66d1717be389a84bc8a29b8c98e370f5e671543ae3ff36f44"
+      "bytes": 165908,
+      "sha256": "0060dad73ef42a8b34a06b9352c37b4033939b82b801d494fbf56bdbb1611c0d"
     },
     {
       "file": "assets/deck-slide-08-1440x900.png",
-      "bytes": 228411,
-      "sha256": "da76ab9667110b60a1ae9bd82cfae6c726e69fde5fd15e5518605e2478ef0089"
+      "bytes": 224380,
+      "sha256": "f5513031510890da3a39869571bd36ef844f9efe3f6889d7ab8e29f6d32af7b6"
     },
     {
       "file": "assets/deck-slide-09-1024x768.png",
-      "bytes": 186583,
-      "sha256": "ff02200b271ef5d24d7b3deb43666cff6f167a2e985bbc774884be12ba1ea9c4"
+      "bytes": 182887,
+      "sha256": "992094f5f1b51220623aad72063dfbf99901286081f6c0b1d5f93e980313d74c"
     },
     {
       "file": "assets/deck-slide-09-1280x720.png",
-      "bytes": 225502,
-      "sha256": "ea28a1f0e92664bc5128916f2eebb7ba9149d87a6339a5c0deca1215de353093"
+      "bytes": 221875,
+      "sha256": "4355d838d661a0bd100227660e24042e9c2fbeaae860fc1ed4cdf676575eed98"
     },
     {
       "file": "assets/deck-slide-09-1440x900.png",
-      "bytes": 296707,
-      "sha256": "03348b47604277be50bfa7f8ced6b8a6b1f26cb1c16bccf1fe8dc441b2a7ff7b"
+      "bytes": 291841,
+      "sha256": "3f6dd7aad50cd95ceb7fde349f2c15b9dc022664b954e3290e0b32400dfd4aeb"
     },
     {
       "file": "assets/deck-slide-09-390x844.png",
-      "bytes": 182006,
-      "sha256": "df686badac5c4b5bde4ef2125d9f80418abcda37329fbd61841c7dbd0ae9ff86"
+      "bytes": 177068,
+      "sha256": "befdb93bb4b169ff302095d724c2801a2507c1f74ba02c9299d74facda35b7d4"
     },
     {
       "file": "assets/deck-slide-10-1280x720.png",
@@ -894,43 +897,43 @@
     },
     {
       "file": "assets/deck-slide-12-1024x768.png",
-      "bytes": 197181,
-      "sha256": "354bb270419e71f256de34b380475ca21d82a99d57d81da94b45e2c21ec3e429"
+      "bytes": 195228,
+      "sha256": "1776d515e1ee2c4ccb1d87e6c509a3fb2b86c811ee4e17cb681b85f9f2820b95"
     },
     {
       "file": "assets/deck-slide-12-1280x720.png",
-      "bytes": 212042,
-      "sha256": "e7dbda126852c1868fa9dffcaefc407dce6ea6049003868008dfa38b1349fae5"
+      "bytes": 209400,
+      "sha256": "d6601f1ab8d2aab897ebf5556412415cbd8167edd3ce9fb2809da84ccac71313"
     },
     {
       "file": "assets/deck-slide-12-1440x900.png",
-      "bytes": 290840,
-      "sha256": "38de91cff5aeb5911822a3a11157c3f68af965a565195e2c94d6361bf2e628b1"
+      "bytes": 287297,
+      "sha256": "bc42f836601f227c338a0cfff8cdd52ea949d5ccd9386f2df6f10b23cb45df46"
     },
     {
       "file": "assets/deck-slide-12-390x844.png",
-      "bytes": 164521,
-      "sha256": "197d00228f079b0b0d3c583b44064bfa958f3fd10c55df9f4a16447d8a8a0fb9"
+      "bytes": 160893,
+      "sha256": "02c5727b8040b688e2400990861098101cc22fc434b3fdeb4525acb87d4cd9d3"
     },
     {
       "file": "assets/deck-slide-13-1024x768.png",
-      "bytes": 88644,
-      "sha256": "0d8ccbb0e5eb04092d2a37b71b3ceb79d86f729cdc8018aa723f7420fcb55fbb"
+      "bytes": 88678,
+      "sha256": "7d1697f40ad05873516f596ef844d123ac250c461b3639ee87186dc4ada0a008"
     },
     {
       "file": "assets/deck-slide-13-1280x720.png",
-      "bytes": 88007,
-      "sha256": "ecfb634125bdc394b24ec71ab2b64948e2cab45f121ed9056b30421250b678f9"
+      "bytes": 87972,
+      "sha256": "7ecc27b7024169a6907a51444de2a0f8d6074d9803c3934eb81c586a3b554739"
     },
     {
       "file": "assets/deck-slide-13-1440x900.png",
-      "bytes": 126889,
-      "sha256": "ef80803b610b5997bb80cb68bc7840e388d3150629a3a629b9af6d1713295072"
+      "bytes": 126926,
+      "sha256": "9f96305ba0cf08795894dcdeb14388bdedb3a109a20e794de67fca0d1dd09074"
     },
     {
       "file": "assets/deck-slide-13-390x844.png",
-      "bytes": 112027,
-      "sha256": "bd54659769f4440b5d92f2a640b40d35f222c46d32927a34445464341e611a58"
+      "bytes": 112100,
+      "sha256": "aca3c6583f134e73a966246bf44145be477aa15378c370656d9b7c471e54eaee"
     },
     {
       "file": "assets/deck-slide-14-1024x768.png",
@@ -1044,33 +1047,33 @@
     },
     {
       "file": "assets/packet-1440x900.png",
-      "bytes": 190454,
-      "sha256": "56d84b72ac864627f05e4c1bd8110ca36a7962c606bdaf6f00d2b31170147294"
+      "bytes": 190694,
+      "sha256": "93483feea58ec95441ef1ed5505d51e4dff833bbe6bd7d1a97c8b5074bc55807"
     },
     {
       "file": "assets/packet-focus-1440x900.png",
-      "bytes": 137873,
-      "sha256": "813fb8a6972b79722011dcf568c414294522f5c7e2650156c272a1df265bf74e"
+      "bytes": 138189,
+      "sha256": "372b0af7ac9492dfb763540c83dea2c95de70e0f964ff128661d9ba69020f592"
     },
     {
       "file": "assets/packet-full-1440.png",
-      "bytes": 720985,
-      "sha256": "28f5bb4095dc3e70f6d948c25e63495dad2d9a01fb3cd22bc2b95c1423cd8644"
+      "bytes": 731600,
+      "sha256": "f61e37853112dce21fb2586503fa63ac3e4463913723e49dd04fbec3b09a381b"
     },
     {
       "file": "assets/packet-predecision-1440x900.png",
-      "bytes": 190338,
-      "sha256": "4bdac2d1b4f2c9ebac6d30918a7a074f0937ce119de70aac447416bcac1376ae"
+      "bytes": 190152,
+      "sha256": "5e115cb54b9bb3539cdbfb7f5fc6a5965905617ed0faaf916939df4826b57bae"
     },
     {
       "file": "assets/packet-predecision-focus-1440x900.png",
-      "bytes": 138133,
-      "sha256": "dc3e6d2bff1aa8b24d9b09ae6db043fa528dd7a641e8e64506d39fb187ce1865"
+      "bytes": 137930,
+      "sha256": "a6a1d1a6e30bee9fee2407a60ae5f957b71d7c380429e69ad8bb8d39594de03a"
     },
     {
       "file": "assets/packet-predecision-full-1440.png",
-      "bytes": 706542,
-      "sha256": "dcacfcb0acc27fddd25e8aa11755af6d3817e2ff31ffa24b328a1ab9d19b67b7"
+      "bytes": 717353,
+      "sha256": "5d85e70534cd691bfd076285db7d82dd7e8c492a813868f33960a83d7a456f38"
     },
     {
       "file": "assets/reconstruction-1440x900.png",
@@ -1119,8 +1122,8 @@
     },
     {
       "file": "assets/workbench-1280x900.png",
-      "bytes": 174535,
-      "sha256": "ebd4449f72f31faa06670c071a17df26b463fb39bc1e1ffd9b0f1eb10f1868c6"
+      "bytes": 174571,
+      "sha256": "d61a4c31d16ee8a12101d24fc6a07322f0b7fe0ae542a69c167122bd8a7035c3"
     },
     {
       "file": "assets/workbench-1440x900.png",
@@ -1314,11 +1317,13 @@
     },
     "pdf": {
       "pdf": "docs/presentation/PreFlight-deck.pdf",
-      "bytes": 967458,
-      "sha256": "8f2e009bcf2c94c1dbe1e8ee9c85038206927ae98588d883eb6e2fdc2434cdf7",
+      "bytes": 912318,
+      "sha256": "51cd25f3523470f1abc0b1aa31fc15985c337e66d9c8704ca606092be75877be",
       "pages": 16,
       "page_size": "1200 x 675.12 pts"
-    }
+    },
+    "crop_failures": 0,
+    "capture_ok": true
   },
   "asset_count": 92
 }

@@ -83,14 +83,14 @@ No score is claimed in this log; the independent reviewer panel decides.
 - Focus crops now start at `x=218` (50 px app gutter) and end at section boundaries. Coordinates used by `scripts/capture_demo.py`:
   - Workbench: `x=218 y=270 w=1212 h=630`
   - Manifest: `x=218 y=200 w=1212 h=620` (ends after pagination, before the app footer)
-  - Reconstruction: `x=218 y=105 w=1212 h=770` (ends after M-04; M-12 below the fold is labelled schematic)
+  - Reconstruction: `x=218 y=105 w=1212 h=748` (ends cleanly before M-04; M-12 below the fold is labelled schematic)
   - Findings: `x=218 y=220 w=1212 h=1000` (includes the complete Finding F-002 detail panel)
   - Packet: `x=218 y=95 w=1212 h=772` (page header, six cards, and complete A-01 register row; no mid-row cut)
 - The decision toast is waited out before capture; the M-12 panel is visibly labelled “Schematic · M-12 row below the crop.” Slide 12’s caption now says the crop shows the assumption-register summary (A-01) and that the live register has four rows including A-DEC-04.
 - `capture_demo.py` now validates each crop against the live DOM: required elements must be wholly inside the crop, partial regions must start inside it, the next section must not be crossed, and the app footer must stay outside. Six checks passed; failures are recorded in `capture-manifest.json` and make the script exit non-zero.
 
 **Markers and layout**
-- Markers on slides 6, 7, 8, 9, and 12 are smaller and placed in the image gutter (or the table/detail-panel gutter for slide 9) at the measured row; they no longer sit on the text they explain.
+- Overlay markers were removed from slides 6, 8, 9, and 12. Callout numbers are text-only; no bubble obscures the evidence it explains. `marker-hints.json` is retained only as a capture-debug artifact.
 - Slide 9 gets a wider evidence column and a short-projector column ratio so the complete detail panel stays visible at 1440 × 900, 1280 × 720, and 1024 × 768.
 - Slide 4’s stage-label column switches to `max-content` at ≥1600 px; validated at 1920 × 1080 with no label/text overlap.
 - Slide 3 splits **CAST/ADDI** (portfolio and code discovery) from **Syntra ETL** (data migration/extraction), softens “files nobody classified” to “files that were never classified,” and compacts at 720/768 so the extra row does not clip.
@@ -99,14 +99,14 @@ No score is claimed in this log; the independent reviewer panel decides.
 ### Validation (current capture)
 
 - Deck: 16/16 slides navigated at **1920×1080, 1440×900, 1280×720, 1024×768, 390×844**; **0 failures**, 0 console errors, 0 external requests; mobile matrix focusable; no 1920 stage-label overlap.
-- Crop checks: **6/6 pass** (workbench, manifest, reconstruction pre/post, findings, packet).
+- Crop checks: **0 failures** in `capture-manifest.json` (workbench, manifest, reconstruction pre/post, findings, packet).
 - Content check: **ok** — slide-7 snapshot prefix matches the manifest; slide-12 packet/audit values are read-live; scope language present on slides 5 and 12.
-- PDF: **16 pages, 1200 × 675.12 pt**, 967,458 bytes, SHA-256 `8f2e009bcf2c94c1dbe1e8ee9c85038206927ae98588d883eb6e2fdc2434cdf7`.
+- PDF: **16 pages, 1200 × 675.12 pt**; SHA-256 and byte count are recorded in `evidence.json` and `deck-validation.json` after each capture (currently `51cd25f3…`, 912,318 bytes).
 - `evidence.json` and `capture-manifest.json` regenerated from the same run.
 
 ### Remaining risks / final recapture
 
-1. **App/content merge changes screens.** These captures are from the current live `127.0.0.1:8000` build at HEAD `b7d0303`. If the parallel app/content branch changes any captured screen, rerun:
+1. **App/content merge changes screens.** These captures are from the current live `127.0.0.1:8000` build after Loop 4. If the parallel app/content branch changes any captured screen, rerun:
    ```bash
    /home/understressengineer/programming/Preflight-CloudMigration/.venv/bin/python \
      scripts/capture_demo.py --base-url http://127.0.0.1:8000 \

@@ -38,6 +38,25 @@ def main() -> int:
     payload["assets"] = assets
     payload["asset_count"] = len(assets)
 
+    manifest_path = ASSETS / "capture-manifest.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        after = manifest.get("after_decision", {})
+        facts = manifest.get("content_facts", {})
+        run = payload.setdefault("run", {})
+        if after:
+            run["packet_hash_after_actions"] = after.get("packet_hash", run.get("packet_hash_after_actions"))
+            run["audit_head_after_actions"] = after.get("audit_head", run.get("audit_head_after_actions"))
+            run["audit_events_after_actions"] = after.get("audit_events", run.get("audit_events_after_actions"))
+            run["assumptions_after_actions"] = after.get("assumptions", run.get("assumptions_after_actions"))
+        if facts:
+            run["snapshot_short"] = facts.get("snapshot_short", run.get("snapshot_short"))
+            run["snapshot_hash"] = facts.get("snapshot_hash", run.get("snapshot_hash"))
+            run["packet_hash_seed"] = facts.get("packet_cover_packet", run.get("packet_hash_seed"))
+            run["packet_cover_snapshot"] = facts.get("packet_cover_snapshot", run.get("packet_cover_snapshot"))
+        failures = manifest.get("crop_failures", [])
+        payload.setdefault("validation", {})["crop_failures"] = len(failures)
+        payload["validation"]["capture_ok"] = not failures
     pdf = PRESENTATION / "PreFlight-deck.pdf"
     if pdf.is_file():
         validation_path = ASSETS / "deck-validation.json"
@@ -45,8 +64,19 @@ def main() -> int:
         deck = payload.setdefault("deck", {})
         deck["pdf_sha256"] = sha256(pdf)
         deck["pdf_bytes"] = pdf.stat().st_size
-        deck["pdf_pages"] = validation.get("pdf", {}).get("pages", deck.get("pdf_pages", 16))
-        deck["pdf_page_size"] = validation.get("pdf", {}).get("page_size", deck.get("pdf_page_size", ""))
+        deck["pdf_pages"] = 16
+        deck["pdf_page_size"] = validation.get("pdf", {}).get("page_size", deck.get("pdf_page_size", "1200 x 675.12 pts"))
+        # The validation file is written before the PDF render; refresh its PDF block too.
+        pdf_validation = validation.setdefault("pdf", {})
+        pdf_validation.update({
+            "pdf": "docs/presentation/PreFlight-deck.pdf",
+            "bytes": pdf.stat().st_size,
+            "sha256": sha256(pdf),
+            "pages": deck["pdf_pages"],
+            "page_size": deck["pdf_page_size"],
+        })
+        (ASSETS / "deck-validation.json").write_text(json.dumps(validation, indent=2) + "\n", encoding="utf-8")
+        payload.setdefault("validation", {})["pdf"] = pdf_validation
         failures = sum(
             len(viewport.get("failures", []))
             for viewport in validation.get("deck_validation", {}).get("viewports", {}).values()

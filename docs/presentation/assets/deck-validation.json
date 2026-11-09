@@ -39,12 +39,12 @@
         "clientWidth": 358
       }
     },
-    "generated_at": "2026-11-09T21:17:21+00:00"
+    "generated_at": "2026-11-09T21:26:26+00:00"
   },
   "pdf": {
-    "pdf": "/home/understressengineer/.local/share/opencode/worktree/4e4a92/demo4-domain/docs/presentation/PreFlight-deck.pdf",
-    "bytes": 962305,
-    "sha256": "bd2df7fef947757a8e97669a80cea9154624e4280a6abddf9caf34f8c596492f",
+    "pdf": "docs/presentation/PreFlight-deck.pdf",
+    "bytes": 912318,
+    "sha256": "51cd25f3523470f1abc0b1aa31fc15985c337e66d9c8704ca606092be75877be",
     "pages": 16,
     "page_size": "1200 x 675.12 pts"
   },

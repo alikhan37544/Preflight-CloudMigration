@@ -1069,10 +1069,6 @@
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/workbench-focus-1440x900.png" width="1212" height="630" alt="PreFlight Workbench focus crop for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
-          <span class="marker" style="left:10%;top:0.5%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:1.7%;top:35.6%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:1.7%;top:22.4%" aria-hidden="true">3</span>
-          <span class="marker amber" style="left:78%;top:0.5%" aria-hidden="true">4</span>
           <figcaption>Live capture at 1440 × 900, cropped to the summary strip, eight feature candidates, and the 18-node spine. The evidence drawer and grounded assistant sit below the fold.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1099,7 +1095,7 @@
     <div class="speaker-note" hidden>
       <p><strong>Open on the Workbench, not the dashboard.</strong> “This is one feature, not the whole estate: PA-VEH-01 Vehicle Information. The summary strip says what the claim rests on — 31 evidence records across 12 files, four artefact types, two tests, and 11 references.”</p>
       <p>Point at the 37 vs 24 signal, then separate the counts. “PA-VEH-01 has 11 references, four artefact types, and two tests. The 37-character long type is not one of those references: it appears in two files, <span class="mono">product/template/LongTypeA.xml</span> and <span class="mono">config/resources/productmodel/PersonalAuto.xml</span>, and it is a PA-VEH-02 dependency. No tests cover it. That is the kind of cross-feature scope that surfaces at week five if the inventory is not done first.”</p>
-      <p>Click a spine node. “Every node resolves to a file and a locator — here EV-0001, a PCF xpath at line 4, with an excerpt hash. The assistant below is retrieval-only and model off.”</p>
+      <p>Click a spine node. “Every highlighted evidence-bearing node resolves to a file and a locator — here EV-0001, a PCF xpath at line 4, with an excerpt hash. The assistant below is retrieval-only and model off.”</p>
       <p>Say clearly: “The three gaps are estate-wide, not three missing links in PA-VEH-01.” Add the fixture-realism caveat: “The 300 files include generated filler. The PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats; codegen and entity names match the fixture. This is a test of the evidence discipline, not a claim of domain fidelity.”</p>
     </div>
   </section>
@@ -1118,9 +1114,6 @@
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/manifest-focus-1440x900.png" width="1212" height="620" alt="PreFlight Manifest focus crop filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
-          <span class="marker middle" style="left:1.7%;top:5.4%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:1.7%;top:55.8%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:1.7%;top:20.6%" aria-hidden="true">3</span>
           <figcaption>Live capture at 1440 × 900, cropped to the excluded banner, source-unchanged check, and the four excluded rows. “Excluded (4)” filter applied; 2 binary, 1 corrupt PCF, 1 unsupported CSV.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1166,9 +1159,6 @@
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="755" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
-          <span class="marker middle" style="left:5%;top:57%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:5%;top:70%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:82%;top:4%" aria-hidden="true">3</span>
           <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The capture uses an isolated copy; reseed the live run with make demo before presenting. M-12 itself is below this crop and is shown schematically in panel 4.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1186,7 +1176,6 @@
           </div>
           <div class="panel tint m12-shot" style="padding:8px 10px;position:relative">
             <p class="eyebrow" style="margin:0 0 4px;padding-right:24px">Schematic · M-12 row below the crop</p>
-            <span class="marker danger" style="left:auto;right:6px;top:6px" aria-hidden="true">4</span>
             <dl class="m12-list" aria-label="Schematic excerpt of the M-12 row after rejection">
               <dt>ID</dt><dd><code>M-12</code> · <span class="danger"><b>rejected</b></span></dd>
               <dt>Source</dt><dd><code>VehicleType.Motorcycle_Ext</code></dd>
@@ -1220,10 +1209,6 @@
       <div class="demo-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/findings-focus-1440x900.png" width="1212" height="1000" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls. The complete detail panel is included.">
-          <span class="marker middle" style="left:1.7%;top:33.5%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:1.7%;top:51.3%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:70.2%;top:41.5%" aria-hidden="true">3</span>
-          <span class="marker middle amber" style="left:1.7%;top:19.8%" aria-hidden="true">4</span>
           <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the complete detail panel. The precision-guard corpus is shown separately below.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1236,7 +1221,6 @@
           </div>
           <div class="guards-shot" style="max-width:300px">
             <img src="assets/findings-guard-query-make.png" width="270" height="244" alt="Precision-guard excerpt: PF-GW-SQL-001 lists Query.make(PersonalVehicle).select() as supported data access, not direct JDBC, with driver, string, and comment near-misses.">
-            <span class="marker ink" style="left:auto;right:5px;top:5px" aria-hidden="true">5</span>
             <div class="cap"><b>Precision guard.</b> 8 rules × 3 near-misses; <code>Query.make</code> is supported access, not JDBC.</div>
           </div>
           <div class="panel optional-panel" style="padding:8px 10px">
@@ -1432,10 +1416,6 @@
       <div class="packet-grid grow">
         <figure class="shot" style="margin:0">
           <img src="assets/packet-focus-1440x900.png" width="1212" height="752" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
-          <span class="marker middle" style="left:88%;top:4%" aria-hidden="true">1</span>
-          <span class="marker middle" style="left:50%;top:23%" aria-hidden="true">2</span>
-          <span class="marker middle" style="left:79%;top:46%" aria-hidden="true">3</span>
-          <span class="marker middle" style="left:10%;top:37%" aria-hidden="true">4</span>
           <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; the crop shows the assumption-register summary (A-01), while the live register has four rows including A-DEC-04. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
         </figure>
         <div class="demo-side">
@@ -1481,12 +1461,12 @@
         <div class="slide-head-main">
           <p class="kicker">Engineering rigor</p>
           <h2>The demo is the surface. The hardening is the work.</h2>
-          <p class="slide-lede"><b>412 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+          <p class="slide-lede"><b>416 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
         </div>
         <span class="head-badge">Internal adversarial review</span>
       </div>
       <div class="rigor-top">
-        <span class="rigor-badge"><b>412</b> tests collected</span>
+        <span class="rigor-badge"><b>416</b> tests collected</span>
         <span class="rigor-badge"><b>1</b> Playwright golden path</span>
         <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
         <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
@@ -1510,7 +1490,7 @@
       </div>
     </div>
     <div class="speaker-note" hidden>
-      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 412 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 416 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
       <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
       <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
     </div>

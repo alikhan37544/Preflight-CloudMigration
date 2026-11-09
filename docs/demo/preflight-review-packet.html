@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PreFlight Review Packet - R-DEMO-001</title>
-<meta name="packet-sha256" content="8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895">
+<meta name="packet-sha256" content="7f92b60428fa360eb8e98a1b090c0b2d6a1d1b671ea8f8c6bcd3fb13b47a1d18">
 <meta name="packet-hash-scope" content="sha256-of-normalized-rendered-html">
 <style>
   :root { --ink:#1f2d3a; --muted:#5b6f80; --line:#d3dce4; --brand:#0b6b85; --warn:#a05c00; --danger:#b3261e; --evidence:#6b4fa1; }
@@ -81,7 +81,7 @@
     </div>
     <div style="text-align:right">
       <span class="badge synthetic">Synthetic estate</span>
-      <div class="muted" style="margin-top:6px">2026-11-09T21:07:12Z</div>
+      <div class="muted" style="margin-top:6px">2026-11-09T21:25:55Z</div>
     </div>
   </div>
 
@@ -97,11 +97,11 @@
     <tr><th scope="row">Fixture</th><td>demo-slice-300</td></tr>
     <tr><th scope="row">Release context</th><td>Qusar 2026.08 (review context)</td></tr>
     <tr><th scope="row">Scope boundary</th><td>Cloud Retrofit without APD App; not Guidewire&#39;s recommended process; local, non-deployable draft; field-level nameOverride only applies on this path.</td></tr>
-    <tr><th scope="row">Snapshot hash</th><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
+    <tr><th scope="row">Snapshot hash</th><td class="hash">bd4a8a4b338af3698c5fa2c6f4232456e3810a337b79e19e1bd07e36a9c46c6f</td></tr>
     <tr><th scope="row">Files</th><td>300 (4 unsupported/corrupt, listed)</td></tr>
-    <tr><th scope="row">Audit head</th><td class="hash">0d0e91a4927315ccb746e88866ce509506290f4d5e80f4cfe321352f08ec7d4d</td></tr>
+    <tr><th scope="row">Audit head</th><td class="hash">591c2901d18b379185851abf199cbea13568d9b6d3473f37c9cd98704d68df9e</td></tr>
     <tr><th scope="row">Audit chain verified</th><td><span class="badge ok">yes</span> (9 events)</td></tr>
-    <tr><th scope="row">Packet hash</th><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
+    <tr><th scope="row">Packet hash</th><td class="hash">7f92b60428fa360eb8e98a1b090c0b2d6a1d1b671ea8f8c6bcd3fb13b47a1d18</td></tr>
   </table></div>
 
   <h2>2. Executive summary</h2>
@@ -292,9 +292,9 @@
     
     <tr>
       <td>A-03</td>
-      <td>The product-template type name exceeds APD&#39;s 24-character import limit; the draft adds a nameOverride mapping the truncated visualized name to the installed name.</td>
+      <td>The 37-character type PersonalAutoRatingFactorConfiguration appears in two files (product/template/LongTypeA.xml and config/resources/productmodel/PersonalAuto.xml), above APD&#39;s 24-character import limit. It is a PA-VEH-02 dependency outside PA-VEH-01&#39;s 11 references; the draft adds a nameOverride mapping the truncated visualized name to the installed name.</td>
       <td>high (7.0-9.0 engineer-days)</td>
-      <td>Which teams own the 11 references, and can the nameOverride be validated on the target release?</td>
+      <td>Who owns the template and product-model change, and can the nameOverride be validated on the target release?</td>
       <td>unassigned</td><td>open</td>
     </tr>
     
@@ -2405,97 +2405,98 @@ class PersonalVehicleQueryC {</div></td>
 
   <h3>Audit trail (9 events)</h3>
   <p><strong>Audit chain verified: yes</strong>. The local log is
-  tamper-evident, not non-repudiation. Verify with <code>preflight verify-audit R-DEMO-001</code>.</p>
+  tamper-evident, not non-repudiation. Verify the audit chain with
+  <code>preflight verify-audit R-DEMO-001</code>; that command checks the audit chain only, not the packet.</p>
   <div class="table-scroll" role="group" aria-label="Table: Seq · Timestamp · Action · Object · Actor · Hash · Prev hash" tabindex="0"><table data-columns="7"><caption>Table: Seq · Timestamp · Action · Object · Actor · Hash · Prev hash</caption><thead><tr><th scope="col">Seq</th><th scope="col">Timestamp</th><th scope="col">Action</th><th scope="col">Object</th><th scope="col">Actor</th><th scope="col">Hash</th><th scope="col">Prev hash</th></tr></thead><tbody>
     
     <tr>
       <td>0</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.intake</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">6b5c2f2d2f480c46</td>
+      <td class="hash">df8e0b651cc18ce9</td>
       <td class="hash">GENESIS</td>
     </tr>
     
     <tr>
       <td>1</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.parse</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">0339c28716cf1fb9</td>
-      <td class="hash">6b5c2f2d2f480c46</td>
+      <td class="hash">b4fe2d7ef53166b9</td>
+      <td class="hash">df8e0b651cc18ce9</td>
     </tr>
     
     <tr>
       <td>2</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.review</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">9dfc30ca9114dec4</td>
-      <td class="hash">0339c28716cf1fb9</td>
+      <td class="hash">5e251f33cb2f1aaa</td>
+      <td class="hash">b4fe2d7ef53166b9</td>
     </tr>
     
     <tr>
       <td>3</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.reconstruct</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">7fc10a83b24d93a9</td>
-      <td class="hash">9dfc30ca9114dec4</td>
+      <td class="hash">6522f29eab7a13c4</td>
+      <td class="hash">5e251f33cb2f1aaa</td>
     </tr>
     
     <tr>
       <td>4</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.compare</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">15e2a117dba384e4</td>
-      <td class="hash">7fc10a83b24d93a9</td>
+      <td class="hash">c7df5fff6f9a2cdb</td>
+      <td class="hash">6522f29eab7a13c4</td>
     </tr>
     
     <tr>
       <td>5</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.evaluate</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">f1de22b6a8a824ea</td>
-      <td class="hash">15e2a117dba384e4</td>
+      <td class="hash">cc5f3a42d5c9ac0b</td>
+      <td class="hash">c7df5fff6f9a2cdb</td>
     </tr>
     
     <tr>
       <td>6</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>stage.packet</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">d6b96b13f15d83da</td>
-      <td class="hash">f1de22b6a8a824ea</td>
+      <td class="hash">f87cde812eb6f243</td>
+      <td class="hash">cc5f3a42d5c9ac0b</td>
     </tr>
     
     <tr>
       <td>7</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>run.immutability.verified</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">d3a6f8b887a42c50</td>
-      <td class="hash">d6b96b13f15d83da</td>
+      <td class="hash">91e24e4e9a8d84f9</td>
+      <td class="hash">f87cde812eb6f243</td>
     </tr>
     
     <tr>
       <td>8</td>
-      <td>2026-11-09T21:06:58Z</td>
+      <td>2026-11-09T21:25:35Z</td>
       <td>run.succeeded</td>
       <td><code>run:R-DEMO-001</code></td>
       <td>system</td>
-      <td class="hash">0d0e91a4927315cc</td>
-      <td class="hash">d3a6f8b887a42c50</td>
+      <td class="hash">591c2901d18b3791</td>
+      <td class="hash">91e24e4e9a8d84f9</td>
     </tr>
     
   </tbody></table></div>
@@ -2503,19 +2504,19 @@ class PersonalVehicleQueryC {</div></td>
   <h3>Hashes</h3>
   <div class="table-scroll" role="group" aria-label="Table: Hash · Value" tabindex="0"><table data-columns="2"><caption>Table: Hash · Value</caption><thead><tr><th scope="col">Hash</th><th scope="col">Value</th></tr></thead><tbody>
     
-    <tr><td>snapshot</td><td class="hash">668872420dfb896bf11ed3086535b790ecabeeccdbc46196713202a2c9c83b21</td></tr>
+    <tr><td>snapshot</td><td class="hash">bd4a8a4b338af3698c5fa2c6f4232456e3810a337b79e19e1bd07e36a9c46c6f</td></tr>
     
-    <tr><td>rulepack</td><td class="hash">cb26756f81df7ba674b57c9694b3784435708dbafdcacaf2e45cc161f32fcd4a</td></tr>
+    <tr><td>rulepack</td><td class="hash">d84a4b7e744613ce1ff787dc4ca97c6e91a554563cf5f5bc030a13c4b3d49232</td></tr>
     
     <tr><td>reference_target</td><td class="hash">7863be8e5046b572b6a60b685a68e474066e4aa8390d369bb4fa934a52d31541</td></tr>
     
-    <tr><td>ground_truth_manifest</td><td class="hash">260a20fad95f69b0806dd062754da296f5a525a7456308b885558e7f8f3e0587</td></tr>
+    <tr><td>ground_truth_manifest</td><td class="hash">f8fdbd1f5c3df18b842af44fbd8184586ac3d671f062dcca600bed5b68650f7c</td></tr>
     
-    <tr><td>audit_head</td><td class="hash">0d0e91a4927315ccb746e88866ce509506290f4d5e80f4cfe321352f08ec7d4d</td></tr>
+    <tr><td>audit_head</td><td class="hash">591c2901d18b379185851abf199cbea13568d9b6d3473f37c9cd98704d68df9e</td></tr>
     
     <tr><td>features</td><td class="hash">d04bdcc3bda1e8bb26d665fafed9592962a15f36cfe490d4ca3218dd22aecbc0</td></tr>
     
-    <tr><td>findings</td><td class="hash">fe237678b57a18aebd9c2d4b8c3e60953ddd01fe9c552eadacd6dec80cc7ace0</td></tr>
+    <tr><td>findings</td><td class="hash">961858f84dd7ba9e542394a1bac7dc72cb7e77003ec896f7e340d929cce2b4a2</td></tr>
     
     <tr><td>readiness</td><td class="hash">55db25effa1a6aad78a0c12a7573efae44e0478cec2a972c1c7f29470e6cbe3e</td></tr>
     
@@ -2523,7 +2524,7 @@ class PersonalVehicleQueryC {</div></td>
     
     <tr><td>changes</td><td class="hash">1165f8d7dae2366db79aa3b0afeaa49e84e4e944811b87630f785fe7f3b9f8e5</td></tr>
     
-    <tr><td>assumptions</td><td class="hash">5b073aa75a8f876badd635de5654817c73f528bee596f3627e50d01fdd29025b</td></tr>
+    <tr><td>assumptions</td><td class="hash">4850196f725c14aac239cc7fb475667740af4e4b90d77f30daa3f76380701620</td></tr>
     
     <tr><td>evidence</td><td class="hash">14ea995d48283119281dbed4fd661e0997180d88dd33fcded7cf2c01e606d001</td></tr>
     
@@ -2531,17 +2532,21 @@ class PersonalVehicleQueryC {</div></td>
     
     <tr><td>gaps</td><td class="hash">36fc86c518ceaff006be00963de431aa9e79c8bade422c7e366690f2cbef0895</td></tr>
     
-    <tr><td>packet_json</td><td class="hash">17fce73c99fbd8696c6e06b4cbf542449f39c47c91852f02abab1af6fbd74b03</td></tr>
+    <tr><td>packet_json</td><td class="hash">6c931935b012af5548e099d26beb1e2953c26899747bc074a86330fd87ee1f2f</td></tr>
     
-    <tr><td>packet</td><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
+    <tr><td>packet</td><td class="hash">7f92b60428fa360eb8e98a1b090c0b2d6a1d1b671ea8f8c6bcd3fb13b47a1d18</td></tr>
     
-    <tr><td>packet_html</td><td class="hash">8fd621ca5aec9a353bf971ee746736683e28e16f7b63badc03ecd4e98746b895</td></tr>
+    <tr><td>packet_html</td><td class="hash">7f92b60428fa360eb8e98a1b090c0b2d6a1d1b671ea8f8c6bcd3fb13b47a1d18</td></tr>
     
   </tbody></table></div>
   <p class="muted"><strong>Packet hash scope.</strong> SHA-256 over the complete rendered packet HTML after normalizing the packet hash fields to a fixed placeholder. packet_sha256 and hashes.packet_html are the same value. The canonical packet JSON is covered separately by hashes.packet_json (excluding packet_sha256 and the packet/packet_html/packet_json hash entries), and hashes.findings, hashes.mappings, hashes.evidence and the other content digests bind the artifact payloads to the packet.</p>
 
   <footer>
-    PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. This packet is generated from a synthetic fixture; it contains no customer data or confidential Guidewire information. Findings are pattern-based heuristics, not official Cloud Standards checks. Official Cloud Assurance: not run. Impact ranges are heuristic planning ranges, not quotes.
+    <p>PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. This packet is generated from a synthetic fixture; it contains no customer data or confidential Guidewire information. Findings are pattern-based heuristics, not official Cloud Standards checks. Official Cloud Assurance: not run. Impact ranges are heuristic planning ranges, not quotes.</p>
+    <p><strong>Two-step verification.</strong> Verify this packet with
+    <code>preflight verify-packet R-DEMO-001</code> (rendered HTML, canonical JSON, content digests, and packet audit head),
+    then verify the audit chain with <code>preflight verify-audit R-DEMO-001</code>.
+    <code>verify-audit</code> checks the audit chain only; it does not check the packet.</p>
   </footer>
 </main>
 </body>
