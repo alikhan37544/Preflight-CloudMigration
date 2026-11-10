@@ -546,8 +546,12 @@ def run_migration(store, run_id: str, *, feature_id: str | None = None,
             "verification": state["verification"],
         }
         plan_bytes = (json.dumps(plan, indent=2, sort_keys=False) + "\n").encode("utf-8")
+        plan_sha256 = _sha(plan_bytes)
         _write_bytes(migration_dir / "migration-plan.json", plan_bytes)
-        report = _render_report(state, plan)
+        report = _render_report(
+            state, plan, plan_sha256=plan_sha256,
+            bundle_file_count=len(outputs) + 3,
+        )
         _write_bytes(migration_dir / "MIGRATION-REPORT.md", report.encode("utf-8"))
         bundle_files = []
         for path in sorted(migration_dir.rglob("*")):
@@ -579,7 +583,7 @@ def run_migration(store, run_id: str, *, feature_id: str | None = None,
             "file_count": len(bundle_files),
             "sha256_files": {item["path"]: item["sha256"] for item in bundle_files},
         }
-        state["plan_sha256"] = _sha(plan_bytes)
+        state["plan_sha256"] = plan_sha256
         state["report_sha256"] = _sha(report.encode("utf-8"))
         state["summary"]["artifacts"] = len(bundle_files)
         verified, detail = verify_migration_log(store, run_id)
@@ -636,7 +640,8 @@ def run_migration(store, run_id: str, *, feature_id: str | None = None,
         raise
 
 
-def _render_report(state: dict[str, Any], plan: dict[str, Any]) -> str:
+def _render_report(state: dict[str, Any], plan: dict[str, Any], *,
+                   plan_sha256: str, bundle_file_count: int) -> str:
     lines = [
         f"# Autonomous migration draft — {state['feature_id']} {state['feature_name']}",
         "",
@@ -676,10 +681,10 @@ def _render_report(state: dict[str, Any], plan: dict[str, Any]) -> str:
         "",
         "## Generated files",
         "",
-        f"The sealed bundle manifest is `{MANIFEST_PATH}` ({state.get('bundle', {}).get('file_count', 0)} files).",
+        f"The sealed bundle manifest is `{MANIFEST_PATH}` ({bundle_file_count} files plus the manifest).",
         "",
-        f"Plan SHA-256: `{state.get('plan_sha256', '')}`  ",
-        f"Report SHA-256: `{state.get('report_sha256', '')}`  ",
+        f"Plan SHA-256: `{plan_sha256}`  ",
+        "Report SHA-256: recorded in `migration/bundle-manifest.json`  ",
         f"Agent log: `{AUDIT_PATH}`",
         "",
         "Changes remain pending human approval. This is not a deployment.",

@@ -5,6 +5,7 @@ Written before app/services/pipeline.py exists.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -401,6 +402,12 @@ def test_autonomous_migrator_generates_a_verified_bundle(run) -> None:
     assert store.exists("R-PIPE", PLAN_PATH)
     assert store.exists("R-PIPE", REPORT_PATH)
     assert store.exists("R-PIPE", "migration/bundle-manifest.json")
+    report = store.read_artifact("R-PIPE", REPORT_PATH)
+    assert "completed_with_gates" in report
+    assert "Plan SHA-256: `" in report
+    bundle = store.read_artifact("R-PIPE", "migration/bundle-manifest.json")
+    report_entry = next(item for item in bundle["files"] if item["path"].endswith("MIGRATION-REPORT.md"))
+    assert report_entry["sha256"] == hashlib.sha256(report.encode("utf-8")).hexdigest()
     for package in state["packages"]:
         assert store.exists("R-PIPE", f"migration/target/{package['target_path']}")
         assert package["status"] == "draft_ready"
