@@ -21,7 +21,8 @@
     <li>It does not convert products to APD and does not replace Cloud Retrofit.</li>
     <li>It does not produce an official Cloud Assurance result, score, or certification.</li>
     <li>Not a generic Gosu linter; SonarQube and Cloud Assurance own generic linting.</li>
-    <li>Not a live-tenant connector, autonomous migration agent, or deployment tool.</li>
+    <li>Not a live-tenant connector or deployment tool.</li>
+    <li>The Migrator is an autonomous <strong>draft generator</strong>: it writes a local, non-deployable bundle and leaves every change pending human approval. It does not connect to a tenant or deploy code.</li>
   </ul>
   <h2>Claim legend</h2>
   {% call scroll_region("Claim legend table, horizontally scrollable if needed") %}

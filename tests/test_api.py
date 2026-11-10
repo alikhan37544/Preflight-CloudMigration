@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 import shutil
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -65,7 +66,7 @@ def test_health(api) -> None:
 
 def test_product_pages_render(api, run_id) -> None:
     client, _ = api
-    for path in ["/", "/manifest", "/reconstruction", "/findings", "/evaluation", "/packet", "/runs", "/about", "/settings"]:
+    for path in ["/", "/manifest", "/reconstruction", "/migrator", "/findings", "/evaluation", "/packet", "/runs", "/about", "/settings"]:
         response = client.get(f"{path}?run={run_id}")
         assert response.status_code == 200, path
         assert "PreFlight" in response.text
@@ -1569,3 +1570,39 @@ def test_delete_waits_for_direct_draft_writer(tmp_path: Path, monkeypatch) -> No
         # joined worker cannot recreate the directory afterwards.
         assert not app.state.store.run_dir(run_id).exists()
         assert client.get(f"/api/runs/{run_id}/status").status_code == 404
+
+
+def test_migrator_api_runs_agents_and_renders(api, run_id) -> None:
+    client, token = api
+    fresh = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert fresh.status_code == 200, fresh.text
+    migration_run = fresh.json()["run_id"]
+    response = client.post(
+        f"/api/runs/{migration_run}/migration",
+        json={"feature_id": "PA-VEH-01", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    assert response.status_code == 200, response.text
+    state = None
+    for _ in range(80):
+        state = client.get(f"/api/runs/{migration_run}/migration").json()
+        if state.get("status") in {"completed", "completed_with_gates", "failed"}:
+            break
+        time.sleep(0.1)
+    assert state is not None
+    assert state["status"] == "completed_with_gates", state
+    assert state["verification"]["status"] == "passed"
+    assert state["summary"]["generated"] == 5
+    assert state["audit"]["verified"] is True
+    assert [agent["status"] for agent in state["agents"]] == ["done"] * 5
+    page = client.get(f"/migrator?run={migration_run}")
+    assert page.status_code == 200
+    text = page.text
+    assert "Multi-agent migrator" in text
+    assert "Agent crew" in text
+    assert "migration-plan.json" in text
+    assert "draft ready" in text

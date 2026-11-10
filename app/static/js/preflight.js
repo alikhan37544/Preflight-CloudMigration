@@ -1039,4 +1039,83 @@
     details.addEventListener("toggle", sync);
     sync();
   });
+
+  /* Autonomous migrator: launch and follow the agent handoffs live. */
+  const migrationPanel = document.querySelector("[data-migration-panel]");
+  const migrationButton = document.querySelector("[data-migration-start]");
+  let migrationPolling = false;
+
+  async function watchMigration() {
+    if (!runId || migrationPolling) return;
+    migrationPolling = true;
+    const deadline = Date.now() + 90000;
+    while (Date.now() < deadline) {
+      let state;
+      try {
+        const response = await fetch(`/api/runs/${runId}/migration`, {
+          headers: { "Accept": "application/json" },
+        });
+        if (!response.ok) throw new Error("Could not read migration state");
+        state = await response.json();
+      } catch (error) {
+        migrationPolling = false;
+        notify(error.message, true);
+        return;
+      }
+      const bar = document.querySelector("[data-migration-bar]");
+      const label = document.querySelector("[data-migration-label]");
+      if (bar && typeof state.progress === "number") bar.value = state.progress;
+      if (label) {
+        const current = state.current_agent ? `Running ${state.current_agent}` : state.status;
+        label.textContent = `${current} · ${Math.round(state.progress || 0)}%`;
+      }
+      (state.agents || []).forEach((agent) => {
+        const card = document.querySelector(`[data-agent="${agent.agent_id}"]`);
+        if (!card) return;
+        card.classList.remove("agent-queued", "agent-running", "agent-done", "agent-failed");
+        card.classList.add(`agent-${agent.status}`);
+        const stateLabel = card.querySelector(".agent-state");
+        if (stateLabel) stateLabel.textContent = agent.status;
+        const summary = card.querySelector(".agent-summary");
+        if (summary && agent.summary) summary.textContent = agent.summary;
+      });
+      const summary = state.summary || {};
+      Object.keys(summary).forEach((key) => {
+        const node = document.querySelector(`[data-migration-stat="${key}"]`);
+        if (node) node.textContent = summary[key];
+      });
+      if (["completed", "completed_with_gates", "failed"].includes(state.status)) {
+        window.location.reload();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+    migrationPolling = false;
+    notify("Migration is taking longer than expected. Refresh the page to inspect it.", true);
+  }
+
+  if (migrationPanel && migrationButton) {
+    if (migrationPanel.dataset.migrationStatus === "running") {
+      watchMigration();
+    }
+    migrationButton.addEventListener("click", async () => {
+      migrationButton.disabled = true;
+      try {
+        const force = migrationButton.dataset.migrationForce === "1";
+        await postJson(`/api/runs/${runId}/migration`, { force });
+        notify("Migration running.");
+        const hasRenderedState = Boolean(migrationPanel.dataset.migrationStatus);
+        if (hasRenderedState) {
+          migrationButton.disabled = false;
+          await watchMigration();
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 650));
+        window.location.reload();
+      } catch (error) {
+        migrationButton.disabled = false;
+        notify(error.message, true);
+      }
+    });
+  }
 })();

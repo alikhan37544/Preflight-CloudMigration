@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 418 passed
+pytest -q                                 421 passed
 pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
@@ -53,7 +53,7 @@ Playwright golden path                    passes (accept/reject dialog, mobile l
 
 ## Final status
 
-**Current internal gate: PASS for the demo path.** 418 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 421 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 
@@ -77,7 +77,7 @@ the demo separately after five hardening loops.
 | Judge / demo | 7.0 | **8.0** | Full script on an isolated copy; live seed intact; packet/audit verification; deck/PDF |
 | UX / accessibility | 7.5 | **8.2** | 0 axe violations; 1280/390 layouts; dialogs; packet export semantics; keyboard |
 | Guidewire domain | 6.0 | **8.5** | ERR00-G, A-03 counts, CUE, APD conversion scope, GarageLocation_Ext, verify-packet |
-| Engineering | 7.5 | **8.0** | 418 tests, 92/92 asset hashes, packet tamper/audit checks, CSRF, redaction |
+| Engineering | 7.5 | **8.0** | 421 tests, 92/92 asset hashes, packet tamper/audit checks, CSRF, redaction |
 
 The panel found no remaining demo blockers. Residual limitations are the
 synthetic in-sample evaluation, internally authored reference target, no human
@@ -95,3 +95,12 @@ inter-annotator study, non-deployable draft, and the demo-tier scope. See
   AI-assisted pass, not human IAA.
 - The PCF baseline is labelled "PCF filename baseline", not "PCF+grep".
 - Holdout is labelled capability recall under a naming-shift fixture.
+
+## Autonomous migrator (10 November 2026)
+
+- **Implementation:** `app/services/migrator.py`, `/migrator`, `/api/runs/{run_id}/migration`.
+- **Fresh seed:** five agents complete; 5/5 work packages generated; 11 open gates; verification PASS.
+- **Independent log:** `migration/audit.jsonl` hash chain verifies (`verify-migration`).
+- **Review-run integrity:** review audit remains at its 9 seed events; `verify-packet` still passes.
+- **Safety:** every package has `approval: pending`; the orchestrator writes only
+  `migration/target/**` and cannot approve, deploy, or resolve an assumption.

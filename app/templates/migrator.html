@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% from "_macros.html" import scroll_region, pluralize %}
+
+{% block content %}
+{% set state = view.migration %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Autonomous draft generation</div>
+    <h1>Multi-agent migrator</h1>
+    <p class="lede">Five specialist agents take a completed review run and autonomously produce a verified,
+    reviewable migration bundle. The orchestrator writes only local draft targets; every change stays pending
+    human approval.</p>
+  </div>
+  <div class="head-meta">
+    {% if state %}
+      {% if state.status == 'running' %}
+      <span class="pill pill-status status-running">running</span>
+      {% elif state.status == 'completed_with_gates' %}
+      <span class="pill pill-status status-succeeded">completed · gates open</span>
+      {% else %}
+      <span class="pill pill-status status-{{ state.status }}">{{ state.status }}</span>
+      {% endif %}
+      <span class="badge badge-neutral">non-deployable draft</span>
+    {% else %}
+    <span class="badge badge-neutral">ready to launch</span>
+    {% endif %}
+  </div>
+</div>
+
+<section class="banner banner-info" aria-label="Autonomy boundary">
+  <strong>Bounded autonomy.</strong> Agents can read the snapshot, generate target files, verify their own output,
+  and package the result. They cannot deploy, edit <code>_gen</code> files, approve a change, resolve an assumption,
+  or contact a tenant. {{ state.boundary if state else 'Every generated change remains pending human approval.' }}
+</section>
+
+{% if not state %}
+<section class="panel migration-launch" data-migration-panel data-run-id="{{ run_id }}">
+  <div class="migration-launch-copy">
+    <div class="eyebrow">No migration run yet</div>
+    <h2>Launch the crew on this snapshot</h2>
+    <p>The migrator uses the completed review artifacts for this run. It will scope the feature, generate the
+    target draft, convert review findings into gates, adversarially verify every package, and seal a bundle.</p>
+    <ul class="migration-inline-list">
+      <li><strong>Scout</strong> resolves the feature and evidence.</li>
+      <li><strong>Architect</strong> generates target files.</li>
+      <li><strong>Guardian</strong> opens risk gates.</li>
+      <li><strong>Critic</strong> rejects unsafe or ungrounded output.</li>
+      <li><strong>Scribe</strong> seals the plan, report, and bundle manifest.</li>
+    </ul>
+  </div>
+  <div class="migration-launch-action">
+    <button class="btn btn-primary" type="button" data-migration-start>Run autonomous migration</button>
+    <p class="muted">Runs locally in a few seconds. No upload, no tenant, no LLM API.</p>
+  </div>
+</section>
+
+{% else %}
+<section class="panel" data-migration-panel data-run-id="{{ run_id }}" data-migration-status="{{ state.status }}">
+  <div class="panel-head">
+    <div>
+      <h2>{{ state.feature_id }} · {{ state.feature_name }}</h2>
+      <p class="muted">{{ state.mode }} · {{ state.started_at }}{% if state.finished_at %} → {{ state.finished_at }}{% endif %}</p>
+    </div>
+    <button class="btn btn-small" type="button" data-migration-start data-migration-force="1">
+      {{ 'Run again' if state.status in ['completed', 'completed_with_gates'] else 'Restart' }}
+    </button>
+  </div>
+  <div class="migration-progress">
+    <progress class="progress" data-migration-bar max="100" value="{{ state.progress }}"></progress>
+    <div class="migration-progress-meta">
+      <span data-migration-label>{% if state.current_agent %}Running {{ state.current_agent }}{% else %}{{ state.status }}{% endif %} · {{ state.progress }}%</span>
+      <span class="muted">Agent log: <code>{{ state.audit.events }}</code> events
+        {% if state.audit.verified %}<span class="pill pill-status status-succeeded">verified</span>{% else %}<span class="pill pill-status status-failed">unverified</span>{% endif %}
+      </span>
+    </div>
+  </div>
+  <div class="summary-strip migration-summary" aria-label="Migration summary">
+    <div class="summary-stat"><span class="summary-value" data-migration-stat="packages">{{ state.summary.get('packages', 0) }}</span><span class="summary-label">work packages</span></div>
+    <div class="summary-stat"><span class="summary-value" data-migration-stat="generated">{{ state.summary.get('generated', 0) }}</span><span class="summary-label">draft targets generated</span></div>
+    <div class="summary-stat"><span class="summary-value" data-migration-stat="gates">{{ state.summary.get('gates', 0) }}</span><span class="summary-label">open gates</span></div>
+    <div class="summary-stat summary-signal"><span class="summary-value" data-migration-stat="high_gates">{{ state.summary.get('high_gates', 0) }}</span><span class="summary-label">high-impact gates</span></div>
+    <div class="summary-stat"><span class="summary-value" data-migration-stat="artifacts">{{ state.summary.get('artifacts', 0) }}</span><span class="summary-label">bundle files</span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>Agent crew</h2><span class="muted">deterministic handoffs · no self-approval</span></div>
+  <div class="agent-grid">
+    {% for agent in state.agents %}
+    <article class="agent-card agent-{{ agent.status }}" data-agent="{{ agent.agent_id }}">
+      <div class="agent-top">
+        <span class="agent-index">{{ loop.index }}</span>
+        <span class="agent-state">{{ agent.status }}</span>
+      </div>
+      <h3>{{ agent.name }}</h3>
+      <p class="agent-role">{{ agent.role }}</p>
+      <p class="agent-summary">{{ agent.summary or agent.description }}</p>
+      {% if agent.checks %}
+      <ul class="agent-checks">
+        {% for check in agent.checks[:3] %}
+        <li class="{{ 'ok' if check.ok else 'bad' }}">{{ check.name }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Generated packages</h2>
+    <span class="muted">{{ pluralize(state.packages|length, 'target') }} · {{ state.summary.get('generated', 0) }} ready · {{ state.summary.get('blocked', 0) }} blocked</span>
+  </div>
+  {% if state.packages %}
+  {% call scroll_region("Migration work packages, horizontally scrollable if needed") %}
+    <table class="data-table compact migration-table">
+      <caption>Migration work packages, target files, evidence, and approval state.</caption>
+      <thead><tr><th scope="col">ID</th><th scope="col">Target</th><th scope="col">Disposition</th><th scope="col">Status</th><th scope="col">Evidence</th><th scope="col">Gates</th><th scope="col">Approval</th></tr></thead>
+      <tbody>
+        {% for package in state.packages %}
+        <tr>
+          <td><code>{{ package.package_id }}</code></td>
+          <td><code>{{ package.target_path }}</code></td>
+          <td>{{ package.disposition or '—' }}</td>
+          <td>{% if package.status == 'draft_ready' %}<span class="pill pill-status status-succeeded">draft ready</span>{% else %}<span class="pill pill-status status-failed">{{ package.status }}</span>{% endif %}</td>
+          <td>{% for evidence_id in package.evidence_ids %}<code>{{ evidence_id }}</code>{% if not loop.last %} {% endif %}{% endfor %}</td>
+          <td>{% for gate_id in package.gate_ids %}<code>{{ gate_id }}</code>{% if not loop.last %} {% endif %}{% else %}<span class="muted">—</span>{% endfor %}</td>
+          <td>{{ package.approval }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
+  {% else %}
+  <p class="muted">No packages are available yet. The Architect creates one package per explicit change.</p>
+  {% endif %}
+</section>
+
+<div class="grid-2 migration-lower">
+  <section class="panel">
+    <div class="panel-head"><h2>Open gates</h2><span class="muted">human decisions required</span></div>
+    {% if state.gates %}
+    <div class="gate-list">
+      {% for gate in state.gates %}
+      <article class="gate-card gate-{{ gate.severity }}">
+        <div class="gate-head"><code>{{ gate.gate_id }}</code><span class="pill pill-{{ 'danger' if gate.severity == 'high' else 'warning' }}">{{ gate.severity }}</span><span class="muted">{{ gate.kind }}</span></div>
+        <p><strong>{{ gate.title }}</strong></p>
+        <p class="muted">{{ gate.question }}</p>
+        <p class="muted">Owner: {{ gate.owner }} · {{ gate.source_id }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">No open gates. Changes still require human approval before release.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Verification and bundle</h2><span class="pill pill-status status-{{ 'succeeded' if state.verification.status == 'passed' else 'failed' }}">{{ state.verification.status }}</span></div>
+    {% if state.verification.checks %}
+    <ul class="verification-list">
+      {% for check in state.verification.checks %}
+      <li class="{{ 'ok' if check.ok else 'bad' }}"><strong>{{ 'PASS' if check.ok else 'FAIL' }}</strong> {{ check.name }} <span class="muted">— {{ check.detail }}</span></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <dl class="migration-facts">
+      <div><dt>Plan</dt><dd><a href="/api/runs/{{ run_id }}/migration/file?path={{ state.plan_path|urlencode }}">migration-plan.json</a> <code>{{ state.plan_sha256[:12] if state.plan_sha256 else '—' }}</code></dd></div>
+      <div><dt>Report</dt><dd><a href="/api/runs/{{ run_id }}/migration/file?path={{ state.report_path|urlencode }}">MIGRATION-REPORT.md</a> <code>{{ state.report_sha256[:12] if state.report_sha256 else '—' }}</code></dd></div>
+      <div><dt>Bundle</dt><dd>{{ state.bundle.file_count if state.bundle else 0 }} files · <code>{{ state.bundle.sha256[:12] if state.bundle else '—' }}</code></dd></div>
+      <div><dt>Agent log</dt><dd><code>{{ state.audit.path }}</code> · head <code>{{ state.audit.head or '—' }}</code></dd></div>
+    </dl>
+  </section>
+</div>
+
+{% if state.status == 'running' %}
+<p class="muted migration-live-note" data-migration-poll>Live run in progress. This page updates automatically.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

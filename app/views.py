@@ -672,6 +672,7 @@ def load_run_view(store: RunStore, run_id: str) -> dict[str, Any]:
     audit = store.read_audit(run_id)
     decisions = _read(store, run_id, "decisions.json", {"decisions": []})["decisions"]
     immutability = _read(store, run_id, "immutability.json", {"before": "", "after": "", "unchanged": False})
+    migration = _read(store, run_id, "migration.json", None)
 
     evidence_by_id = {item["evidence_id"]: item for item in evidence + review_evidence}
     selected_feature = features[0] if features else None
@@ -703,6 +704,7 @@ def load_run_view(store: RunStore, run_id: str) -> dict[str, Any]:
         "audit_verified": store.verify_audit(run_id),
         "decisions": decisions,
         "immutability": immutability,
+        "migration": migration,
         "spines": spines,
         "selected_feature": selected_feature,
         "selected_spine": selected_spine,

@@ -10,6 +10,7 @@ from pathlib import Path
 from app.config import REPO, Settings
 from app.services.intake import build_manifest, snapshot_hash
 from app.services.packet import verify_packet_artifacts
+from app.services.migrator import MIGRATION_ARTIFACT, run_migration, verify_migration_log
 from app.services.pipeline import execute_run
 from app.store import RunStore
 
@@ -125,6 +126,37 @@ def cmd_verify_packet(args) -> int:
     return 0 if ok else 1
 
 
+def cmd_migrate(args) -> int:
+    store = _store(args)
+    try:
+        state = run_migration(store, args.run_id, feature_id=args.feature, pace=0.0)
+    except Exception as exc:
+        print(f"migration failed: {type(exc).__name__}: {exc}")
+        return 1
+    print(
+        f"{args.run_id}: {state['status']} · {state['summary'].get('generated', 0)}/"
+        f"{state['summary'].get('packages', 0)} targets · {state['summary'].get('gates', 0)} gates · "
+        f"verification {state['verification']['status']}"
+    )
+    print(f"plan: {state['plan_path']} · report: {state['report_path']} · bundle: {state['bundle']['path']}")
+    return 0
+
+
+def cmd_verify_migration(args) -> int:
+    store = _store(args)
+    try:
+        store.read_status(args.run_id)
+    except Exception:
+        print(f"run not found: {args.run_id}")
+        return 1
+    if not store.exists(args.run_id, MIGRATION_ARTIFACT):
+        print(f"{args.run_id}: no migration artifact")
+        return 1
+    ok, detail = verify_migration_log(store, args.run_id)
+    print(f"{args.run_id}: {'OK' if ok else 'TAMPERED'} - {detail}")
+    return 0 if ok else 1
+
+
 def cmd_claims_lint(args) -> int:
     from scripts.claims_lint import main as lint_main
 
@@ -166,6 +198,15 @@ def main(argv: list[str] | None = None) -> int:
     packet = sub.add_parser("verify-packet", help="verify the review packet hashes and content binding")
     packet.add_argument("run_id")
     packet.set_defaults(func=cmd_verify_packet)
+
+    migrate = sub.add_parser("migrate", help="run the autonomous multi-agent migrator")
+    migrate.add_argument("run_id")
+    migrate.add_argument("--feature", default=None)
+    migrate.set_defaults(func=cmd_migrate)
+
+    verify_migration = sub.add_parser("verify-migration", help="verify the migrator agent log")
+    verify_migration.add_argument("run_id")
+    verify_migration.set_defaults(func=cmd_verify_migration)
 
     lint = sub.add_parser("claims-lint", help="lint the claims ledger and rule coverage")
     lint.set_defaults(func=cmd_claims_lint)
