@@ -1,7 +1,7 @@
 # PreFlight — Demo & Hardening PR Summary
 
 **Branch:** `feat/deep-review-demo` (based on `main` @ `c72bb93`)
-**Status:** committed locally; push blocked by missing GitHub credentials.
+**Status:** pushed to the `alikhan37544/Preflight-CloudMigration` fork; cross-repo PR open against `SaundaryaSingh/Preflight-CloudMigration:main`.
 **Scope:** demo/presentation 10/10 pass, evidence-packet integrity, evaluation
 hardening, security/intake hardening, performance, and documentation.
 
@@ -88,23 +88,19 @@ make test
 
 ## Push / PR
 
-No GitHub credentials were available in this environment:
-
-```text
-git push -u origin feat/deep-review-demo
-fatal: could not read Username for 'https://github.com'
-ssh -T git@github.com
-git@github.com: Permission denied (publickey)
-```
-
-To publish:
+The authenticated account has read-only access to the upstream repository, so the
+branch is published from a fork:
 
 ```bash
-git push -u origin feat/deep-review-demo
-gh pr create --base main --head feat/deep-review-demo \
+git remote add fork https://github.com/alikhan37544/Preflight-CloudMigration.git
+git push -u fork feat/deep-review-demo
+gh pr create --repo SaundaryaSingh/Preflight-CloudMigration \
+  --base main --head alikhan37544:feat/deep-review-demo \
   --title "PreFlight: evidence-first demo, packet integrity, and evaluation hardening" \
   --body-file docs/PR-SUMMARY.md
 ```
+
+The upstream owner can merge the cross-repo PR directly.
 
 ## Known limitations
 
