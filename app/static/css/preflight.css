@@ -897,8 +897,8 @@ a.citation-card:hover { border-color: var(--brand); text-decoration: none; }
 .agent-checks li.bad::before { content: "×"; color: var(--danger); }
 .migration-table { min-width: 980px; }
 .migration-lower { align-items: start; }
-.gate-list { display: grid; gap: 8px; }
-.gate-card { border: 1px solid var(--border); border-left: 3px solid var(--warning); padding: 9px 11px; background: var(--surface-2); }
+.gate-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.gate-card { border: 1px solid var(--border); border-left: 3px solid var(--warning); padding: 9px 11px; background: var(--surface-2); min-width: 0; overflow-wrap: anywhere; }
 .gate-card.gate-high { border-left-color: var(--danger); }
 .gate-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .gate-card p { font-size: 12px; margin-bottom: 4px; }

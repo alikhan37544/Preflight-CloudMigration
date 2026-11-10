@@ -1,7 +1,7 @@
 # PreFlight — Autonomous Multi-Agent Migrator
 
 **Branch:** `feat/autonomous-migrator`
-**Base:** `main` (stacked on `feat/deep-review-demo` / PR #1)
+**Base:** `main` (follow-up to merged PR #1)
 **New commit:** `Add autonomous multi-agent migrator with live agent orchestration`
 
 ## What this adds
