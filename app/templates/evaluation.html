@@ -1,103 +1,240 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status %}
+{% from "_macros.html" import status, scroll_region %}
 
 {% block content %}
+{% set evaluation = view.evaluation %}
+{% set headline_metrics = view.metrics.metrics|selectattr('primary')|list %}
+{% set headline_count = headline_metrics|length %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Measured, with denominators</div>
     <h1>Evaluation</h1>
-    <p class="lede">Six headline metrics on the controlled synthetic demo slice. Raw counts, 95% Wilson
+    <p class="lede">{% if headline_count %}{{ headline_count }} headline metric{{ '' if headline_count == 1 else 's' }} on the controlled synthetic demo slice. Raw counts, 95% Wilson
     intervals, baselines, and known limitations are shown. Demo metrics are in-sample; the holdout
-    aggregate is pre-computed and not imported.</p>
+    aggregate is pre-computed and not imported.{% else %}No evaluation metrics are available for this run. Evaluation requires a completed
+    reconstruction and a frozen reference target; the empty state below explains what is missing.{% endif %}</p>
   </div>
   <div class="head-meta"><span class="badge badge-synthetic">not a benchmark</span></div>
 </div>
 
 {% if view.metrics.metrics %}
-<section class="metric-grid">
+<section class="summary-strip eval-summary" aria-label="Evaluation summary facts" data-eval-summary>
+  {% for fact in evaluation.facts %}
+  <div class="summary-stat eval-fact{{ ' eval-fact-wide' if fact.wide }}" title="{{ fact.title }}">
+    {% if fact.value %}<span class="summary-value">{{ fact.value }}</span>{% endif %}
+    <span class="summary-label">{{ fact.label }}</span>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="metric-grid" aria-label="{{ headline_count }} headline metric{{ '' if headline_count == 1 else 's' }}">
   {% for metric in view.metrics.metrics if metric.primary %}
-  <article class="metric-card">
+  <article class="metric-card" data-metric="{{ metric.metric_id }}">
     <div class="eyebrow">{{ metric.metric_id }}</div>
+    {% if metric.metric_id == 'M6' and evaluation.m6_counts %}
+    <div class="metric-value">F1 {{ evaluation.m6_counts.f1 }}</div>
+    {% else %}
     <div class="metric-value">{{ metric.value|percent }}</div>
+    {% endif %}
     <div class="metric-label">{{ metric.label }}</div>
+    {% if metric.metric_id == 'M5' and evaluation.m5_top8 %}
+    <div class="metric-facts" aria-label="M5 is reported as two facts">
+      <div class="metric-fact"><strong>{{ metric.numerator }} / {{ metric.denominator }}</strong> estimate-moving recall</div>
+      <div class="metric-fact metric-fact-allowance"><strong>{{ evaluation.m5_top8.fraction }}</strong> top-8 allowance</div>
+    </div>
+    {% elif metric.metric_id == 'M6' and evaluation.m6_counts %}
+    <div class="metric-facts" aria-label="M6 is reported as F1 and raw counts">
+      <div class="metric-fact"><strong>{{ evaluation.m6_counts.detail }}</strong></div>
+      <div class="metric-fact">{{ evaluation.m6_counts.findings }} findings in the scored corpus</div>
+    </div>
+    {% else %}
     <div class="metric-fraction">{{ metric.numerator }} / {{ metric.denominator }}{% if metric.interval_low is not none %} &middot; 95% CI {{ metric.interval_low|percent }}-{{ metric.interval_high|percent }}{% endif %}</div>
+    {% endif %}
+    {% if metric.metric_id == 'M5' and metric.interval_low is not none %}
+    <div class="metric-fraction">95% CI {{ metric.interval_low|percent }}-{{ metric.interval_high|percent }}</div>
+    {% endif %}
     <div class="metric-caveat">{{ metric.caveat }}</div>
   </article>
   {% endfor %}
 </section>
 
+<div class="grid-2 eval-boundary-grid">
+  {% if evaluation.holdout %}
+  <section class="panel holdout-panel" data-holdout="not-imported" aria-labelledby="holdout-heading">
+    <div class="panel-head">
+      <h2 id="holdout-heading">Holdout check</h2>
+      <span class="pill pill-heuristic">not imported</span>
+    </div>
+    <div class="holdout-value">{{ evaluation.holdout.value_pct }}</div>
+    <p><strong>{{ evaluation.holdout.fraction }} holdout feature recall.</strong> {{ evaluation.holdout.interval_text }} on
+      <code>{{ evaluation.holdout.fixture_id }}</code>.</p>
+    <p class="muted">{{ evaluation.holdout.caveat }}</p>
+  </section>
+  {% endif %}
+
+  <section class="panel boundary-panel" data-panel="not-proven" aria-labelledby="not-proven-heading">
+    <div class="panel-head">
+      <h2 id="not-proven-heading">What this does not prove</h2>
+      <a href="#limitations">Full limitations</a>
+    </div>
+    <ul class="limitation-list">
+      <li>One synthetic fixture plus a pre-computed naming-shift holdout. This is not a benchmark and not a generalisation claim.</li>
+      <li>The holdout is never imported into the demo, never used for tuning, and is not re-run here.</li>
+      <li>No live tenant, customer code, Cloud API generation, deployment, or official Cloud Assurance run.</li>
+      <li>M5 uses a fixed {{ evaluation.m5_top8.fraction if evaluation.m5_top8 else 'top-8' }} top-8 allowance, not a learned ranking. M6 has no interval at this n. M3 checks excerpt support, not semantic entailment.</li>
+      <li>Findings are pattern-based and advisory; the reference target is internally authored and AI-assisted, not independent.</li>
+    </ul>
+  </section>
+</div>
+
+<section class="panel chart-panel" aria-labelledby="wilson-heading">
+  <div class="panel-head">
+    <h2 id="wilson-heading">95% Wilson intervals</h2>
+    <span class="muted">dot = observed value; line = interval. M6 has no interval (bootstrap deferred).</span>
+  </div>
+  <div class="ci-chart" data-chart="wilson" role="list">
+    {% for row in evaluation.chart_rows %}
+    <div class="ci-row" role="listitem" data-metric-id="{{ row.id }}">
+      <div class="ci-label"><code>{{ row.id }}</code> {{ row.label }} <span class="muted">{{ row.fraction }}</span></div>
+      <div class="ci-track">
+        <svg class="ci-svg" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
+          <line class="ci-axis-line" x1="0" y1="10" x2="100" y2="10" vector-effect="non-scaling-stroke"/>
+          {% if row.has_interval %}
+          <line class="ci-range" x1="{{ row.interval_left }}" y1="10" x2="{{ row.interval_right }}" y2="10" vector-effect="non-scaling-stroke"/>
+          {% endif %}
+          <line class="ci-dot" x1="{{ row.dot_left }}" y1="3" x2="{{ row.dot_left }}" y2="17" vector-effect="non-scaling-stroke"/>
+        </svg>
+      </div>
+      <div class="ci-value">{{ row.value_pct }} <span class="muted">{{ row.interval_text }}</span></div>
+      <span class="visually-hidden">{{ row.aria }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted chart-note">Intervals are Wilson score intervals from the reported numerators and denominators. A 100% observed value does not mean certainty.</p>
+</section>
+
+<section class="panel chart-panel" aria-labelledby="bars-heading">
+  <div class="panel-head">
+    <h2 id="bars-heading">Headline metrics vs baselines</h2>
+    <span class="muted">same scale, 0-100%; the +10 pp pre-registered margin is shown per pair</span>
+  </div>
+  <div class="bar-chart" data-chart="baseline-bars">
+    {% for row in evaluation.bar_rows %}
+    <div class="bar-group" data-bar-metric="{{ row.id }}">
+      <div class="bar-heading"><code>{{ row.id }}</code> {{ row.label }} <span class="muted">{{ row.value_pct }} vs {{ row.baseline_pct }}</span></div>
+      <div class="bar-item">
+        <span class="bar-caption">PreFlight</span>
+        <svg class="bar-track" viewBox="0 0 100 10" preserveAspectRatio="none" role="img"
+             aria-label="PreFlight {{ row.label }}: {{ row.value_pct }}">
+          <rect class="bar-fill bar-tool" x="0" y="0" width="{{ row.value_left }}" height="10" rx="1"></rect>
+        </svg>
+        <span class="bar-number">{{ row.value_pct }}</span>
+      </div>
+      <div class="bar-item">
+        <span class="bar-caption">Baseline</span>
+        <svg class="bar-track" viewBox="0 0 100 10" preserveAspectRatio="none" role="img"
+             aria-label="{{ row.baseline_label }} baseline {{ row.label }}: {{ row.baseline_pct }}">
+          <rect class="bar-fill bar-baseline" x="0" y="0" width="{{ row.baseline_left }}" height="10" rx="1"></rect>
+        </svg>
+        <span class="bar-number">{{ row.baseline_pct }}</span>
+      </div>
+      <div class="bar-foot muted">{{ row.baseline_label }} baseline; delta {{ row.delta_pp }};
+        {{ 'meets the +10 pp margin' if row.pass else 'does not meet the +10 pp margin' }}.</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
 <div class="grid-2">
   <section class="panel">
     <div class="panel-head"><h2>Baselines</h2><span class="muted">independent or naive comparators</span></div>
-    <table class="data-table compact">
-      <thead><tr><th>Baseline</th><th>Value</th></tr></thead>
-      <tbody>
-        {% for name, value in view.metrics.baselines.items() %}
-        <tr><td>{{ name|replace('_', ' ') }}</td><td>{{ value|num }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% if view.metrics.margins %}
-    <table class="data-table compact">
-      <thead><tr><th>Margin</th><th>Baseline</th><th>Delta</th><th>Required</th><th>Status</th></tr></thead>
-      <tbody>
-        {% for metric_id, margin in view.metrics.margins.items() %}
-        <tr>
-          <td>{{ metric_id }}</td>
-          <td>{{ margin.baseline|num }}</td>
-          <td>{{ margin.delta|num }}</td>
-          <td>+{{ margin.required_pp }}pp</td>
-          <td><span class="pill {{ 'pill-verified-id' if margin.pass else 'pill-error' }}">{{ 'PASS' if margin.pass else 'NOT SUPPORTED' }}</span></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% call scroll_region("Comparison baselines table, horizontally scrollable if needed") %}
+      <table class="data-table compact">
+        <caption>Comparison baselines, shown as percentages.</caption>
+        <thead><tr><th scope="col">Baseline</th><th scope="col">Value</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.baseline_rows %}
+          <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
+    <p class="muted table-note">{{ evaluation.baseline_footnote }}</p>
+    {% if evaluation.margin_rows %}
+    {% call scroll_region("Pre-registered margins table, horizontally scrollable if needed") %}
+      <table class="data-table compact margin-table">
+        <caption>Pre-registered margins against selected baselines.</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.margin_rows %}
+          <tr>
+            <td>{{ row.id }} {{ row.label }}</td>
+            <td>{{ row.baseline_pct }} <span class="muted">({{ row.baseline_label }})</span></td>
+            <td>{{ row.delta_pp }}</td>
+            <td>{{ row.required_pp }}</td>
+            <td><span class="pill {{ 'pill-verified-id' if row.pass else 'pill-error' }}">{{ 'PASS' if row.pass else 'NOT SUPPORTED' }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
     {% endif %}
   </section>
   <section class="panel">
-    <div class="panel-head"><h2>Supporting metrics</h2></div>
-    <table class="data-table compact">
-      <thead><tr><th>Metric</th><th>Value</th><th>n / d</th></tr></thead>
-      <tbody>
-        {% for metric in view.metrics.supporting %}
-        <tr><td>{{ metric.label }}</td><td>{{ metric.value|num }}</td><td>{{ metric.numerator }} / {{ metric.denominator }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="panel-head"><h2>Supporting metrics</h2><span class="muted">ratios shown as percentages</span></div>
+    {% call scroll_region("Supporting metrics table, horizontally scrollable if needed") %}
+      <table class="data-table compact">
+        <caption>Supporting metrics with numerator and denominator.</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">n / d</th></tr></thead>
+        <tbody>
+          {% for row in evaluation.supporting_rows %}
+          <tr><td>{{ row.label }}</td><td>{{ row.value_pct }}</td><td>{{ row.fraction }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endcall %}
   </section>
 </div>
 
 <section class="panel">
-  <div class="panel-head"><h2>Per-rule findings</h2><span class="muted">TP / FP / FN</span></div>
-  <table class="data-table compact">
-    <thead><tr><th>Rule</th><th>TP</th><th>FP</th><th>FN</th><th>Precision</th><th>Recall</th></tr></thead>
-    <tbody>
-      {% for rule_id, stats in view.metrics.per_rule.items() %}
-      <tr>
-        <td><code>{{ rule_id }}</code></td>
-        <td>{{ stats.tp }}</td><td>{{ stats.fp }}</td><td>{{ stats.fn }}</td>
-        <td>{{ (stats.tp / (stats.tp + stats.fp)) if (stats.tp + stats.fp) else 0|num }}</td>
-        <td>{{ (stats.tp / (stats.tp + stats.fn)) if (stats.tp + stats.fn) else 0|num }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="panel-head"><h2>Per-rule findings</h2><span class="muted">TP / FP / FN; precision and recall as percentages</span></div>
+  {% call scroll_region("Per-rule findings table, horizontally scrollable if needed") %}
+    <table class="data-table compact per-rule-table">
+      <caption>Per-rule finding counts and percentages.</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">TP</th><th scope="col">FP</th><th scope="col">FN</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
+      <tbody>
+        {% for row in evaluation.per_rule_rows %}
+        <tr>
+          <td><code>{{ row.rule_id }}</code></td>
+          <td>{{ row.tp }}</td><td>{{ row.fp }}</td><td>{{ row.fn }}</td>
+          <td>{{ row.precision_pct }}</td>
+          <td>{{ row.recall_pct }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
 </section>
 
-<section class="panel">
-  <div class="panel-head"><h2>Limitations</h2></div>
+<details class="panel limitations" id="limitations">
+  <summary>
+    <span class="details-title">Full limitations, caveats, and pre-registration notes</span>
+    <span class="details-hint" data-details-hint>expand</span>
+  </summary>
   <ul class="limitation-list">
     <li>One synthetic main fixture plus a naming-shift holdout. Not a benchmark and not a generalisation claim.</li>
     <li>No live tenant, no customer code, no Cloud API generation, and no deployment.</li>
     <li>Findings are pattern-based and advisory. Official Cloud Assurance was not run.</li>
     <li>Impact ranges are heuristic planning ranges, not quotes or measured productivity.</li>
     <li>Demo metrics are in-sample on the development slice; the naming-shift holdout is pre-computed and never imported.</li>
-    <li>M3 audits excerpt support at the source, not semantic entailment. M6 uses three positives and three hard negatives per rule; no F1 interval is shown at this n.</li>
+    <li>M3 audits excerpt support at the source, not semantic entailment. The M6 scoring corpus uses three positives and three hard negatives per rule; the findings table lists observed findings only, not the corpus rows. No F1 interval is shown at this n.</li>
     <li>No human inter-annotator study was run; the reference target and concordance process are labelled AI-assisted.</li>
     <li>The reference target is internally authored by the same build team, not independent; this is reported as a limitation.</li>
-    <li>M5 reports recall with a fixed two-decoy top-8 allowance, not a learned ranking of all tool output.</li>
+    {% set m5_metric = view.metrics.metrics|selectattr('metric_id', 'equalto', 'M5')|first %}
+    <li>M5 reports recall with a fixed two-decoy top-8 allowance, not a learned ranking of all tool output.{% if m5_metric and evaluation.m5_top8 %} The same run shows {{ m5_metric.numerator }}/{{ m5_metric.denominator }} recall and {{ evaluation.m5_top8.fraction }} top-8 allowance.{% endif %}</li>
+    <li>The always-answer assistant refusal-recall baseline is pre-registered but not a meaningful comparator for this demo.</li>
   </ul>
-</section>
+</details>
 {% else %}
 <section class="panel empty-inline">
   <h2>No metrics yet</h2>

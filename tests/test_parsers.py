@@ -5,8 +5,14 @@ Written before the parser implementations.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
+import pytest
+
+from lxml import etree
+
+from app.services.parsers._xml import XPathBuilder, safe_parser, xpath_with_index
 from app.services.parsers.config import parse_config_yaml, parse_json_with_pointer
 from app.services.parsers.entity import parse_entity
 from app.services.parsers.gosu import parse_gunit, scan_gosu
@@ -22,6 +28,49 @@ def test_parse_pcf_widgets_and_lines(tiny_snapshot: Path) -> None:
     assert [w.binding for w in doc.widgets] == ["VehicleType", "ModelYear", "GarageLocation_Ext"]
     assert all(w.line and w.line >= 1 for w in doc.widgets)
     assert doc.widgets[0].xpath.endswith("TypeKeyInput[1]")
+
+
+def test_xpath_builder_matches_lxml_getpath_including_namespaces(tmp_path: Path) -> None:
+    xml = (
+        '<PCF xmlns:x="urn:prefixed" name="P">'
+        "<Screen>"
+        '<TextInput id="a"/><TextInput id="b"/>'
+        '<x:TextInput id="c"/><TextInput id="d"/>'
+        "<Other><TextInput id=\"e\"/></Other>"
+        "</Screen>"
+        "</PCF>"
+    )
+    path = tmp_path / "Namespaced.pcf"
+    path.write_text(xml, encoding="utf-8")
+    tree = etree.parse(str(path), safe_parser())
+    builder = XPathBuilder(tree)
+    for element in tree.iter():
+        assert builder.path(element) == tree.getpath(element)
+
+    # Default-namespace elements use lxml's wildcard step; prefixed elements
+    # keep their prefix so tree.xpath() resolves the stored locator.
+    default_xml = (
+        '<PCF xmlns="urn:default"><Screen><TextInput id="a"/><TextInput id="b"/>'
+        "</Screen></PCF>"
+    )
+    default_tree = etree.fromstring(default_xml).getroottree()
+    default_builder = XPathBuilder(default_tree)
+    widgets = [element for element in default_tree.iter() if element.get("id")]
+    assert [default_builder.path(element) for element in widgets] == [
+        "/*/*/*[1]", "/*/*/*[2]",
+    ]
+    for element in widgets:
+        assert default_tree.xpath(default_builder.path(element))[0] == element
+
+
+def test_parse_pcf_locator_paths_resolve_back_to_widgets(tiny_snapshot: Path) -> None:
+    path = tiny_snapshot / "config/web/pcf/policy/PAVehicleDV.pcf"
+    doc = parse_pcf(path)
+    tree = etree.parse(str(path), safe_parser())
+    for widget in doc.widgets:
+        found = tree.xpath(widget.xpath)
+        assert len(found) == 1
+        assert found[0].get("id") == widget.widget_id
 
 
 def test_parse_entity_columns_and_extension(tiny_snapshot: Path) -> None:
@@ -99,6 +148,42 @@ def test_parse_config_yaml_reports_line_numbers(tmp_path: Path) -> None:
     assert doc.data["types"]["PAVehicle"]["nameOverride"] == "PersonalVehicle"
     assert doc.line_for("types.PAVehicle.nameOverride") == 3
     assert doc.line_for("types.PAVehicle.fields.Year.nameOverride") == 6
+
+
+def test_yaml_alias_bomb_is_rejected_quickly(tmp_path: Path) -> None:
+    lines = ['a0: &a0 ["x","x","x","x","x","x","x","x","x","x"]']
+    previous = "a0"
+    for level in range(1, 8):
+        current = f"a{level}"
+        lines.append(f"{current}: &{current} [" + ",".join([f"*{previous}"] * 10) + "]")
+        previous = current
+    path = tmp_path / "alias-bomb.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert len(path.read_bytes()) < 1024
+
+    started = time.monotonic()
+    with pytest.raises(ValueError, match="alias"):
+        parse_config_yaml(path)
+    assert time.monotonic() - started < 1.0
+
+
+def test_yaml_nesting_limit_is_enforced(tmp_path: Path) -> None:
+    lines = []
+    for level in range(70):
+        lines.append("  " * level + f"level{level}:")
+    lines.append("  " * 70 + "value: 1")
+    path = tmp_path / "deep.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="nesting limit"):
+        parse_config_yaml(path)
+
+
+def test_normal_yaml_with_anchors_but_no_aliases_still_parses(tmp_path: Path) -> None:
+    path = tmp_path / "anchors.yaml"
+    path.write_text("types: &types\n  PAVehicle:\n    nameOverride: PersonalVehicle\n",
+                    encoding="utf-8")
+    doc = parse_config_yaml(path)
+    assert doc.data["types"]["PAVehicle"]["nameOverride"] == "PersonalVehicle"
 
 
 def test_json_pointer_returns_value_and_excerpt(tmp_path: Path) -> None:

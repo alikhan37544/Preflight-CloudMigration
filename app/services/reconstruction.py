@@ -119,7 +119,9 @@ def _schema_document() -> dict:
         "title": "PreFlight local Cloud API extension draft (not official Guidewire schema)",
         "type": "object",
         "additionalProperties": False,
-        "required": ["modelYear", "make", "vin", "usage", "vehicleType", "garageLocation"],
+        # garageLocation is optional in the codegen draft
+        # (GarageLocation.requiredForCreate: false), so it is not required here.
+        "required": ["modelYear", "make", "vin", "usage", "vehicleType"],
         "properties": {
             "modelYear": {"type": "integer", "minimum": 1900, "maximum": 2100},
             "make": {"type": "string", "maxLength": 80},
@@ -168,7 +170,13 @@ def _codegen_document() -> dict:
                 "toRemove": "removeVehicle",
                 "fields": {
                     "Year": {"nameOverride": "ModelYear"},
-                    "GarageLocation": {"requiredForCreate": False},
+                    # APD template field name -> installed extension field name.
+                    # Optional here and in the schema; the updater maps the API
+                    # property to GarageLocation_Ext.
+                    "GarageLocation": {
+                        "nameOverride": "GarageLocation_Ext",
+                        "requiredForCreate": False,
+                    },
                 },
             },
             "PADriver": {"nameOverride": "VehicleDriver"},
@@ -376,15 +384,28 @@ def reconstruct(root: Path, manifest: Manifest, discovery: DiscoveryResult, feat
         ),
         Assumption(
             assumption_id="A-03",
-            statement="The long APD type name exceeds 24 characters; the draft adds a nameOverride to avoid truncation compile errors.",
+            statement=(
+                "The 37-character type PersonalAutoRatingFactorConfiguration appears in two files "
+                "(product/template/LongTypeA.xml and config/resources/productmodel/PersonalAuto.xml), "
+                "above APD's 24-character import limit. It is a PA-VEH-02 dependency outside "
+                "PA-VEH-01's 11 references; the draft adds a nameOverride mapping the truncated "
+                "visualized name to the installed name."
+            ),
             impact="high",
             impact_range_days=(7.0, 9.0),
-            impact_basis="11 references x 0.5 + 4 artefact types x 0.25 + 2 tests x 0.5 = 7.5, with a review buffer rounded to 7-9 engineer-days.",
+            impact_basis=(
+                "Two files carry the long type (template and product model), with 0 tests; "
+                "7-9 engineer-days is a heuristic for cross-artefact review and compile validation, "
+                "not a count-derived estimate."
+            ),
             impact_confidence="medium",
             impact_caveat="Heuristic planning range; not a quote or measured productivity claim.",
             status="open",
             owner="unassigned",
-            question_to_ask="Which teams own the 11 references, and can the nameOverride be validated on the target release?",
+            question_to_ask=(
+                "Who owns the template and product-model change, and can the nameOverride be "
+                "validated on the target release?"
+            ),
             related_mapping_id=mappings[4].mapping_id,
         ),
     ]

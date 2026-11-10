@@ -1,0 +1,1897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>PreFlight — Evidence before the estimate</title>
+<style>
+  :root {
+    --ink: #1B2833;
+    --ink-2: #243846;
+    --ink-3: #314959;
+    --canvas: #F6F8FA;
+    --paper: #FFFFFF;
+    --teal: #0B6B85;
+    --teal-dark: #075268;
+    --teal-soft: #E6F2F5;
+    --teal-line: #B8D8E0;
+    --border: #D5DEE5;
+    --border-strong: #B9C7D2;
+    --muted: #5B6B78;
+    --muted-2: #52636F;
+    --amber: #8A5A12;
+    --amber-bg: #FBF1DF;
+    --amber-line: #E7C98F;
+    --danger: #8E2F2F;
+    --danger-bg: #FAEDEC;
+    --success: #2E6A4E;
+    --success-bg: #EAF4EE;
+    --violet: #5B4B8A;
+    --violet-bg: #F0EDF7;
+    --chrome-h: 56px;
+    --foot-h: 38px;
+    --pad-x: clamp(26px, 4.55vw, 76px);
+    --radius: 4px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--ink);
+    font-family: var(--sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid #E0A83B; outline-offset: 3px; }
+  .skip-link {
+    position: fixed; z-index: 100; left: 12px; top: -60px;
+    background: var(--paper); color: var(--ink); padding: 10px 14px;
+    border: 2px solid var(--teal); font-weight: 700; text-decoration: none;
+  }
+  .skip-link:focus { top: 10px; }
+  .visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Chrome */
+  .chrome {
+    position: fixed; z-index: 60; inset: 0 0 auto 0; height: var(--chrome-h);
+    display: flex; align-items: center; gap: 18px;
+    padding: 0 18px; background: var(--ink); color: #F3F7F9;
+    border-bottom: 1px solid #0E1921;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-mark {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    background: var(--teal); color: #fff; font-weight: 800; font-size: 12px;
+    letter-spacing: .02em; border: 1px solid #2D91AA; flex: none;
+  }
+  .brand-name { font-size: 15px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+  .brand-divider { width: 1px; height: 18px; background: #3B4C5A; flex: none; }
+  .deck-title { font-size: 12.5px; color: #C8D6DF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chrome-mid { flex: 1; min-width: 0; text-align: center; }
+  .section-label {
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: #8FB8C6; font-weight: 800; white-space: nowrap;
+  }
+  .chrome-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+  .chrome-btn {
+    background: transparent; color: #D8E4EA; border: 1px solid #3B4C5A;
+    padding: 6px 9px; font-size: 11px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; border-radius: 2px;
+  }
+  .chrome-btn:hover { background: #253845; color: #fff; border-color: #5A7484; }
+  .chrome-btn[aria-pressed="true"] { background: var(--teal); border-color: #2D91AA; color: #fff; }
+  .chrome-btn kbd { font-family: var(--mono); font-size: 10px; color: #AFC4CF; }
+  .chrome-btn[aria-pressed="true"] kbd { color: #D8F0F6; }
+  .counter { font-family: var(--mono); font-size: 12px; color: #EAF2F6; min-width: 74px; text-align: right; }
+  .counter span { color: #8FA9B8; }
+
+  /* Deck */
+  .deck { position: fixed; inset: var(--chrome-h) 0 var(--foot-h) 0; background: var(--canvas); overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0; background: var(--canvas);
+    display: none; overflow: hidden;
+  }
+  .slide.is-active { display: block; }
+  .slide-body {
+    width: 100%; max-width: 1640px; height: 100%; margin: 0 auto;
+    padding: clamp(18px, 2.3vh, 30px) var(--pad-x) clamp(12px, 1.6vh, 20px);
+    display: flex; flex-direction: column;
+  }
+  .slide-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: clamp(10px, 1.5vh, 18px); }
+  .slide-head-main { min-width: 0; }
+  .kicker {
+    font-size: clamp(9px, .56vw, 11px); letter-spacing: .17em; text-transform: uppercase;
+    color: var(--teal); font-weight: 800; margin: 0 0 5px;
+  }
+  h1, h2, h3, p { margin-top: 0; }
+  h2 {
+    font-size: clamp(1.65rem, 2.62vw, 3.1rem); line-height: 1.06; letter-spacing: -.028em;
+    margin: 0 0 6px; max-width: 34ch; font-weight: 800;
+  }
+  .slide-lede {
+    margin: 0; color: var(--muted); line-height: 1.42;
+    font-size: clamp(.83rem, .93vw, 1rem); max-width: 88ch;
+  }
+  .head-badge {
+    flex: none; align-self: flex-start; border: 1px solid var(--border-strong);
+    background: var(--paper); color: var(--muted); font-size: 10.5px;
+    font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 6px 9px;
+  }
+  .head-badge.attention { border-color: var(--amber-line); background: var(--amber-bg); color: var(--amber); }
+
+  .foot {
+    position: fixed; z-index: 60; inset: auto 0 0 0; height: var(--foot-h);
+    display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    background: var(--ink); color: #9FB2BF; font-size: 10.5px;
+  }
+  .foot-brand { white-space: nowrap; }
+  .foot-note { color: #7F95A3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .foot-mid { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 40px; }
+  .progress-track { height: 4px; flex: 1; background: #314654; overflow: hidden; }
+  .progress-bar { height: 100%; width: 6.25%; background: #42A6BF; transition: width .22s ease; }
+  .foot-right { white-space: nowrap; display: flex; gap: 12px; align-items: center; }
+  .foot-dot { width: 6px; height: 6px; background: #42A6BF; border-radius: 50%; display: inline-block; }
+
+  /* Shared pieces */
+  .panel {
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: clamp(14px, 1.5vw, 22px); min-width: 0;
+  }
+  .panel.tint { background: #EEF4F6; border-color: #C9D9DF; }
+  .panel.ink { background: var(--ink); border-color: var(--ink); color: #F2F6F8; }
+  .panel h3 { font-size: clamp(.96rem, 1.06vw, 1.15rem); line-height: 1.22; margin: 0 0 8px; letter-spacing: -.01em; }
+  .panel p { line-height: 1.42; }
+  .panel p:last-child { margin-bottom: 0; }
+  .eyebrow {
+    font-size: 10px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800;
+    color: var(--teal); margin-bottom: 6px;
+  }
+  .panel.ink .eyebrow { color: #7BC4D6; }
+  .muted { color: var(--muted); }
+  .small { font-size: clamp(.7rem, .76vw, .8rem); line-height: 1.38; }
+  .tiny { font-size: clamp(.64rem, .68vw, .72rem); line-height: 1.35; color: var(--muted); }
+  .mono { font-family: var(--mono); }
+  .nowrap { white-space: nowrap; }
+  .accent { color: var(--teal); }
+  .warn { color: var(--amber); }
+  .danger { color: var(--danger); }
+  .success { color: var(--success); }
+  .rule { height: 1px; background: var(--border); margin: 12px 0; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 6px;
+    border: 1px solid var(--border-strong); border-radius: 2px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); background: var(--paper); white-space: nowrap;
+  }
+  .tag.teal { border-color: var(--teal-line); background: var(--teal-soft); color: var(--teal-dark); }
+  .tag.amber { border-color: var(--amber-line); background: var(--amber-bg); color: var(--amber); }
+  .tag.danger { border-color: #E4B7B5; background: var(--danger-bg); color: var(--danger); }
+  .tag.success { border-color: #B8D8C6; background: var(--success-bg); color: var(--success); }
+  .tag.violet { border-color: #CFC5E6; background: var(--violet-bg); color: var(--violet); }
+  .tag.ink { border-color: #3C5261; background: #22333F; color: #D9E5EB; }
+  .source { font-size: clamp(.62rem, .67vw, .71rem); color: var(--muted-2); line-height: 1.35; }
+  .source b { color: var(--muted); font-weight: 700; }
+  .stat-strip { display: flex; flex-wrap: wrap; border: 1px solid var(--border); background: var(--paper); }
+  .stat {
+    flex: 1 1 0; min-width: 92px; padding: 9px 12px; border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: 0; }
+  .stat-value { display: block; font-size: clamp(1.15rem, 1.45vw, 1.55rem); line-height: 1; font-weight: 800; letter-spacing: -.02em; }
+  .stat-label { display: block; margin-top: 4px; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; line-height: 1.25; }
+  .stat.signal .stat-value { color: var(--danger); }
+  .stat.good .stat-value { color: var(--teal); }
+  .cols { display: grid; gap: clamp(12px, 1.5vw, 22px); min-height: 0; }
+  .cols-2 { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); }
+  .cols-2.wide-left { grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr); }
+  .eval-cols { grid-template-columns: 1.35fr .65fr; }
+  .risk-cols { grid-template-columns: 1.15fr .85fr; }
+  .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stack { display: flex; flex-direction: column; gap: clamp(8px, 1.1vh, 12px); min-height: 0; }
+  .grow { flex: 1; min-height: 0; }
+  .bullets { margin: 0; padding-left: 17px; }
+  .bullets li { margin: 0 0 7px; line-height: 1.38; font-size: clamp(.78rem, .85vw, .92rem); }
+  .bullets li:last-child { margin-bottom: 0; }
+  .bullets.tight li { margin-bottom: 4px; }
+
+  /* Numbered callouts */
+  .callout-list { display: flex; flex-direction: column; gap: clamp(7px, 1vh, 11px); }
+  .callout { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 9px; align-items: start; }
+  .callout-num {
+    width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
+    background: var(--teal); color: #fff; font-weight: 800; font-size: 11px;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px var(--teal-line);
+  }
+  .callout-body { font-size: clamp(.72rem, .79vw, .85rem); line-height: 1.36; }
+  .callout-body b { font-weight: 800; }
+  .shot {
+    position: relative; background: var(--paper); border: 1px solid var(--border-strong);
+    line-height: 0; overflow: hidden;
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot figcaption {
+    line-height: 1.35; padding: 7px 10px; border-top: 1px solid var(--border);
+    color: var(--muted); background: #FBFCFD;
+    font-size: clamp(.62rem, .67vw, .71rem);
+  }
+  .marker {
+    position: absolute; z-index: 3; width: clamp(18px, 1.3vw, 22px); height: clamp(18px, 1.3vw, 22px);
+    display: grid; place-items: center; border-radius: 50%;
+    background: var(--teal); color: #fff; font-size: clamp(9px, .66vw, 11px); font-weight: 800;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(11,107,133,.5), 0 1px 3px rgba(0,0,0,.18);
+    line-height: 1;
+  }
+  .marker.middle { transform: translateY(-50%); }
+  .marker.amber { background: var(--amber); }
+  .marker.danger { background: var(--danger); }
+  .marker.ink { background: var(--ink); }
+
+  /* Title */
+  .slide--title .slide-body { justify-content: center; }
+  .title-grid { display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(0, .86fr); gap: clamp(22px, 4vw, 62px); align-items: center; flex: 1; }
+  .title-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .title-kicker .line { width: 42px; height: 3px; background: var(--teal); }
+  .title-kicker span { font-size: clamp(10px, .68vw, 12px); letter-spacing: .2em; text-transform: uppercase; font-weight: 800; color: var(--teal); }
+  .title-display {
+    font-size: clamp(2.75rem, 5.55vw, 6.2rem); line-height: .94; letter-spacing: -.045em;
+    margin: 0 0 20px; font-weight: 800; max-width: 12ch;
+  }
+  .title-sub { font-size: clamp(.92rem, 1.08vw, 1.15rem); line-height: 1.45; color: var(--muted); max-width: 52ch; margin-bottom: 18px; }
+  .title-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .title-meta { font-size: 10.5px; color: var(--muted-2); letter-spacing: .04em; }
+  .title-panel { background: var(--ink); color: #EDF4F7; padding: clamp(18px, 2vw, 30px); border: 1px solid #0E1921; }
+  .packet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; border-bottom: 1px solid #3A4F5D; padding-bottom: 11px; margin-bottom: 12px; }
+  .packet-title { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #86BDCD; font-weight: 800; }
+  .packet-id { font-family: var(--mono); font-size: 10px; color: #9DB2BE; }
+  .packet-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 8px 0; border-bottom: 1px solid #2B3E4B; align-items: baseline; }
+  .packet-row:last-of-type { border-bottom: 0; }
+  .packet-k { font-size: 12px; color: #DDE9EE; }
+  .packet-v { font-family: var(--mono); font-size: 11.5px; color: #75C2D2; white-space: nowrap; }
+  .packet-note { font-size: 10.5px; line-height: 1.45; color: #90A5B1; border-top: 1px solid #3A4F5D; padding-top: 12px; margin-top: 12px; }
+  .packet-quote { font-size: 12px; line-height: 1.4; color: #EAF3F6; margin-top: 12px; }
+  .packet-quote b { color: #8FD3E1; }
+
+  /* Slide 2 */
+  .question-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .qcard { background: var(--paper); border: 1px solid var(--border); border-top: 3px solid var(--teal); padding: 13px 14px; }
+  .qcard .qnum { font-size: 1.5rem; line-height: 1; font-weight: 800; color: var(--teal); margin-bottom: 7px; }
+  .qcard h3 { font-size: clamp(.88rem, .95vw, 1.02rem); margin-bottom: 4px; }
+  .qcard p { font-size: clamp(.7rem, .75vw, .8rem); margin: 0; color: var(--muted); line-height: 1.35; }
+  .pain-list { display: flex; flex-direction: column; gap: 8px; }
+  .pain { display: grid; grid-template-columns: 94px minmax(0, 1fr); gap: 11px; align-items: start; background: var(--paper); border: 1px solid var(--border); padding: 10px 12px; }
+  .pain-tag { font-size: 9.5px; line-height: 1.2; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--teal-dark); padding-top: 2px; }
+  .pain h3 { font-size: clamp(.83rem, .9vw, .96rem); margin: 0 0 3px; }
+  .pain p { font-size: clamp(.71rem, .76vw, .81rem); line-height: 1.34; color: var(--muted); margin: 0 0 4px; }
+  .quote-bar { border-left: 3px solid var(--teal); padding: 7px 0 7px 13px; margin: 0 0 12px; color: var(--ink-2); font-size: clamp(.8rem, .9vw, .96rem); line-height: 1.4; }
+  .quote-bar b { color: var(--teal-dark); }
+
+  /* Slide 3 */
+  .slide--gap h2 { max-width: 54ch; font-size: clamp(1.45rem, 2.3vw, 2.7rem); }
+  .ack-line { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .fixture-note { margin: 6px 0 0; font-size: 10px; line-height: 1.35; color: var(--muted); }
+  .guards-shot { border: 1px solid var(--border-strong); background: var(--paper); position: relative; margin-top: 8px; }
+  .guards-shot img { display: block; width: 100%; height: auto; }
+  .guards-shot .cap { padding: 5px 8px; border-top: 1px solid var(--border); font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .m12-list { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 3px 6px; margin: 0; font-size: 10px; line-height: 1.35; }
+  .m12-list dt { color: var(--muted); font-weight: 700; }
+  .m12-list dd { margin: 0; overflow-wrap: anywhere; }
+  .m12-list code { font-size: 10px; }
+  .matrix-wrap { min-width: 0; }
+  .matrix { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--border); }
+  .matrix th, .matrix td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .matrix th { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 800; background: #EEF3F5; line-height: 1.2; }
+  .matrix th:not(:first-child), .matrix td:not(:first-child) { text-align: center; width: 9.4%; }
+  .matrix td { font-size: clamp(.68rem, .73vw, .78rem); line-height: 1.3; }
+  .matrix tr:last-child td { border-bottom: 0; }
+  .matrix .tool-name { font-weight: 800; display: block; }
+  .matrix .tool-sub { color: var(--muted); font-size: .92em; display: block; margin-top: 1px; }
+  .matrix tr.preflight td { background: #EAF4F6; border-top: 2px solid var(--teal); }
+  .matrix tr.preflight .tool-name { color: var(--teal-dark); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); }
+  .dot.half { background: #9FBCC6; }
+  .dot.none { background: #DCE5EA; border: 1px solid #C3D0D8; }
+  .dot-label { display: block; font-size: 8px; color: var(--muted-2); margin-top: 1px; }
+  .gap-call { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 14px; margin-top: 12px; }
+  .gap-call .panel { border-left: 3px solid var(--teal); }
+  .not-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .bottom-band { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+  .bottom-band.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bottom-card { background: var(--paper); border: 1px solid var(--border); border-top: 2px solid var(--teal); padding: 8px 10px; min-width: 0; }
+  .bottom-card b { display: block; font-size: clamp(.7rem, .75vw, .8rem); line-height: 1.2; margin-bottom: 2px; }
+  .bottom-card span { display: block; font-size: clamp(.62rem, .66vw, .71rem); color: var(--muted); line-height: 1.3; }
+  .bottom-card .num { font-family: var(--mono); color: var(--teal); font-size: 10px; font-weight: 700; }
+  .stage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 0 16px; margin-top: 8px; flex: 1; min-height: 0; }
+  .stage-item { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: clamp(.62rem, .66vw, .71rem); line-height: 1.25; }
+  .stage-item b { font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--teal-dark); }
+  .stage-item span { color: var(--muted); }
+  .closing-line { margin-top: auto; border-top: 1px solid var(--border); padding-top: 9px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: clamp(.67rem, .72vw, .77rem); color: var(--muted); }
+  .closing-line b { color: var(--ink); font-weight: 800; }
+
+  /* Slide 4 */
+  .pipeline { display: flex; align-items: stretch; gap: 5px; margin: 2px 0 12px; }
+  .pipe {
+    flex: 1 1 0; min-width: 0; background: var(--paper); border: 1px solid var(--border);
+    padding: 9px 8px; position: relative;
+  }
+  .pipe:nth-child(odd) { border-top: 3px solid var(--teal); }
+  .pipe-num { font-family: var(--mono); font-size: 9px; color: var(--muted-2); letter-spacing: .06em; }
+  .pipe-name { display: block; font-size: clamp(.68rem, .74vw, .79rem); font-weight: 800; line-height: 1.15; margin: 3px 0 4px; }
+  .pipe-desc { display: block; font-size: clamp(.59rem, .63vw, .68rem); color: var(--muted); line-height: 1.28; }
+  .arrow { flex: none; width: 10px; display: grid; place-items: center; color: #3E5563; font-size: 15px; font-weight: 800; }
+  .invariants { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+  .invariant { background: var(--paper); border: 1px solid var(--border); border-top: 2px solid var(--teal); padding: 9px 10px; }
+  .invariant b { display: block; font-size: clamp(.68rem, .73vw, .78rem); margin-bottom: 3px; }
+  .invariant span { display: block; font-size: clamp(.6rem, .64vw, .69rem); color: var(--muted); line-height: 1.3; }
+  .run-strip { display: flex; align-items: center; gap: 10px; background: var(--ink); color: #EAF2F6; padding: 11px 14px; margin-top: 10px; }
+  .run-strip .big { font-size: 1.15rem; font-weight: 800; color: #7BC4D6; letter-spacing: -.02em; }
+  .run-strip .txt { font-size: clamp(.68rem, .74vw, .8rem); color: #B9CCD6; line-height: 1.35; }
+  .run-strip .sep { color: #4B6270; }
+
+  /* Slide 5 */
+  .claim-code { background: #13222C; color: #D8E5EB; padding: 12px 13px; font-family: var(--mono); font-size: clamp(.62rem, .68vw, .72rem); line-height: 1.55; overflow: hidden; }
+  .claim-code .k { color: #7BC4D6; }
+  .claim-code .s { color: #E7C98F; }
+  .claim-code .m { color: #A7B7C1; }
+  .ladder { display: flex; flex-direction: column; gap: 5px; }
+  .rung { display: grid; grid-template-columns: 112px 32px minmax(0, 1fr); gap: 7px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .rung:last-child { border-bottom: 0; }
+  .rung .lab { font-weight: 800; font-size: clamp(.66rem, .71vw, .76rem); }
+  .rung .cnt { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; }
+  .rung .desc { font-size: clamp(.62rem, .66vw, .71rem); color: var(--muted); line-height: 1.28; }
+  .field-list { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 8px; font-size: clamp(.67rem, .72vw, .77rem); line-height: 1.32; }
+  .field-list dt { color: var(--muted); font-weight: 700; }
+  .field-list dd { margin: 0; }
+  .chain { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .chain-node { font-family: var(--mono); font-size: 8.5px; border: 1px solid var(--border-strong); background: #F7F9FB; padding: 4px 5px; color: var(--ink-2); white-space: nowrap; }
+  .chain-arrow { color: #3E5563; font-weight: 800; font-size: 11px; }
+
+  /* Demo slides */
+  .demo-grid { display: grid; grid-template-columns: minmax(0, 1.52fr) minmax(0, .88fr); gap: clamp(12px, 1.5vw, 20px); align-items: start; min-height: 0; }
+  /* Slide 9 carries the complete detail panel; give the evidence column room. */
+  .slide--findings .demo-grid { grid-template-columns: minmax(0, 1.32fr) minmax(0, 1.08fr); }
+  .demo-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .demo-side .panel { padding: 12px 14px; }
+  .demo-side h3 { font-size: clamp(.86rem, .94vw, 1.01rem); }
+  .demo-side p, .demo-side .callout-body { font-size: clamp(.7rem, .75vw, .8rem); }
+  .demo-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .demo-stat { background: var(--paper); border: 1px solid var(--border); padding: 7px 8px; }
+  .demo-stat b { display: block; font-size: clamp(1rem, 1.2vw, 1.25rem); line-height: 1; letter-spacing: -.02em; }
+  .demo-stat span { display: block; margin-top: 3px; font-size: 8.6px; line-height: 1.2; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+  .demo-stat.signal b { color: var(--danger); }
+  .evidence-mini { border: 1px solid var(--border-strong); background: var(--paper); }
+  .evidence-mini img { display: block; width: 100%; height: auto; }
+  .evidence-mini .cap { padding: 5px 8px; border-top: 1px solid var(--border); font-size: 9px; color: var(--muted); line-height: 1.3; }
+  .mini-table { width: 100%; border-collapse: collapse; font-size: clamp(.62rem, .66vw, .71rem); line-height: 1.28; }
+  .mini-table th { text-align: left; color: var(--muted); font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); padding: 4px 4px; }
+  .mini-table td { border-bottom: 1px solid var(--border); padding: 5px 4px; vertical-align: top; }
+  .mini-table tr:last-child td { border-bottom: 0; }
+  .mini-table code { font-family: var(--mono); font-size: 9.6px; }
+
+  /* Assistant */
+  .assistant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(12px, 1.5vw, 20px); min-height: 0; }
+  .assistant-card { background: var(--paper); border: 1px solid var(--border); padding: 10px; min-width: 0; }
+  .assistant-card .shot { border-color: var(--border); }
+  .assistant-card h3 { display: flex; align-items: center; gap: 7px; font-size: clamp(.85rem, .92vw, 1rem); margin: 0 0 7px; }
+  .assistant-card .shot img { width: 100%; height: auto; max-height: min(34vh, 310px); object-fit: contain; object-position: top center; }
+  .assistant-strip { margin-top: 10px; display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  @media (min-height: 850px) { .assistant-strip { display: grid; } }
+  .assistant-strip .panel { padding: 9px 11px; }
+  .assistant-strip b { display: block; font-size: clamp(.7rem, .75vw, .8rem); margin-bottom: 2px; }
+  .assistant-strip span { display: block; font-size: clamp(.62rem, .66vw, .71rem); color: var(--muted); line-height: 1.3; }
+
+  /* Evaluation */
+  .eval-top { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-bottom: 8px; }
+  .eval-metric-block { min-width: 0; }
+  .eval-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); background: var(--paper); }
+  .eval-stat { padding: 7px 9px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .eval-stat:nth-child(3n) { border-right: 0; }
+  .eval-stat:nth-child(n+4) { border-bottom: 0; }
+  .eval-stat b { display: block; font-size: clamp(1rem, 1.2vw, 1.3rem); line-height: 1; }
+  .eval-stat span { display: block; margin-top: 3px; font-size: 8.4px; line-height: 1.2; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+  .guard-line { margin: 5px 0 0; font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .guard-line b { color: var(--ink); }
+  .chart-panel { padding: 10px 12px 8px; }
+  .chart-panel h3 { margin-bottom: 2px; }
+  .chart-panel .chart-sub { font-size: 9.5px; color: var(--muted); margin-bottom: 4px; }
+  .chart-svg { display: block; width: 100%; height: clamp(190px, 26vh, 300px); }
+  .mobile-ci { display: none; }
+  .mobile-ci-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 72px; gap: 7px; align-items: center; margin: 6px 0; font-size: 10px; }
+  .mobile-ci-track { position: relative; height: 11px; background: #E5ECF0; border: 1px solid #D0DBE2; }
+  .mobile-ci-range { position: absolute; top: 0; bottom: 0; background: #9BC6D1; }
+  .mobile-ci-dot { position: absolute; right: 0; top: 50%; width: 7px; height: 7px; background: var(--teal); border-radius: 50%; transform: translate(50%, -50%); }
+  .mobile-ci-value { text-align: right; font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+  .caveat-list { display: flex; flex-direction: column; gap: 7px; }
+  .caveat { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; align-items: start; }
+  .caveat .mark { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; border: 1px solid var(--amber-line); background: var(--amber-bg); color: var(--amber); }
+  .caveat .mark.no { border-color: #E4B7B5; background: var(--danger-bg); color: var(--danger); }
+  .caveat p { margin: 0; font-size: clamp(.67rem, .72vw, .77rem); line-height: 1.32; color: var(--ink-2); }
+  .caveat p b { font-weight: 800; }
+  .holdout { border-left: 3px solid var(--teal); }
+  .eval-right { display: flex; flex-direction: column; }
+  .eval-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
+
+  /* Packet */
+  .packet-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr); gap: 14px; min-height: 0; }
+  .section-list { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .section-item { border: 1px solid var(--border); background: var(--paper); padding: 6px 7px; }
+  .section-item b { display: block; font-family: var(--mono); font-size: 9px; color: var(--teal); }
+  .section-item span { display: block; font-size: clamp(.62rem, .66vw, .71rem); line-height: 1.25; margin-top: 2px; }
+  .hash-block { background: #13222C; color: #DCE8EE; padding: 10px 11px; font-family: var(--mono); font-size: clamp(.58rem, .62vw, .67rem); line-height: 1.55; overflow-wrap: anywhere; }
+  .hash-block .hk { color: #7BC4D6; }
+  .hash-block .hv { color: #E7C98F; }
+  .hash-block .muted { color: #AFC4CF; }
+  .cmd { background: #13222C; color: #DCE8EE; padding: 7px 9px; font-family: var(--mono); font-size: clamp(.61rem, .65vw, .7rem); line-height: 1.4; margin-top: 7px; }
+  .cmd .prompt { color: #7BC4D6; }
+
+  /* Rigor */
+  .rigor-top { display: flex; gap: 6px; margin-bottom: 9px; flex-wrap: wrap; }
+  .rigor-badge { background: var(--paper); border: 1px solid var(--border); padding: 6px 9px; font-size: 9.5px; color: var(--muted); font-weight: 700; }
+  .rigor-badge b { color: var(--ink); font-size: 12px; }
+  .fix-table { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--border); }
+  .fix-table th { text-align: left; padding: 6px 8px; background: #EEF3F5; color: var(--muted); font-size: 8.6px; text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--border); }
+  .fix-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: clamp(.62rem, .66vw, .71rem); line-height: 1.28; vertical-align: top; }
+  .fix-table tr:last-child td { border-bottom: 0; }
+  .fix-table td:first-child { font-weight: 700; }
+  .fix-table .before { color: var(--danger); }
+  .fix-table .after { color: var(--success); }
+  .security-strip { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+
+  /* Novelty */
+  .prior-table { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--border); }
+  .prior-table th { text-align: left; padding: 5px 7px; background: #EEF3F5; color: var(--muted); font-size: 8.4px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); }
+  .prior-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); font-size: clamp(.62rem, .66vw, .71rem); line-height: 1.28; vertical-align: top; }
+  .prior-table tr:last-child td { border-bottom: 0; }
+  .prior-table td:first-child { font-weight: 700; white-space: nowrap; }
+  .score-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 34px; gap: 8px; align-items: center; margin: 7px 0; }
+  .score-label { font-size: clamp(.66rem, .71vw, .76rem); font-weight: 700; line-height: 1.2; }
+  .score-track { display:block; height: 9px; background: #E5ECF0; border: 1px solid #D0DBE2; overflow: hidden; }
+  .score-fill { display:block; height: 100%; background: var(--teal); }
+  .score-fill.mid { background: #4B8A9B; }
+  .score-fill.low { background: var(--amber); }
+  .score-num { font-family: var(--mono); font-size: 11px; text-align: right; color: var(--muted); }
+  .score-note { font-size: 9px; color: var(--muted-2); margin-top: 4px; }
+
+  /* Viability */
+  .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; }
+  .risk { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 5px; align-items: start; padding: 4px 0; border-bottom: 1px solid #E1E8ED; }
+  .risk:last-child { border-bottom: 0; }
+  .risk-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; background: var(--danger); }
+  .risk-dot.m { background: var(--amber); }
+  .risk-dot.l { background: #8AA0AC; }
+  .risk b { display: block; font-size: clamp(.64rem, .69vw, .74rem); line-height: 1.25; }
+  .risk span { display: block; font-size: clamp(.58rem, .62vw, .67rem); color: var(--muted); line-height: 1.25; }
+  .wedge { border-left: 4px solid var(--teal); }
+  .risk-panel { display: flex; flex-direction: column; }
+  .risk-panel > .eval-bottom { margin-top: auto; }
+  .roadmap { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 7px; }
+  .road { background: var(--paper); border: 1px solid var(--border); padding: 5px 7px; font-size: clamp(.6rem, .64vw, .69rem); line-height: 1.25; }
+  .road b { color: var(--teal); font-family: var(--mono); font-size: 9px; display: block; margin-bottom: 1px; }
+
+  /* Close */
+  .slide--close { background: var(--ink); color: #F3F7F9; }
+  .slide--close .slide-body { justify-content: center; }
+  .close-kicker { color: #7BC4D6; }
+  .close-quote {
+    font-size: clamp(2.2rem, 3.8vw, 4.4rem); line-height: 1.04; letter-spacing: -.04em;
+    font-weight: 800; max-width: none; margin: 0 0 18px;
+  }
+  .close-quote .accent { color: #7BC4D6; }
+  .close-sub { font-size: clamp(.9rem, 1vw, 1.05rem); color: #B7C9D3; max-width: 62ch; line-height: 1.45; margin-bottom: 18px; }
+  .ask-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .ask { border: 1px solid #3A4F5D; padding: 12px; background: #223440; }
+  .ask b { display: block; font-size: clamp(.76rem, .82vw, .9rem); margin-bottom: 4px; color: #F3F7F9; }
+  .ask span { display: block; font-size: clamp(.65rem, .7vw, .76rem); color: #AFC2CD; line-height: 1.35; }
+  .contact-line { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: clamp(.68rem, .73vw, .8rem); color: #9FB4C0; margin-bottom: 12px; }
+  .pilot-ask { font-size: clamp(.8rem, .88vw, .96rem); color: #E7F0F4; margin: 0 0 10px; }
+  .pilot-ask b { color: #8FD3E1; }
+  .contact-line b { color: #DCE8EE; font-weight: 700; }
+  .disclaimer { font-size: 9px; line-height: 1.45; color: #7D94A2; border-top: 1px solid #3A4F5D; padding-top: 10px; max-width: 125ch; }
+
+  /* Notes and help */
+  .notes-panel {
+    position: fixed; z-index: 80; top: var(--chrome-h); right: 0; bottom: var(--foot-h);
+    width: min(400px, 92vw); background: #14232D; color: #E7F0F4;
+    border-left: 1px solid #3A4F5D; transform: translateX(101%);
+    transition: transform .2s ease; display: flex; flex-direction: column;
+    visibility: hidden; pointer-events: none;
+  }
+  .notes-panel.open { transform: translateX(0); visibility: visible; pointer-events: auto; }
+  .notes-head { padding: 12px 15px; border-bottom: 1px solid #3A4F5D; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .notes-head h2 { font-size: 13px; margin: 0; letter-spacing: .08em; text-transform: uppercase; color: #8FD3E1; }
+  .notes-close { background: transparent; border: 1px solid #4B6270; color: #DCE8EE; width: 28px; height: 28px; cursor: pointer; }
+  .notes-body { padding: 15px; overflow-y: auto; font-size: 13px; line-height: 1.5; color: #C9D9E1; }
+  .notes-body p { margin: 0 0 10px; }
+  .notes-body strong { color: #FFFFFF; }
+  .notes-body code { font-family: var(--mono); font-size: 11.5px; color: #F0D7A6; }
+  .notes-body ul { margin: 0 0 10px; padding-left: 17px; }
+  .notes-body li { margin-bottom: 5px; }
+
+  .help-backdrop {
+    position: fixed; z-index: 90; inset: 0; background: rgba(12, 22, 29, .72);
+    display: none; align-items: center; justify-content: center; padding: 18px;
+  }
+  .help-backdrop.open { display: flex; }
+  .help {
+    width: min(620px, 96vw); background: var(--paper); color: var(--ink);
+    border: 1px solid var(--border-strong); padding: 22px 24px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .help-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .help h2 { font-size: 22px; margin: 0; }
+  .help-close { border: 1px solid var(--border-strong); background: var(--paper); width: 32px; height: 32px; cursor: pointer; font-weight: 800; }
+  .help table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .help th, .help td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--border); }
+  .help th { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+  .help kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--border-strong); background: #F3F6F8; padding: 2px 5px; border-radius: 2px; white-space: nowrap; }
+  .help-note { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 12px; }
+
+  /* Mobile */
+  @media screen and (max-width: 900px) {
+    :root { --chrome-h: 50px; --foot-h: 32px; --pad-x: 18px; }
+    html { scroll-padding-top: calc(var(--chrome-h) + 10px); }
+    body { overflow: auto; overflow-x: hidden; padding-top: var(--chrome-h); }
+    .chrome { gap: 10px; padding: 0 10px; }
+    .brand-name { font-size: 13px; }
+    .brand-divider, .deck-title, .chrome-mid { display: none; }
+    .chrome-btn { padding: 5px 7px; font-size: 10px; }
+    .chrome-btn kbd { display: none; }
+    .counter { min-width: 58px; font-size: 10.5px; }
+    .deck { position: static; overflow: visible; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); }
+    .slide { position: static; display: none; overflow: visible; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); scroll-margin-top: calc(var(--chrome-h) + 10px); }
+    .slide.is-active { display: block; }
+    .slide-body { height: auto; min-height: calc(100vh - var(--chrome-h) - var(--foot-h)); padding: 16px 16px calc(var(--foot-h) + 24px); }
+    .slide-head { display: block; margin-bottom: 12px; }
+    .head-badge { display: inline-block; margin-top: 8px; }
+    h2 { font-size: clamp(1.45rem, 7.2vw, 2.1rem); max-width: none; }
+    .slide-lede { font-size: .92rem; }
+    .cols-2, .cols-2.wide-left, .cols-3, .demo-grid, .slide--findings .demo-grid, .assistant-grid, .packet-grid, .gap-call, .eval-top, .eval-cols, .risk-cols, .title-grid { grid-template-columns: 1fr; }
+    .slide--title .slide-body { padding-top: 28px; }
+    .title-display { font-size: clamp(2.5rem, 13.5vw, 4.2rem); max-width: 10ch; }
+    .title-panel { margin-top: 18px; }
+    .question-grid { grid-template-columns: 1fr; }
+    .pain { grid-template-columns: 1fr; gap: 3px; }
+    .pipeline { flex-direction: column; gap: 4px; }
+    .arrow { width: auto; height: 10px; transform: rotate(90deg); }
+    .invariants, .demo-stats, .assistant-strip, .ask-grid, .roadmap, .section-list { grid-template-columns: 1fr 1fr; }
+    .bottom-band, .bottom-band.four { grid-template-columns: 1fr 1fr; }
+    .stage-grid { grid-template-columns: 1fr; }
+    .run-strip { flex-wrap: wrap; row-gap: 3px; }
+    .eval-stats { grid-template-columns: 1fr 1fr; }
+    .eval-stat { border-bottom: 1px solid var(--border); }
+    .eval-stat:nth-child(3n) { border-right: 1px solid var(--border); }
+    .eval-stat:nth-child(2n) { border-right: 0; }
+    .eval-stat:nth-child(n+5) { border-bottom: 0; }
+    .hash-block, .hash-block .hv { overflow-wrap: anywhere; word-break: break-all; }
+    .chart-svg { display: none; }
+    .mobile-ci { display: block; }
+    .stat { min-width: 45%; }
+    .matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .matrix-wrap:focus-visible { outline: 3px solid #E0A83B; outline-offset: 2px; }
+    .matrix { display: table; min-width: 760px; }
+    .matrix th, .matrix td { min-width: 92px; }
+    .assistant-strip { grid-template-columns: 1fr; }
+    .risk-grid { grid-template-columns: 1fr; }
+    .score-row { grid-template-columns: 100px minmax(0, 1fr) 30px; }
+    .close-quote { font-size: clamp(2rem, 10.5vw, 3.2rem); }
+    .foot-brand { display: none; }
+    .foot-note { font-size: 9px; }
+    .notes-panel { width: 100vw; top: var(--chrome-h); bottom: var(--foot-h); }
+    .help { padding: 18px; }
+    .title-meta { font-size: 9.5px; }
+    .matrix th, .matrix td { padding: 6px; }
+    .shot .marker { width: 22px; height: 22px; font-size: 10px; }
+    .m12-shot { overflow-x: auto; }
+    .m12-shot .mini-table { table-layout: fixed; }
+    .m12-shot .mini-table code { overflow-wrap: anywhere; }
+    .qcard .qnum { font-size: 1.2rem; }
+    .claim-code { font-size: 10.5px; }
+  }
+  @media screen and (max-width: 380px) {
+    .invariants, .demo-stats, .ask-grid, .roadmap, .section-list { grid-template-columns: 1fr; }
+    .stat { min-width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
+  }
+  @media screen and (min-width: 901px) and (max-height: 800px) { .slide-body { zoom: .86; } }
+  @media screen and (min-width: 901px) and (max-height: 900px) { #slide-12 .slide-body { zoom: .95; } #slide-9 .slide-body { zoom: .97; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+
+  /* Projector legibility floor: supporting text never renders below 10px. */
+  .tag, .source, .kicker, .stat-label, .dot-label, .pain-tag, .matrix th, .stage-item,
+  .stage-item b, .pipe-num, .pipe-desc, .invariant span, .rung .desc, .chain-node,
+  .demo-stat span, .evidence-mini .cap, .mini-table, .mini-table th, .mini-table code,
+  .assistant-strip span, .eval-stat span, .chart-panel .chart-sub, .mobile-ci-value,
+  .section-item b, .section-item span, .cmd, .rigor-badge, .fix-table th, .fix-table td,
+  .prior-table th, .prior-table td, .score-note, .road, .road b, .disclaimer,
+  .foot-note, .title-meta, .marker, .bottom-card span, .claim-code, .shot figcaption,
+  .hash-block, .risk span { font-size: max(10px, 0.64vw); }
+
+  /* Short projectors: compact spacing first; never hide the argument. */
+  @media screen and (max-height: 840px) and (min-width: 901px) {
+    .slide-body { padding-top: 12px; padding-bottom: 8px; }
+    .slide-head { margin-bottom: 8px; }
+    h2 { font-size: clamp(1.5rem, 2.3vw, 2.4rem); }
+    .slide-lede { font-size: .82rem; line-height: 1.35; }
+    .panel { padding: 10px 12px; }
+    .cols, .demo-grid, .assistant-grid, .packet-grid, .gap-call, .eval-top { gap: 10px; }
+    .callout-list { gap: 5px; }
+    .bottom-band, .bottom-band.four { margin-top: 6px; }
+    .chart-svg { height: 210px; }
+    .fix-table td, .prior-table td { padding: 4px 6px; }
+    .demo-side .panel { padding: 8px 10px; }
+    .run-strip { padding: 7px 10px; margin-top: 6px; }
+    .stage-grid { margin-top: 4px; }
+    .stage-item { padding: 3px 0; }
+    .closing-line { padding-top: 5px; }
+  }
+  @media screen and (max-height: 800px) and (min-width: 901px) {
+    .eval-bottom, .eval-margins, .optional-row, .assistant-strip,
+    .label-buys, .optional-panel, .packet-verify, .packet-source,
+    .shot figcaption, .ack-line, .scope-note { display: none !important; }
+    .matrix .tool-sub { display: none; }
+    .matrix th, .matrix td { padding-top: 3px; padding-bottom: 3px; }
+    .gap-call { margin-top: 4px; }
+    .gap-call .panel { padding: 7px 9px; }
+    .not-list { display: none !important; }
+    .callout-list { gap: 4px; }
+    .bottom-band { margin-top: 3px; }
+    .bottom-card { padding: 6px 8px; }
+    .m12-shot { overflow-x: auto; }
+    .m12-shot .mini-table { table-layout: fixed; }
+    .m12-shot .mini-table code { overflow-wrap: anywhere; }
+    .assistant-card { padding: 7px; }
+    .assistant-card h3 { margin-bottom: 4px; }
+    .assistant-card .callout { margin-top: 2px !important; }
+    .assistant-grid { gap: 8px; }
+    .pain-list { gap: 5px; }
+    .quote-bar { margin-bottom: 8px; }
+    .guards-shot { max-width: 250px !important; }
+    .guard-line { margin-top: 3px; }
+    .slide--findings .demo-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr); gap: 8px; }
+  }
+  @media screen and (min-width: 1600px) {
+    .stage-item { grid-template-columns: max-content minmax(0, 1fr); column-gap: 10px; }
+    .stage-item b { white-space: nowrap; }
+  }
+  @media screen and (max-height: 760px) and (min-width: 901px) {
+    h2 { font-size: clamp(1.35rem, 2.05vw, 2rem); }
+    .slide-lede { font-size: .76rem; }
+    .kicker { margin-bottom: 3px; }
+    .panel { padding: 8px 10px; }
+    .panel h3 { font-size: .9rem; }
+    .shot figcaption { padding: 4px 7px; }
+    .bottom-band { margin-top: 5px; }
+  }
+
+  /* Print: one 16:9 slide per page */
+  @page { size: 1600px 900px; margin: 0; }
+  @media print {
+    html, body { width: 1600px; height: auto; overflow: visible; background: #fff; }
+    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .chrome, .foot, .notes-panel, .help-backdrop, .skip-link, .speaker-note { display: none !important; }
+    .deck { position: static; inset: auto; overflow: visible; background: #fff; }
+    .slide, .slide[hidden] {
+      display: block !important; position: relative !important; inset: auto !important;
+      width: 1600px !important; height: 900px !important; min-height: 900px !important;
+      overflow: hidden !important; page-break-after: always;
+      background: var(--canvas); color: var(--ink);
+    }
+    .slide:last-child { page-break-after: auto; }
+    .slide-body {
+      width: 1600px !important; height: 900px !important; max-width: none; margin: 0;
+      padding: 28px 76px 20px; transform: none !important;
+    }
+    .slide--close { background: var(--ink) !important; color: #F3F7F9 !important; }
+    .slide--close .slide-body { padding: 60px 76px; }
+    .slide--title .title-display { font-size: 5.1rem; }
+    .slide--title .title-grid { gap: 38px; }
+    .slide--title .title-panel { padding: 16px 18px; }
+    .slide--title .title-sub { margin-bottom: 12px; }
+    .slide--title .packet-head { padding-bottom: 7px; margin-bottom: 7px; }
+    .slide--title .packet-row { padding: 4px 0; }
+    .packet-quote, .packet-note { display: none !important; }
+    .chart-svg { height: 178px !important; }
+    .chart-panel { padding: 8px 10px 6px; }
+    .eval-stats .eval-stat { padding: 4px 7px; }
+    .eval-top { margin-bottom: 4px; }
+    .caveat-list { gap: 3px; }
+    .caveat p { font-size: 10px; line-height: 1.2; }
+    .eval-margins .mini-table th, .eval-margins .mini-table td { padding: 2px 5px; }
+    .eval-bottom { margin-top: 4px; padding-top: 5px; }
+    .eval-bottom .bullets li { font-size: 10px; margin-bottom: 2px; }
+    a { color: inherit; text-decoration: none; }
+    .marker { display: grid !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-deck">Skip to the deck</a>
+
+<header class="chrome" aria-label="Presentation controls">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">PF</span>
+    <span class="brand-name">PreFlight</span>
+    <span class="brand-divider" aria-hidden="true"></span>
+    <span class="deck-title">Evidence before the estimate</span>
+  </div>
+  <div class="chrome-mid"><span class="section-label" id="section-label">Title</span></div>
+  <div class="chrome-actions">
+    <button class="chrome-btn" type="button" id="notes-toggle" aria-pressed="false" aria-controls="notes-panel">Notes <kbd>n</kbd></button>
+    <button class="chrome-btn" type="button" id="help-open" aria-haspopup="dialog">Help <kbd>?</kbd></button>
+    <button class="chrome-btn" type="button" id="print-button" title="Print or save as PDF">PDF</button>
+    <span class="counter" id="counter" aria-hidden="true">01 <span>/ 16</span></span>
+  </div>
+</header>
+
+<main class="deck" id="main-deck">
+  <!-- 1 -->
+  <section class="slide slide--title is-active" id="slide-1" data-section="Title" data-title="Title" aria-label="Slide 1 of 16: Title">
+    <div class="slide-body">
+      <div class="title-grid">
+        <div>
+          <div class="title-kicker"><span class="line" aria-hidden="true"></span><span>Independent cloud-readiness review</span></div>
+          <h1 class="title-display">Evidence<br>before the<br><span class="accent">estimate.</span></h1>
+          <p class="title-sub">PreFlight is an offline, evidence-first review of a Guidewire-style policy administration estate. It inventories what exists, links claims to files, records every disposition, and names every unknown — before a migration estimate is signed.</p>
+          <div class="title-badges">
+            <span class="tag teal">Offline</span>
+            <span class="tag">Synthetic estate</span>
+            <span class="tag">Independent research prototype</span>
+            <span class="tag amber">Not affiliated with Guidewire</span>
+          </div>
+          <p class="title-meta mono">v1.0.0 &nbsp;·&nbsp; run R-DEMO-001 &nbsp;·&nbsp; demo-slice-300 &nbsp;·&nbsp; 2026-11-09</p>
+        </div>
+        <aside class="title-panel" aria-label="Review packet preview">
+          <div class="packet-head">
+            <div>
+              <div class="packet-title">Review packet</div>
+              <div class="packet-id">PKT-R-DEMO-001</div>
+            </div>
+            <span class="tag ink">6 sections</span>
+          </div>
+          <div class="packet-row"><span class="packet-k">Files hashed and classified</span><span class="packet-v">300</span></div>
+          <div class="packet-row"><span class="packet-k">Features traced</span><span class="packet-v">8</span></div>
+          <div class="packet-row"><span class="packet-k">Evidence records</span><span class="packet-v">126</span></div>
+          <div class="packet-row"><span class="packet-k">Advisory findings / rules</span><span class="packet-v">24 / 8</span></div>
+          <div class="packet-row"><span class="packet-k">Explicit dispositions</span><span class="packet-v">12</span></div>
+          <div class="packet-row"><span class="packet-k">Audit events</span><span class="packet-v">9 seed · 11 after 2 actions</span></div>
+          <div class="packet-note">Local draft. Not a quote, certification, or deployment. Official Cloud Assurance was not run.</div>
+          <p class="packet-quote"><b>Every claim has evidence; every unknown has a name; every change waits for a human.</b></p>
+        </aside>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Open cold.</strong> “This is PreFlight: an offline review of a synthetic Guidewire-style Personal Auto estate. The thesis is simple — a migration estimate is only as good as the inventory underneath it.”</p>
+      <p>Point at the packet preview. “There are three promises on this slide: every claim resolves to file evidence; every unknown becomes an assumption with an owner and a question; every proposed change starts pending and waits for a reviewer.”</p>
+      <p>State the boundaries early: “300 synthetic files. No tenant, no customer data, no external calls. Not affiliated with Guidewire. Official Cloud Assurance was not run.”</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" id="slide-2" data-section="The problem" data-title="The problem" aria-label="Slide 2 of 16: The problem">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">The problem</p>
+          <h2>A migration estimate is a promise. The inventory is the proof.</h2>
+          <p class="slide-lede">The vendor estimate is not the risk by itself. The risk is the scope hidden underneath it: files that were never classified, features nobody traced, fields nobody disposed, and questions nobody owns.</p>
+        </div>
+        <span class="head-badge attention">Estimate-moving scope</span>
+      </div>
+      <div class="cols cols-2 grow">
+        <div class="stack">
+          <p class="quote-bar"><b>Six to eight weeks</b> is a vendor estimate for APD product conversion — not a full migration estimate. It is a useful anchor. It is not an inventory of <em>your</em> estate.</p>
+          <div class="question-grid">
+            <div class="qcard"><div class="qnum">01</div><h3>What exists?</h3><p>Every file, hash, parser status, and the four that cannot be parsed — listed, not dropped.</p></div>
+            <div class="qcard"><div class="qnum">02</div><h3>Which feature?</h3><p>Cross-artefact links from PCF to entity, typelist, template, Gosu, and tests.</p></div>
+            <div class="qcard"><div class="qnum">03</div><h3>What is disposed?</h3><p>An explicit source-to-target disposition, or a named gap. Never a silent rename.</p></div>
+            <div class="qcard"><div class="qnum">04</div><h3>What is unknown?</h3><p>Owner, impact range, and the one question that would close the gap.</p></div>
+          </div>
+        </div>
+        <div class="pain-list">
+          <article class="pain">
+            <div class="pain-tag">APD types</div>
+            <div><h3>24-character type limit → compile errors</h3><p>APD limits <b>type names</b> to 24 characters. A longer name can be valid in source and still fail when endpoint generation compiles the generated code. The documented correction is a codegen <code>nameOverride</code> with the installed name.</p><p class="source"><b>Guidewire docs</b> · “Correcting compile errors” · accessed 2026-11-09</p></div>
+          </article>
+          <article class="pain">
+            <div class="pain-tag">Patterns</div>
+            <div><h3>JDBC, explicit commits, servlets, hidden packages</h3><p>These recur in migration lessons. They often surface in the CUE (the official Cloud Upgrade Estimate) or a build gate; the earlier they are found, the less the estimate moves.</p><p class="source"><b>Guidewire developer blog</b> · migration lessons guest post · accessed 2026-11-09</p></div>
+          </article>
+          <article class="pain">
+            <div class="pain-tag">SBT</div>
+            <div><h3>Standards Based Template lines cannot convert</h3><p>The Olos release note says SBT lines cannot be converted to APD-managed lines “at this time.” That is a readiness <b>scope and estimate risk</b>: it has to be priced or explicitly excluded, not assumed away.</p><p class="source"><b>Guidewire release highlights</b> · Olos · accessed 2026-11-09</p></div>
+          </article>
+          <article class="pain">
+            <div class="pain-tag">Handover</div>
+            <div><h3>Incomplete handover</h3><p>Inventory lives in spreadsheets, heads, and ticket threads. Dispositions and assumptions are rarely written with an owner and a falsifier.</p><p class="source"><b>Field observation</b> · not measured in this study</p></div>
+          </article>
+        </div>
+      </div>
+      <div class="bottom-band" aria-label="What the review changes">
+        <div class="bottom-card"><b><span class="num">01</span> Scope becomes countable</b><span>300 files, 4 exclusions, 8 features, 126 evidence records.</span></div>
+        <div class="bottom-card"><b><span class="num">02</span> Dispositions become explicit</b><span>12 source-to-target rows, 5 target changes, 0 <code>_gen</code> writes.</span></div>
+        <div class="bottom-card"><b><span class="num">03</span> Unknowns become questions</b><span>Each gap gets an owner, an impact range, and a question to ask.</span></div>
+      </div>
+      <p class="source" style="margin:10px 0 0">Source discipline: vendor claims are labelled as vendor claims; gated bodies are marked gated; “incomplete handover” is a design premise, not a measured result. Full list in <span class="mono">docs/presentation/sources.md</span>.</p>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>The hook.</strong> “The 6–8 week number is a vendor estimate for APD product conversion — not a full migration estimate. The number is not the problem. The problem is that nobody can show you the inventory behind it.”</p>
+      <p>Walk the four questions, not the tool list. “What exists? Which feature does it belong to? What is the explicit disposition? What is unknown, and who owns the question?”</p>
+      <p>Use the 24-character APD limit as the concrete example: the limit applies to <strong>type names</strong>, not every name in the model. A type can be correct in the source and still fail later when endpoint generation compiles it. The documented fix is a codegen <code>nameOverride</code>, but only if you find the name before the compile. APD documents other short-name/label limits (for example 22/30 characters); do not generalise the 24-character figure. Cite the docs page. Be explicit that “incomplete handover” is a premise from practice, not a measured finding in the fixture, and that SBT is a readiness scope/estimate risk rather than a claim that it is absent from the estimate.</p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide slide--gap" id="slide-3" data-section="The gap" data-title="Why tools leave a gap" aria-label="Slide 3 of 16: Why existing tools leave a gap">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">The gap</p>
+          <h2>No public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet.</h2>
+          <p class="slide-lede">Guidewire CUE, Cloud Assurance Services, Lighthouse, SurePath, Developer Assistants, GoQu, CAST/ADDI for portfolio and code discovery, Syntra ETL for data migration and extraction, and SI assessments each cover a real slice. The gap is the hand-off: a file-level, cross-artefact feature inventory with a disposition ledger, an assumption register, and a reviewable packet.</p>
+          <div class="ack-line" aria-label="Adjacent tools explicitly acknowledged">
+            <span class="tag">CUE</span><span class="tag">Cloud Assurance Services</span><span class="tag">Lighthouse</span><span class="tag">SurePath</span><span class="tag">Developer Assistants</span><span class="tag">GoQu</span><span class="tag">CAST / ADDI</span><span class="tag">Syntra ETL</span><span class="tag">SI assessments</span>
+          </div>
+        </div>
+        <span class="head-badge">Capability map, not a benchmark</span>
+      </div>
+      <div class="matrix-wrap" tabindex="0" role="region" aria-label="Capability comparison table; scroll horizontally at narrow widths">
+      <table class="matrix" aria-label="Capability comparison of existing tools and PreFlight">
+        <thead><tr><th scope="col">Tool / service</th><th scope="col">Inventory</th><th scope="col">Feature evidence</th><th scope="col">Disposition ledger</th><th scope="col">Assumption register</th><th scope="col">Review packet</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tool-name">Cloud Assurance Services</span><span class="tool-sub">official standards gate</span></td><td><span class="dot half"></span><span class="dot-label">code scan</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">findings</span></td></tr>
+          <tr><td><span class="tool-name">Guidewire CUE</span><span class="tool-sub">official Cloud Upgrade Estimate</span></td><td><span class="dot half"></span><span class="dot-label">scope</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">estimate risks</span></td><td><span class="dot half"></span><span class="dot-label">estimate</span></td></tr>
+          <tr><td><span class="tool-name">Lighthouse / SurePath / Assistants</span><span class="tool-sub">migration lab, delivery method, codegen help</span></td><td><span class="dot half"></span><span class="dot-label">lab</span></td><td><span class="dot half"></span><span class="dot-label">validated flows</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">handover</span></td></tr>
+          <tr><td><span class="tool-name">SonarQube / GoQu</span><span class="tool-sub">Gosu lint and quality</span></td><td><span class="dot none"></span><span class="dot-label">code only</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot half"></span><span class="dot-label">issues</span></td></tr>
+          <tr><td><span class="tool-name">CAST / ADDI</span><span class="tool-sub">portfolio and code discovery</span></td><td><span class="dot"></span><span class="dot-label">portfolio / code</span></td><td><span class="dot half"></span><span class="dot-label">dependencies</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
+          <tr><td><span class="tool-name">Syntra ETL</span><span class="tool-sub">data migration / extraction</span></td><td><span class="dot half"></span><span class="dot-label">data</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td><td><span class="dot none"></span><span class="dot-label">no</span></td></tr>
+          <tr><td><span class="tool-name">Systems integrator</span><span class="tool-sub">services and expertise</span></td><td><span class="dot"></span><span class="dot-label">bespoke</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td><td><span class="dot half"></span><span class="dot-label">varies</span></td></tr>
+          <tr class="preflight"><td><span class="tool-name">PreFlight</span><span class="tool-sub">offline, one-feature evidence review</span></td><td><span class="dot"></span><span class="dot-label">300 files</span></td><td><span class="dot"></span><span class="dot-label">cross-artefact</span></td><td><span class="dot"></span><span class="dot-label">12 explicit</span></td><td><span class="dot"></span><span class="dot-label">impact-rated</span></td><td><span class="dot"></span><span class="dot-label">6 sections</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="gap-call">
+        <div class="panel tint">
+          <p class="eyebrow">The actual gap</p>
+          <h3>The connective tissue, not another scanner.</h3>
+          <p class="small" style="margin-bottom:0">Cross-artefact feature evidence + an explicit disposition ledger + an assumption register + a review packet. Each is adjacent to an existing tool; the integrated, reviewable chain is the missing artifact. Output: feature map · disposition ledger · assumption register · review packet.</p>
+        </div>
+        <div class="panel">
+          <p class="eyebrow">Deliberately not replaced</p>
+          <p class="small" style="margin-bottom:5px">PreFlight does not compete with the official gate, the official estimate, the migration lab, or SI delivery.</p>
+          <div class="not-list"><span class="tag">Cloud Assurance</span><span class="tag">CUE</span><span class="tag">Lighthouse</span><span class="tag">SurePath</span><span class="tag">APD conversion</span><span class="tag">Cloud Retrofit</span><span class="tag">SI delivery</span></div>
+          <p class="source" style="margin:6px 0 0"><b>Positioning, not an independent product evaluation.</b> Public product descriptions and documentation; see <span class="mono">sources.md</span> S-05, S-06, S-07, S-19–S-24.</p>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Do not run down the incumbents.</strong> “Cloud Assurance Services is the official standards gate. CUE is the official Cloud Upgrade Estimate. Lighthouse is Guidewire’s migration lab. SurePath is the delivery method. Developer Assistants help with codegen. SonarQube and GoQu own Gosu lint. CAST/ADDI cover portfolio and code discovery; Syntra ETL covers data migration and extraction. SIs bring expertise. All of that is real and useful.”</p>
+      <p>Then point at the matrix. “The exact sentence is: no public tool we found combines PCF/entity/typelist/template/Gosu evidence into one disposition + assumption packet. That is a literature and public-documentation search result, not a product benchmark. A SI could assemble this manually; the claim is repeatability and evidence discipline, not that no human has ever done it.”</p>
+      <p>This is positioning, not an independent product evaluation. Keep the footnote visible if someone challenges the comparison.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide" id="slide-4" data-section="Solution" data-title="The engineered solution" aria-label="Slide 4 of 16: The engineered solution">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">The engineered solution</p>
+          <h2>One pipeline. Nine stages. Every step leaves a trace.</h2>
+          <p class="slide-lede">A read-only snapshot is hashed, parsed, assembled into features, reviewed against cited rules, reconstructed into a local draft, compared, evaluated, and sealed into a review packet.</p>
+        </div>
+        <span class="head-badge">FastAPI · Python 3.12 · JSON store</span>
+      </div>
+      <div class="pipeline" aria-label="Nine-stage pipeline">
+        <div class="pipe"><span class="pipe-num">01</span><span class="pipe-name">Snapshot</span><span class="pipe-desc">read-only tree; no live tenant</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">02</span><span class="pipe-name">Intake + hash</span><span class="pipe-desc">manifest, status, before/after hash</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">03</span><span class="pipe-name">Parse</span><span class="pipe-desc">PCF, entity, typelist, template, Gosu</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">04</span><span class="pipe-name">Discover</span><span class="pipe-desc">features, evidence, gaps, confidence</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">05</span><span class="pipe-name">Review rules</span><span class="pipe-desc">8 rules, 24 hard negatives</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">06</span><span class="pipe-name">Reconstruct</span><span class="pipe-desc">_ext draft, mapping, assumptions</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">07</span><span class="pipe-name">Compare</span><span class="pipe-desc">preserved, changed, missing, unresolved</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">08</span><span class="pipe-name">Evaluate</span><span class="pipe-desc">M1–M6, baselines, intervals</span></div>
+        <div class="arrow" aria-hidden="true">›</div>
+        <div class="pipe"><span class="pipe-num">09</span><span class="pipe-name">Packet</span><span class="pipe-desc">6 sections, hashes, audit head</span></div>
+      </div>
+      <div class="invariants" aria-label="System invariants">
+        <div class="invariant"><b>Read-only</b><span>Snapshot hashed before and after; source unchanged.</span></div>
+        <div class="invariant"><b>Unsupported listed</b><span>Binary, corrupt, and unsupported files are named.</span></div>
+        <div class="invariant"><b>Every claim evidence</b><span>Path, locator, excerpt, hash, method, confidence.</span></div>
+        <div class="invariant"><b>Every change pending</b><span>Draft changes wait for an explicit reviewer action.</span></div>
+        <div class="invariant"><b>No LLM required</b><span>Model off; deterministic retrieval; no external calls.</span></div>
+      </div>
+      <div class="run-strip">
+        <span class="big">300</span><span class="txt">files</span><span class="sep">→</span>
+        <span class="big">126</span><span class="txt">evidence records</span><span class="sep">→</span>
+        <span class="big">24</span><span class="txt">findings / 8 rules</span><span class="sep">→</span>
+        <span class="big">12</span><span class="txt">dispositions</span><span class="sep">→</span>
+        <span class="big">1</span><span class="txt">review packet</span>
+        <span class="txt" style="margin-left:auto;color:#8FD3E1">one feature slice · one laptop · no telemetry</span>
+      </div>
+      <div class="bottom-band" aria-label="Run facts and boundaries">
+        <div class="bottom-card"><b><span class="num">INPUT</span> Read-only snapshot</b><span>300 synthetic files; 4 excluded and named; source hash identical before and after.</span></div>
+        <div class="bottom-card"><b><span class="num">OUTPUT</span> Evidence graph + packet</b><span>126 evidence records, 8 features, 24 cited findings, 12 dispositions, 1 packet.</span></div>
+        <div class="bottom-card"><b><span class="num">BOUNDARY</span> Stops before deployment</b><span>No tenant, no LLM, no external calls, no <code>_gen</code> edit, no certification.</span></div>
+      </div>
+      <p class="eyebrow" style="margin:7px 0 0">What each stage writes</p>
+      <div class="stage-grid" aria-label="What each pipeline stage writes">
+        <div class="stage-item"><b>Snapshot</b><span>read-only source; no writes</span></div>
+        <div class="stage-item"><b>Intake</b><span>manifest · immutability · audit events</span></div>
+        <div class="stage-item"><b>Parse</b><span>evidence records with locators</span></div>
+        <div class="stage-item"><b>Discover</b><span>features · gaps · spine</span></div>
+        <div class="stage-item"><b>Review</b><span>findings · review evidence</span></div>
+        <div class="stage-item"><b>Reconstruct</b><span>mappings · changes · assumptions · draft</span></div>
+        <div class="stage-item"><b>Compare</b><span>comparison rows</span></div>
+        <div class="stage-item"><b>Evaluate</b><span>metrics · intervals · baselines</span></div>
+        <div class="stage-item"><b>Packet</b><span>packet JSON/HTML · audit head</span></div>
+      </div>
+      <div class="closing-line">
+        <span class="tag teal">Deterministic</span>
+        <b>Same snapshot + same rule pack → same evidence.</b>
+        <span>Reviewer decisions are the only mutation; every decision is hashed into the audit chain.</span>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Architecture in one breath.</strong> “Snapshot, intake and hash, parse, discover, review, reconstruct, compare, evaluate, packet.” Point out that parsing is not a generic AST parse: PCF is XML page configuration, entities and typelists are metadata, templates are extracted product XML, and Gosu is scanned for evidence.</p>
+      <p>The five invariants are the product. “Source is read-only. Excluded files are listed. Every claim has path, locator, excerpt hash, method, and confidence. Every change starts pending. No LLM is required and there are no external calls.”</p>
+      <p>Use the bottom strip: 300 files become 126 evidence records, 24 findings, 12 dispositions, and one packet. That is the whole demo in one line.</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" id="slide-5" data-section="Evidence model" data-title="The evidence model" aria-label="Slide 5 of 16: The evidence model">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">The evidence model</p>
+          <h2>A claim is only as strong as its locator, its label, and its open question.</h2>
+          <p class="slide-lede">PreFlight does not store “a finding.” It stores a claim with a source pointer, an excerpt hash, a method, a confidence label, and — where the evidence runs out — an assumption with an owner.</p>
+        </div>
+        <span class="head-badge">Evidence before assertion</span>
+      </div>
+      <div class="cols cols-3 grow">
+        <div class="stack">
+          <div class="panel" style="padding-bottom:10px">
+            <p class="eyebrow">Anatomy of a claim</p>
+            <div class="claim-code" aria-label="Example evidence record"><span class="m">{</span>
+  <span class="k">"evidence_id"</span>: <span class="s">"EV-0001"</span>,
+  <span class="k">"path"</span>: <span class="s">"config/web/pcf/policy/PAVehicleDV.pcf"</span>,
+  <span class="k">"locator"</span>: <span class="s">"xpath /PCF/Screen/TypeKeyInput[1]:4"</span>,
+  <span class="k">"excerpt"</span>: <span class="s">"&lt;TypeKeyInput id=\"VehicleType\" …/&gt;"</span>,
+  <span class="k">"excerpt_sha"</span>: <span class="s">"d76bf9908b1f…"</span>,
+  <span class="k">"method"</span>: <span class="s">"xml_xpath"</span>,
+  <span class="k">"confidence"</span>: <span class="s">"parsed"</span>
+<span class="m">}</span></div>
+          </div>
+          <div class="panel tint">
+            <p class="eyebrow">Why the hash matters</p>
+            <p class="small" style="margin-bottom:0">The excerpt is not decorative. It is re-read from the snapshot and hashed; a fabricated or drifting excerpt fails the locator-support audit.</p>
+          </div>
+          <div class="panel">
+            <p class="eyebrow">What the record does not prove</p>
+            <ul class="bullets tight" style="font-size:clamp(.66rem,.71vw,.76rem);margin-bottom:0">
+              <li>That the excerpt is semantically sufficient.</li>
+              <li>That the parser understood every construct.</li>
+              <li>That the decision is correct — only that it is inspectable.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="eyebrow">Claim-strength ladder</p>
+          <h3>A label caps what may be inferred.</h3>
+          <div class="ladder">
+            <div class="rung"><span class="lab success">verified-id</span><span class="cnt">12</span><span class="desc">Public standard ID/title verified; body may be gated.</span></div>
+            <div class="rung"><span class="lab success">verified-policy</span><span class="cnt">3</span><span class="desc">Public policy or hardening guidance; no rule ID claimed.</span></div>
+            <div class="rung"><span class="lab success">verified-doc</span><span class="cnt">3</span><span class="desc">Documented mechanism, e.g. the 24-character APD limit.</span></div>
+            <div class="rung"><span class="lab warn">secondary</span><span class="cnt">3</span><span class="desc">Credible secondary source, e.g. an experience report.</span></div>
+            <div class="rung"><span class="lab" style="color:var(--violet)">heuristic</span><span class="cnt">3</span><span class="desc">PreFlight pattern; explicitly not a Cloud Standard.</span></div>
+          </div>
+          <p class="source" style="margin:9px 0 0">Counts are the 24 advisory findings in R-DEMO-001. The separate SBT readiness flag is not one of the 24.</p>
+          <div class="label-buys">
+            <div class="rule" style="margin:10px 0 7px"></div>
+            <p class="eyebrow" style="margin-bottom:3px">What the label buys you</p>
+            <table class="mini-table" aria-label="What each claim-strength label permits">
+              <thead><tr><th scope="col">Label</th><th scope="col">You may say</th><th scope="col">You may not say</th></tr></thead>
+              <tbody>
+                <tr><td><code>verified-id</code></td><td>This is standard ID/title X.</td><td>“This passes the gated rule body.”</td></tr>
+                <tr><td><code>verified-policy</code></td><td>Public policy discourages this.</td><td>“This is a Cloud Standards violation.”</td></tr>
+                <tr><td><code>verified-doc</code></td><td>The documented mechanism is X.</td><td>“The target estate behaves this way.”</td></tr>
+                <tr><td><code>secondary</code></td><td>An experience report flags this.</td><td>“This is an official rule.”</td></tr>
+                <tr><td><code>heuristic</code></td><td>PreFlight flags this pattern.</td><td>“Guidewire says this is wrong.”</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <p class="eyebrow">Assumption register</p>
+            <dl class="field-list">
+              <dt>ID</dt><dd><code>A-01</code></dd>
+              <dt>Statement</dt><dd>Territory_Ext exists; no rating or territory source artefact was found.</dd>
+              <dt>Owner</dt><dd><span class="tag amber">unassigned</span></dd>
+              <dt>Impact</dt><dd>high · heuristic range <b>3–5 engineer-days</b></dd>
+              <dt>Question</dt><dd>Which rating table or service consumes Territory_Ext, and is it in scope?</dd>
+              <dt>Status</dt><dd>open</dd>
+            </dl>
+          </div>
+          <div class="panel ink">
+            <p class="eyebrow">Packet hash / audit chain</p>
+            <div class="chain" aria-label="Hash-chained audit events">
+              <span class="chain-node">event 1</span><span class="chain-arrow">→</span><span class="chain-node">hash 1</span><span class="chain-arrow">→</span><span class="chain-node">event 2</span><span class="chain-arrow">→</span><span class="chain-node">hash 2</span><span class="chain-arrow">→</span><span class="chain-node">…</span><span class="chain-arrow">→</span><span class="chain-node">head</span>
+            </div>
+            <p class="small" style="color:#B9CCD6;margin:8px 0 0">The packet hash covers the rendered packet HTML (hash fields normalized); <span class="mono">packet_json</span> separately covers canonical packet JSON; content digests bind findings, mappings, and evidence. The audit head covers the append-only event chain. Verification is local and tamper-evident — not non-repudiation.</p>
+          </div>
+          <div class="panel tint">
+            <p class="eyebrow">Reviewer question</p>
+            <p class="small" style="margin-bottom:0">If this evidence disappeared, which decision would become unsafe? If the answer is “none,” the record is not carrying its weight.</p>
+          </div>
+        </div>
+      </div>
+      <div class="closing-line">
+        <span class="tag teal">Chain of custody</span>
+        <b>Capture → link → label → seal.</b>
+        <span>Read-only file; excerpt and SHA-256 at capture · evidence ID attached to a feature, finding, or gap · claim strength caps what may be inferred · packet hash and audit head make the artifact reviewable.</span>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>This is the trust model.</strong> Read the EV-0001 card: path, xpath plus line 4, excerpt, excerpt hash, method, confidence. “If you cannot point to it, it is not a finding. It is an assumption.”</p>
+      <p>Explain claim strength carefully: “verified-id means the ID and title are verified in public material. It does not mean we have the gated standard body. Heuristic means this is our pattern, not Guidewire’s.”</p>
+      <p>Then the assumption register: territory is a real field in the entity, but no rating table exists in the snapshot. The output is not a zero. It is A-01 with an owner, a heuristic range, and a question. The audit chain is hash-linked but local; it is tamper-evident, not non-repudiation.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" id="slide-6" data-section="Demo · Workbench" data-title="Workbench: one feature, six artefact families" aria-label="Slide 6 of 16: Demo workbench">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 01 · Workbench</p>
+          <h2>One feature, traced across six artefact families.</h2>
+          <p class="slide-lede">PA-VEH-01 Vehicle Information is the slice. The summary strip counts what the claim rests on; the spine shows how PCF, entity, typelist, template/Gosu, API draft, and tests connect.</p>
+        </div>
+        <span class="head-badge">R-DEMO-001 · PA-VEH-01</span>
+      </div>
+      <div class="demo-grid grow">
+        <figure class="shot" style="margin:0">
+          <img src="assets/workbench-focus-1440x900.png" width="1212" height="630" alt="PreFlight Workbench focus crop for run R-DEMO-001 and feature PA-VEH-01, showing the summary strip, feature list, and six-column feature spine.">
+          <figcaption>Live capture at 1440 × 900, cropped to the summary strip, eight feature candidates, and the 18-node spine. The evidence drawer and grounded assistant sit below the fold.</figcaption>
+        </figure>
+        <div class="demo-side">
+          <div class="callout-list">
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>31 evidence / 12 files / 4 artefact types / 2 tests / 11 references — all PA-VEH-01 counts.</b> Every number is a count of linked records. The 37-character long type is separate: it appears in two files (template and product model) and is a PA-VEH-02 dependency, not one of the 11 references.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Eight features, each with evidence count and confidence.</b> The selected feature is PA-VEH-01; the list is the inventory entry point.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>18-node spine, six columns.</b> PCF → entity → typelist → template/Gosu → API draft → tests. Directed edges; click any highlighted evidence-bearing node for evidence.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>37 vs 24, and 3 estate-wide gaps.</b> The long type is carried by two files and is a PA-VEH-02 dependency; the gaps are labelled estate-wide, not three missing links in this feature.</div></div>
+          </div>
+          <div class="demo-stats">
+            <div class="demo-stat"><b>31</b><span>evidence</span></div>
+            <div class="demo-stat"><b>12</b><span>files</span></div>
+            <div class="demo-stat signal"><b>37:24</b><span>type vs APD</span></div>
+            <div class="demo-stat"><b>3</b><span>estate gaps</span></div>
+          </div>
+          <div class="evidence-mini">
+            <img src="assets/workbench-evidence-drawer.png" width="602" height="171" alt="Evidence drawer showing EV-0001: config/web/pcf/policy/PAVehicleDV.pcf, xpath /PCF/Screen/TypeKeyInput[1], line 4, excerpt, method xml_xpath, and excerpt hash.">
+            <div class="cap"><b>Click node → EV-0001.</b> Path, xpath, line, excerpt, method, excerpt SHA-256. This is the atomic unit of the review.</div>
+          </div>
+          <p class="fixture-note"><b>Fixture realism:</b> the 300 files include generated filler. PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats. Codegen and entity names match the fixture; this is not a claim of domain fidelity.</p>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Open on the Workbench, not the dashboard.</strong> “This is one feature, not the whole estate: PA-VEH-01 Vehicle Information. The summary strip says what the claim rests on — 31 evidence records across 12 files, four artefact types, two tests, and 11 references.”</p>
+      <p>Point at the 37 vs 24 signal, then separate the counts. “PA-VEH-01 has 11 references, four artefact types, and two tests. The 37-character long type is not one of those references: it appears in two files, <span class="mono">product/template/LongTypeA.xml</span> and <span class="mono">config/resources/productmodel/PersonalAuto.xml</span>, and it is a PA-VEH-02 dependency. No tests cover it. That is the kind of cross-feature scope that surfaces at week five if the inventory is not done first.”</p>
+      <p>Click a spine node. “Every highlighted evidence-bearing node resolves to a file and a locator — here EV-0001, a PCF xpath at line 4, with an excerpt hash. The assistant below is retrieval-only and model off.”</p>
+      <p>Say clearly: “The three gaps are estate-wide, not three missing links in PA-VEH-01.” Add the fixture-realism caveat: “The 300 files include generated filler. The PCF, product model, and Gosu are synthetic sketches, not production Guidewire formats; codegen and entity names match the fixture. This is a test of the evidence discipline, not a claim of domain fidelity.”</p>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" id="slide-7" data-section="Demo · Manifest" data-title="Manifest: no silent omission" aria-label="Slide 7 of 16: Demo manifest">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 02 · Manifest</p>
+          <h2>No silent omission. Four files are excluded — and named.</h2>
+          <p class="slide-lede">A parser that quietly drops what it cannot read produces a confident lie. PreFlight records every file, status, reason, and hash; the source snapshot is checked before and after analysis.</p>
+        </div>
+        <span class="head-badge">300 files · 4 excluded</span>
+      </div>
+      <div class="demo-grid grow">
+        <figure class="shot" style="margin:0">
+          <img src="assets/manifest-focus-1440x900.png" width="1212" height="620" alt="PreFlight Manifest focus crop filtered to excluded files, listing two binary assets, one corrupt PCF file, and one unsupported CSV with reasons and hashes.">
+          <figcaption>Live capture at 1440 × 900, cropped to the excluded banner, source-unchanged check, and the four excluded rows. “Excluded (4)” filter applied; 2 binary, 1 corrupt PCF, 1 unsupported CSV.</figcaption>
+        </figure>
+        <div class="demo-side">
+          <div class="callout-list">
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>300 files; 4 excluded: 2 binary / 1 corrupt / 1 unsupported.</b> The manifest is the denominator for every later claim.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Every excluded row has a reason and a SHA-256.</b> BrokenScreen.pcf fails XML parsing at line 1; <code>vehicle_rating_inputs.csv</code> has no supported parser. The filter is part of the UI, not a footnote.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Before = after.</b> <code>bd4a8a4b338a</code> is identical before and after analysis; the immutable snapshot hash is also visible in the live banner. The check is recorded in the audit trail.</div></div>
+          </div>
+          <table class="mini-table" aria-label="Excluded files and reasons">
+            <thead><tr><th scope="col">Excluded file</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
+            <tbody>
+              <tr><td><code>assets/dealer-logo.png</code></td><td>binary</td><td>not parsed as source</td></tr>
+              <tr><td><code>assets/rate-table.xls</code></td><td>binary</td><td>not parsed as source</td></tr>
+              <tr><td><code>config/web/pcf/policy/BrokenScreen.pcf</code></td><td>corrupt</td><td>XML parse error, line 1</td></tr>
+              <tr><td><code>data/vehicle_rating_inputs.csv</code></td><td>unsupported</td><td>no supported parser</td></tr>
+            </tbody>
+          </table>
+          <div class="panel tint" style="padding:9px 11px">
+            <p class="small" style="margin:0"><b>The discipline:</b> an inventory without a failure list is a sample. The excluded files stay visible in the packet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>This is the anti-dashboard slide.</strong> “A scanner that silently drops what it cannot parse gives you a confident number with no denominator. PreFlight lists every excluded file with a reason and a hash.”</p>
+      <p>Click Manifest, tick Excluded (4), Apply. “Two binary assets, one corrupt PCF, one unsupported CSV. BrokenScreen fails XML parsing at line 1. The CSV has no parser.”</p>
+      <p>Point at the source-unchanged banner. “The snapshot hash is the same before and after. The hash check is in the audit trail. If the source changed, the review would be invalid.”</p>
+      <p>Fixture realism: “The 300 files include generated filler. The corrupt PCF and unsupported CSV are deliberate parser-boundary examples; the rest of the estate is a synthetic sketch, not a production Guidewire export. The manifest discipline is real; the domain fidelity is not claimed.”</p>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" id="slide-8" data-section="Demo · Reconstruction" data-title="Reconstruction: a decision queue" aria-label="Slide 8 of 16: Demo reconstruction">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 03 · Reconstruction · after reviewer actions</p>
+          <h2>A decision queue, not a rename script.</h2>
+          <p class="slide-lede">Twelve explicit source-to-target dispositions. Provenance is per row: documented example, PreFlight convention, or reviewer decision. Reject a row and the unresolved question becomes a named assumption.</p>
+        </div>
+        <span class="head-badge">12 dispositions · 0 _gen writes</span>
+      </div>
+      <div class="demo-grid grow">
+        <figure class="shot" style="margin:0">
+          <img src="assets/reconstruction-after-decision-focus-1440x900.png" width="1212" height="755" alt="PreFlight Reconstruction after reviewer actions: A-DEC-04 new assumption banner from the M-12 rejection, M-01 accepted row, 12 dispositions, and the _gen writes zero badge.">
+          <figcaption>UI capture after two reviewer actions on an isolated copy of R-DEMO-001: M-01 accepted and M-12 rejected. A-DEC-04 appears inline; the decision is audited. The capture uses an isolated copy; reseed the live run with make demo before presenting. M-12 itself is below this crop and is shown schematically in panel 4.</figcaption>
+        </figure>
+        <div class="demo-side">
+          <div class="callout-list">
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Reject M-12 → new A-DEC-04.</b> “What target should replace the rejected mapping?” Impact medium, owner unassigned, status open.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Accept is explicit and recorded in the audit.</b> M-01 row turns green only after the action; the other rows stay pending.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b><code>_gen</code> writes: 0.</b> Draft is local and non-deployable; only <code>_ext</code>, codegen, and product-access proposals are written.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>M-12 rejected, not deleted.</b> 12 dispositions / 5 target changes. Four exact documented examples + one documented 24-char mechanism on a synthetic long type; six API conventions; one typelist convention.</div></div>
+          </div>
+          <div class="demo-stats">
+            <div class="demo-stat"><b>12</b><span>dispositions</span></div>
+            <div class="demo-stat"><b>5</b><span>target changes</span></div>
+            <div class="demo-stat"><b>4</b><span>assumptions after reject</span></div>
+            <div class="demo-stat"><b>0</b><span>_gen writes</span></div>
+          </div>
+          <div class="panel tint m12-shot" style="padding:8px 10px;position:relative">
+            <p class="eyebrow" style="margin:0 0 4px;padding-right:24px">Schematic · M-12 row below the crop</p>
+            <dl class="m12-list" aria-label="Schematic excerpt of the M-12 row after rejection">
+              <dt>ID</dt><dd><code>M-12</code> · <span class="danger"><b>rejected</b></span></dd>
+              <dt>Source</dt><dd><code>VehicleType.Motorcycle_Ext</code></dd>
+              <dt>Target</dt><dd><code>schema.vehicleType.motorcycle</code></dd>
+              <dt>State</dt><dd>Stays in the ledger; A-DEC-04 carries the open question.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <p class="fixture-note scope-note"><b>Scope:</b> draft targets Cloud Retrofit <b>without APD App</b>, which Guidewire explicitly labels not the recommended process; field-level <code>nameOverride</code> applies only on that path. The <code>_ext</code> draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.</p>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Set the frame.</strong> “This is a decision queue, not an automated rename. Twelve source-to-target dispositions for PA-VEH-01. <b>Four exact documented examples + one documented 24-char mechanism applied to a synthetic long type.</b> Six are PreFlight API conventions; one is a typelist convention. Provenance is visible per row.”</p>
+      <p>Show the two actions. “Accept M-01: PAVehicle maps to PersonalVehicle by the documented nameOverride. Reject M-12, the Motorcycle_Ext typelist convention. The reject is not a delete. A-DEC-04 appears with impact medium, owner unassigned, and the question that would close it.” The decision dialog asks for a reason; state that the rejection is because the replacement target is not agreed.</p>
+      <p>Point at the header badge. “_gen writes zero. The draft is local, non-deployable, and every change starts pending. The screenshot is an isolated copy; before presenting, reseed the live run with make demo.”</p>
+      <p><strong>Scope note, say it explicitly:</strong> “The draft targets Cloud Retrofit <b>without APD App</b>, which Guidewire explicitly labels not the recommended process. Field-level <code>nameOverride</code> applies only on that path. The <code>_ext</code> draft is a local JSON contract, not official Guidewire schema, mapping, or updater syntax.”</p>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide slide--findings" id="slide-9" data-section="Demo · Findings" data-title="Findings: restraint by construction" aria-label="Slide 9 of 16: Demo findings">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 04 · Findings</p>
+          <h2>Precision is a feature. Restraint is the interface.</h2>
+          <p class="slide-lede">Twenty-four advisory findings from eight rules. Every row carries a claim-strength label. The rule pack ships 24 hard negatives that must stay silent — including the supported <code>Query.make</code> API.</p>
+        </div>
+        <span class="head-badge attention">Official Cloud Assurance: not run</span>
+      </div>
+      <div class="demo-grid grow">
+        <figure class="shot" style="margin:0">
+          <img src="assets/findings-focus-1440x900.png" width="1212" height="1016" alt="PreFlight Findings focus crop: SBT readiness flag, 24 advisory findings from 8 rules, claim strength and standard family columns, selected finding detail, and decision controls. The complete detail panel is included.">
+          <figcaption>Live capture at 1440 × 900, cropped to the SBT readiness flag, the 24 findings, the selected row, and the complete detail panel. The precision-guard corpus is shown separately below.</figcaption>
+        </figure>
+        <div class="demo-side">
+          <div class="callout-list">
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>24 findings / 8 rules.</b> 3 per rule; the guard corpus is separate: 8 rules × 3 hard negatives = 24 cases.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Claim strength on every row.</b> 12 verified-id, 3 verified-policy, 3 verified-doc, 3 secondary, 3 heuristic.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>Two standard families, not one.</b> Cloud Standards: <code>IS-TLS-1238</code> (SQL/JDBC), <code>IS-TLS-1191</code> (hidden package). Gosu Secure Coding: <code>SEC00-G</code> (secrets), <code>ERR00-G</code> (swallowed exception). The <code>standard_family</code> field in the data distinguishes <code>cloud-standard</code> from <code>gosu-secure-coding</code>.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>SBT is a separate readiness flag.</b> Not mixed into the 24 advisory findings or the 8 scored rules.</div></div>
+            <div class="callout"><span class="callout-num">5</span><div class="callout-body"><b>24 hard negatives stay silent.</b> <code>Query.make(PersonalVehicle).select()</code> is supported access, not JDBC. Comments and strings are masked first.</div></div>
+          </div>
+          <div class="guards-shot" style="max-width:300px">
+            <img src="assets/findings-guard-query-make.png" width="270" height="244" alt="Precision-guard excerpt: PF-GW-SQL-001 lists Query.make(PersonalVehicle).select() as supported data access, not direct JDBC, with driver, string, and comment near-misses.">
+            <div class="cap"><b>Precision guard.</b> 8 rules × 3 near-misses; <code>Query.make</code> is supported access, not JDBC.</div>
+          </div>
+          <div class="panel optional-panel" style="padding:8px 10px">
+            <p class="small" style="margin:0"><b>No violation claim.</b> Advisory, pattern-based, cited. Not Cloud Assurance, a pass/fail, or legal/security advice.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Lead with restraint.</strong> “Generic Gosu lint belongs to SonarQube and Cloud Assurance. We only report cited, migration-specific patterns, and every row says how strong the claim is.”</p>
+      <p>Point at the selected row. “ERR00-G, verified ID, source line, excerpt, remediation. Two standard families are in play: Cloud Standards <code>IS-TLS-1238</code> and <code>IS-TLS-1191</code> have <code>standard_family=cloud-standard</code>; Gosu Secure Coding <code>SEC00-G</code> and <code>ERR00-G</code> have <code>standard_family=gosu-secure-coding</code>. They are not one ‘verified ID’ family. The bodies of some standards are gated — we only claim the public ID and title.”</p>
+      <p>Then the precision guard. “Query.make is the supported database API. It must not fire as direct SQL. The 24 hard negatives are deliberate near-misses, and they stay silent. The SBT flag is separate from the 24 findings. Official Cloud Assurance was not run.”</p>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" id="slide-10" data-section="Demo · Assistant" data-title="Grounded assistant: refusal is a feature" aria-label="Slide 10 of 16: Demo grounded assistant">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 05 · Grounded assistant</p>
+          <h2>It would rather refuse than invent a source.</h2>
+          <p class="slide-lede">Deterministic retrieval over the run’s evidence. Model off. A missing rating table produces a refusal with the missing sources named; a present typelist entry produces a citation card with path, locator, and excerpt.</p>
+        </div>
+        <span class="head-badge">Retrieval-only · model off</span>
+      </div>
+      <div class="assistant-grid grow">
+        <article class="assistant-card">
+          <h3><span class="tag amber">Refusal</span> “Does this estate use territory rating?”</h3>
+          <figure class="shot" style="margin:0">
+            <img src="assets/assistant-refusal-panel.png" alt="Assistant refusal: cannot determine because no rating table or territory source artefact exists; lists searched scopes and missing evidence.">
+          </figure>
+          <div class="callout" style="margin-top:8px"><span class="callout-num">1</span><div class="callout-body"><b>Names the missing evidence, not a guess.</b> “Would need: a rating table or territory factor source; rating input export; the service that consumes Territory_Ext.”</div></div>
+          <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Territory is A-01 in the packet.</b> The refusal and the assumption register point at the same unresolved source.</div></div>
+        </article>
+        <article class="assistant-card">
+          <h3><span class="tag teal">Cited answer</span> “Which files reference Motorcycle_Ext?”</h3>
+          <figure class="shot" style="margin:0">
+            <img src="assets/assistant-citation-panel.png" alt="Assistant citation card: Motorcycle_Ext appears in one evidence record, EV-0023, config/extensions/typelist/VehicleType.ttx, xpath /typelistExtension/code[1], line 3.">
+          </figure>
+          <div class="callout" style="margin-top:8px"><span class="callout-num">3</span><div class="callout-body"><b>A citation card is an evidence record.</b> <code>EV-0023</code> → <code>config/extensions/typelist/VehicleType.ttx</code> → xpath <code>/typelistExtension/code[1]</code> → line 3.</div></div>
+          <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Disposition is still a reviewer decision.</b> The assistant reports the source fact; it does not accept the mapping.</div></div>
+        </article>
+      </div>
+      <div class="assistant-strip" aria-label="Assistant boundaries">
+        <div class="panel"><b>No generation</b><span>No LLM, no tools, no external calls. Retrieval over evidence IDs.</span></div>
+        <div class="panel"><b>No orphan citations</b><span>Every cited ID resolves to the embedded evidence record, or is labelled missing.</span></div>
+        <div class="panel"><b>No authority transfer</b><span>An answer is evidence to review, not a decision. The human still accepts or rejects.</span></div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>The refusal is the demo.</strong> Ask “Does this estate use territory rating?” The answer is “Cannot determine.” It lists the searched scopes and the missing evidence. Then connect it to A-01 and the 3–5 day impact range. “The unknown has a name, an owner, and a question.”</p>
+      <p>Ask “Which files reference Motorcycle_Ext?” The answer cites EV-0023, VehicleType.ttx, xpath, line 3, and the excerpt. “This is a retrieval result over evidence records — not a model completion.”</p>
+      <p>Be precise: “The assistant does not decide the mapping. It reports the source fact. The reviewer still decides.”</p>
+      <p><strong>Three boundaries:</strong> no generation (no LLM, no tools, no external calls); no orphan citations (every cited ID resolves to the embedded evidence record or is labelled missing); no authority transfer (an answer is evidence to review, not a decision).</p>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" id="slide-11" data-section="Demo · Evaluation" data-title="Evaluation: honest denominators" aria-label="Slide 11 of 16: Demo evaluation">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 06 · Evaluation</p>
+          <h2>Perfect scores measure the instrument. The estate is still unproven.</h2>
+          <p class="slide-lede">Six headline metrics on the in-sample demo slice, with raw counts and 95% Wilson intervals. The holdout is pre-computed and never imported. A small n with a 100% point estimate is not certainty.</p>
+        </div>
+        <span class="head-badge attention">Not a benchmark</span>
+      </div>
+      <div class="eval-top">
+        <div class="eval-metric-block">
+          <div class="eval-stats" aria-label="Six headline metrics">
+            <div class="eval-stat"><b>8/8</b><span>M1 recall</span></div>
+            <div class="eval-stat"><b>8/8</b><span>M2 precision</span></div>
+            <div class="eval-stat"><b>101/101</b><span>M3 links + 30/30 sample</span></div>
+            <div class="eval-stat"><b>12/12</b><span>M4 dispositions</span></div>
+            <div class="eval-stat"><b>6/6</b><span>M5 issues · 6/8 slots</span></div>
+            <div class="eval-stat"><b>1.00</b><span>M6 F1 · 24 TP / 0 FP / 0 FN</span></div>
+          </div>
+          <p class="guard-line"><b>Guard count, not a seventh metric:</b> 24/24 hard negatives silent.</p>
+        </div>
+        <div class="panel holdout" style="padding:8px 10px">
+          <p class="small" style="margin:0"><b>Holdout:</b> 4/4 capability recall, 95% Wilson 51.0%–100.0%, four-feature naming-shift fixture. <b>Not imported</b> into the demo or used for tuning.</p>
+        </div>
+      </div>
+      <div class="cols cols-2 eval-cols grow">
+        <div class="panel chart-panel">
+          <h3>95% Wilson intervals</h3>
+          <p class="chart-sub">dot = observed value · line = interval · M6 has no interval (bootstrap deferred)</p>
+          <svg class="chart-svg" viewBox="0 0 760 300" role="img" aria-label="Dot and interval chart for six metrics; all observed values are 100 percent but lower bounds range from 61 to 96.3 percent.">
+            <g font-family="ui-sans-serif, Segoe UI, Arial, sans-serif">
+              <!-- grid -->
+              <g stroke="#E3EAEF" stroke-width="1">
+                <line x1="250" y1="34" x2="250" y2="272"/><line x1="340" y1="34" x2="340" y2="272"/>
+                <line x1="430" y1="34" x2="430" y2="272"/><line x1="520" y1="34" x2="520" y2="272"/>
+                <line x1="610" y1="34" x2="610" y2="272"/><line x1="700" y1="34" x2="700" y2="272"/>
+              </g>
+              <line x1="250" y1="272" x2="700" y2="272" stroke="#B9C7D2" stroke-width="1.5"/>
+              <g font-size="10" fill="#7B8A96" text-anchor="middle">
+                <text x="250" y="288">50%</text><text x="340" y="288">60%</text><text x="430" y="288">70%</text>
+                <text x="520" y="288">80%</text><text x="610" y="288">90%</text><text x="700" y="288">100%</text>
+              </g>
+              <!-- rows -->
+              <g font-size="11.5" fill="#1B2833">
+                <text x="0" y="53">M1 recall · 8/8</text>
+                <text x="0" y="94">M2 precision · 8/8</text>
+                <text x="0" y="135">M3 links · 101/101</text>
+                <text x="0" y="176">M4 dispositions · 12/12</text>
+                <text x="0" y="217">M5 issues · 6/6</text>
+                <text x="0" y="258">M6 F1 · 1.00 (24/0/0)</text>
+              </g>
+              <g fill="#9BC6D1">
+                <line x1="408.4" y1="48" x2="700" y2="48" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
+                <line x1="408.4" y1="89" x2="700" y2="89" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
+                <line x1="666.7" y1="130" x2="700" y2="130" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
+                <line x1="482.2" y1="171" x2="700" y2="171" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
+                <line x1="349" y1="212" x2="700" y2="212" stroke="#7FB9C8" stroke-width="9" stroke-linecap="round"/>
+              </g>
+              <g fill="#0B6B85">
+                <circle cx="700" cy="48" r="5"/><circle cx="700" cy="89" r="5"/><circle cx="700" cy="130" r="5"/>
+                <circle cx="700" cy="171" r="5"/><circle cx="700" cy="212" r="5"/><circle cx="700" cy="253" r="5"/>
+              </g>
+              <g font-size="10" fill="#5B6B78" text-anchor="end">
+                <text x="748" y="52">68–100</text><text x="748" y="93">68–100</text><text x="748" y="134">96–100</text>
+                <text x="748" y="175">76–100</text><text x="748" y="216">61–100</text><text x="748" y="257">no interval</text>
+              </g>
+              <g fill="#8A5A12" font-size="10">
+                <text x="349" y="232">6/8 top-8 allowance</text>
+              </g>
+            </g>
+          </svg>
+          <div class="mobile-ci" aria-label="Mobile interval summary for six metrics">
+            <div class="mobile-ci-row"><span>M1 recall</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:35.2%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">68–100</span></div>
+            <div class="mobile-ci-row"><span>M2 precision</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:35.2%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">68–100</span></div>
+            <div class="mobile-ci-row"><span>M3 links</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:92.6%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">96–100</span></div>
+            <div class="mobile-ci-row"><span>M4 dispositions</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:51.6%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">76–100</span></div>
+            <div class="mobile-ci-row"><span>M5 issues</span><span class="mobile-ci-track"><span class="mobile-ci-range" style="left:22%;right:0"></span><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">61–100</span></div>
+            <div class="mobile-ci-row"><span>M6 F1 · 24/0/0</span><span class="mobile-ci-track"><span class="mobile-ci-dot"></span></span><span class="mobile-ci-value">no interval</span></div>
+          </div>
+          <p class="tiny" style="margin:3px 0 0">Wilson score intervals from reported numerators and denominators. M6 has no interval at this n; bootstrap deferred. Demo metrics are in-sample on one synthetic fixture. 24/24 hard negatives are a separate guard count.</p>
+          <div class="eval-margins">
+            <div class="rule" style="margin:8px 0 7px"></div>
+            <p class="eyebrow" style="margin-bottom:3px">Pre-registered margins vs baselines</p>
+            <table class="mini-table" aria-label="Pre-registered margins against selected baselines">
+              <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Required</th><th scope="col">Status</th></tr></thead>
+              <tbody>
+                <tr><td>M1 feature recall</td><td>PCF filename baseline: 87.5%</td><td>+12.5 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+                <tr><td>M4 dispositions</td><td>Identity mapper: 50.0%</td><td>+50.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+                <tr><td>M6 finding micro-F1</td><td>Grep-only F1: 84.0%</td><td>+16.0 pp</td><td>+10 pp</td><td class="success"><b>PASS</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel eval-right">
+          <p class="eyebrow">What the numbers do and do not say</p>
+          <div class="caveat-list">
+            <div class="caveat"><span class="mark">+</span><p><b>M3 is 101/101 all links</b> plus a 30/30 stratified sample. It checks excerpt support at the source, not semantic entailment.</p></div>
+            <div class="caveat"><span class="mark">+</span><p><b>M5 is 6/6</b> but the allowance is <b>6 of 8 slots</b>. It is a fixed two-decoy top-8, not a learned ranking.</p></div>
+            <div class="caveat"><span class="mark">+</span><p><b>M6 is F1 1.00 (24 TP / 0 FP / 0 FN)</b> = 48/48 micro-F1. Line-level matching is deferred; the demo uses path-level matching.</p></div>
+            <div class="caveat"><span class="mark no">–</span><p><b>No human IAA.</b> The reference target is internally authored and AI-assisted, not blind and independent.</p></div>
+            <div class="caveat"><span class="mark no">–</span><p><b>One synthetic fixture.</b> The four-feature holdout is naming-shift only and never imported or tuned.</p></div>
+            <div class="caveat"><span class="mark no">–</span><p><b>Not a benchmark.</b> No real estate, customer code, deployment, or official Cloud Assurance run.</p></div>
+          </div>
+          <div class="eval-bottom">
+            <p class="eyebrow" style="margin-bottom:4px">What would change the verdict</p>
+            <ul class="bullets tight" style="font-size:clamp(.65rem,.7vw,.75rem);margin-bottom:0">
+              <li>A real anonymised estate and a second LOB.</li>
+              <li>Blind human annotation with reported IAA.</li>
+              <li>Line-level finding evaluation and compile validation.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Do not celebrate the 100s.</strong> “These are six headline metrics on one in-sample synthetic slice. They tell you the instrument can run; they do not tell you it generalises to a real estate. The 24/24 hard-negative result is a guard count, not a seventh metric.”</p>
+      <p>Walk the metrics. “M1 recall and M2 precision are both 8/8; the lower bound is 68%. M3 is 101/101 all links plus a 30/30 sample — support, not entailment. M4 is 12/12 dispositions. M5 is 6/6 with a 6/8 top-8 allowance. M6 is F1 1.00: 24 true positives, zero false positives, zero false negatives.”</p>
+      <p>Then the honest parts. “No human IAA. The reference target is internally authored and AI-assisted. The holdout is four features and naming-shift only; it is not imported. This is not a benchmark.”</p>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide" id="slide-12" data-section="Demo · Packet" data-title="Packet and audit" aria-label="Slide 12 of 16: Demo packet and audit">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Demo 07 · Review packet · after reviewer actions</p>
+          <h2>The review artifact is the product.</h2>
+          <p class="slide-lede">Six sections, every excluded file, every assumption, every disposition, 126 evidence items, and a hash-chained audit trail. This capture is post-decision: 11 audit events and 4 assumptions after Accept M-01 + Reject M-12. Downloadable HTML; locally verifiable; explicitly not a certification.</p>
+        </div>
+        <span class="head-badge">126 evidence · 11 audit events</span>
+      </div>
+      <div class="packet-grid grow">
+        <figure class="shot" style="margin:0">
+          <img src="assets/packet-focus-1440x900.png" width="1212" height="752" alt="PreFlight Review packet after reviewer actions: six section cards, audit chain verified with 11 events, four assumptions, findings summary, and download button. The crop shows the assumption-register summary row A-01.">
+          <figcaption>UI capture after M-01 accept + M-12 reject on an isolated copy. Cover says “Audit chain verified: yes (11 events)”; section 06 carries 126 evidence items; the crop shows the assumption-register summary (A-01), while the live register has four rows including A-DEC-04. A pre-decision capture is 9 events / 3 assumptions.</figcaption>
+        </figure>
+        <div class="demo-side">
+          <div class="callout-list">
+            <div class="callout"><span class="callout-num">1</span><div class="callout-body"><b>Downloadable HTML.</b> A local, self-contained review artifact — not a dashboard link that expires.</div></div>
+            <div class="callout"><span class="callout-num">2</span><div class="callout-body"><b>Six sections:</b> cover · executive summary · coverage and confidence · assumption register · findings (24 + 1 separate readiness flag) · evidence and audit appendix.</div></div>
+            <div class="callout"><span class="callout-num">3</span><div class="callout-body"><b>126 evidence items</b> = full discovery evidence plus review evidence linked to findings. Not a 20-row sample.</div></div>
+            <div class="callout"><span class="callout-num">4</span><div class="callout-body"><b>Audit verified: yes, 11 events post-decision.</b> Seed state is 9 events; Accept M-01 + Reject M-12 add two. The packet hash seals the rendered packet HTML; <span class="mono">packet_json</span> seals canonical JSON; content digests bind findings, mappings, and evidence; the audit head seals the event chain. Two-step verification: <code>verify-packet</code> checks the packet and content digests; <code>verify-audit</code> checks the audit chain only, not the packet. Local tamper-evident, not non-repudiation.</div></div>
+          </div>
+          <div class="section-list" aria-label="Packet sections">
+            <div class="section-item"><b>01</b><span>Cover + hashes</span></div>
+            <div class="section-item"><b>02</b><span>Executive summary</span></div>
+            <div class="section-item"><b>03</b><span>Coverage &amp; confidence</span></div>
+            <div class="section-item"><b>04</b><span>Assumption register</span></div>
+            <div class="section-item"><b>05</b><span>Findings</span></div>
+            <div class="section-item"><b>06</b><span>Evidence &amp; audit</span></div>
+          </div>
+          <p class="tiny" style="margin:0">12 mappings · 4 assumptions · 1 readiness flag · 4 excluded files · 11 audit events</p>
+          <div class="hash-block" aria-label="Hash labels: packet and audit values must be read live; only the fixture snapshot is stable">
+            <div><span class="hk">packet</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="hv">read live</span> <span class="muted">rendered packet HTML</span></div>
+            <div><span class="hk">packet_json</span> <span class="hv">read live</span> <span class="muted">canonical JSON</span></div>
+            <div><span class="hk">audit head</span> <span class="hv">read live</span> <span class="muted">event-chain head</span></div>
+            <div><span class="hk">snapshot</span> &nbsp;&nbsp;&nbsp;<span class="hv">bd4a8a4b338a…</span> <span class="muted">fixture; stable</span></div>
+          </div>
+          <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-packet R-DEMO-001</div>
+          <div class="cmd packet-verify"><span class="prompt">$</span> preflight verify-audit R-DEMO-001</div>
+          <p class="source packet-source" style="margin:0">Content digests bind findings, mappings, and evidence. Packet, packet_json, and audit-head values change with reviewer actions and packet refreshes — read them from the live screen. <code>verify-packet</code> checks the packet; <code>verify-audit</code> checks the audit chain only, not the packet. The bundled packet is a capture-time example, not a live artifact.</p>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>End on the artifact.</strong> “This is not a dashboard. It is a six-section packet you can download, mark up, challenge, and approve.”</p>
+      <p>Point at the cover. “This capture is post-decision: audit chain verified, 11 events. The seed state is 9 events; Accept M-01 and Reject M-12 add one each. The assumption register has 4 rows after the rejection. Section 06 carries 126 evidence items, not a sample. The excluded files are in the packet.”</p>
+      <p>Read the hashes from the live screen, not the deck. “The packet hash seals the rendered packet HTML; packet_json seals canonical packet JSON; findings, mappings, and evidence digests bind those payloads; the audit head covers the hash chain. Packet and audit values change with reviewer actions and packet refresh. It is local and tamper-evident, not non-repudiation. Two-step verification: <code>preflight verify-packet R-DEMO-001</code> checks the packet and content digests; <code>preflight verify-audit R-DEMO-001</code> checks the audit chain only, not the packet.”</p>
+      <p>Be explicit: “The bundled docs/demo packet is a historical snapshot. Do not verify the live run against it. If you show a pre-decision packet, label it as 9 events / 3 assumptions.”</p>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide" id="slide-13" data-section="Engineering rigor" data-title="Engineering rigor: flaws found and fixed" aria-label="Slide 13 of 16: Engineering rigor">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Engineering rigor</p>
+          <h2>The demo is the surface. The hardening is the work.</h2>
+          <p class="slide-lede"><b>418 tests</b> and a Playwright golden path. <b>18/18</b> recorded freeze hashes recompute. A security contract with archive, XML, YAML, CSRF, CSP, and redaction tests. Adversarial review found real flaws; each row below was fixed and regression-tested.</p>
+        </div>
+        <span class="head-badge">Internal adversarial review</span>
+      </div>
+      <div class="rigor-top">
+        <span class="rigor-badge"><b>418</b> tests collected</span>
+        <span class="rigor-badge"><b>1</b> Playwright golden path</span>
+        <span class="rigor-badge"><b>18/18</b> frozen hashes recompute</span>
+        <span class="rigor-badge"><b>0</b> raw secret values in artifacts</span>
+        <span class="rigor-badge"><b>9</b> seed audit events verified</span>
+      </div>
+      <table class="fix-table" aria-label="Flaws found by adversarial review and fixed">
+        <thead><tr><th scope="col">Flaw found</th><th scope="col">Before</th><th scope="col">After / control</th></tr></thead>
+        <tbody>
+          <tr><td>Concurrent mapping decisions</td><td class="before">Simultaneous accepts could lose writes</td><td class="after">12/12 persisted; per-run lock + transaction; 409 on conflict</td></tr>
+          <tr><td>Secret leakage through evidence</td><td class="before">Parser warnings / adjacent context could store raw values</td><td class="after">Redact at capture; fingerprint only; packet and logs tested</td></tr>
+          <tr><td>YAML alias bomb</td><td class="before">Recursive aliases could expand without bound</td><td class="after">Aliases rejected before expansion; depth/node caps; sub-second test</td></tr>
+          <tr><td>Forged evidence scoring</td><td class="before">Fabricated excerpts could still match gold paths</td><td class="after">48/48 → 0/48 when excerpts are forged; locator support required</td></tr>
+          <tr><td>Packet evidence completeness</td><td class="before">A 20-row discovery sample</td><td class="after">126 complete evidence items + audit appendix</td></tr>
+          <tr class="optional-row"><td>Evidence audit scope</td><td class="before">A 30-link stratified sample was the headline</td><td class="after">101/101 all links + 30/30 sample; fabricated excerpts fail</td></tr>
+          <tr class="optional-row"><td>Audit verification cost</td><td class="before">Repeated chain scans and no truncation checkpoint</td><td class="after">Single-pass walk + checkpoint head; 9 seed events verified</td></tr>
+          <tr><td>Mobile layout</td><td class="before">Horizontal overflow at 390 px</td><td class="after">Clipped overflow + responsive regression coverage</td></tr>
+        </tbody>
+      </table>
+      <div class="security-strip" aria-label="Security controls">
+        <span class="tag">127.0.0.1 bind</span><span class="tag">Host / Origin allowlist</span><span class="tag">CSRF synchroniser token</span><span class="tag">CSP self-only</span><span class="tag">Zip-slip / bomb rejection</span><span class="tag">XML entities off</span><span class="tag">YAML tags rejected</span><span class="tag">Hash-chained audit</span><span class="tag">No telemetry</span>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>This slide is for the engineer in the room.</strong> “The demo surface is small; the hardening is not. 418 tests, a Playwright golden path, 18/18 freeze hashes, and a security contract.”</p>
+      <p>Pick two rows and go deep. “Concurrent decisions: we test 12 simultaneous accepts; all 12 persist, and conflicting actions return 409. Packet evidence: it used to be a 20-row sample; now it is 126 complete items plus the audit appendix. Forged excerpts used to score; now they score zero.”</p>
+      <p>Be honest about the table: it is from internal adversarial review, not an external audit. Phrase the YAML and audit items as hardening controls, not published benchmarks. The point is that the flaws were found, fixed, and regression-tested. The seed run has 9 audit events; the two reviewer actions in the demo take it to 11.</p>
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide" id="slide-14" data-section="Novelty & prior art" data-title="What is actually novel" aria-label="Slide 14 of 16: Novelty and prior art">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Novelty &amp; prior art</p>
+          <h2>The algorithms are not new. The integration and the evidence discipline are the contribution.</h2>
+          <p class="slide-lede">Feature location, traceability recovery, architecture conformance, and assurance cases are mature fields. Reversa already combines traceability, confidence marking, gap preservation, and a SHA-256 manifest. PreFlight’s difference is domain-specific integration, not a new algorithm.</p>
+        </div>
+        <span class="head-badge">No “first / only” claim</span>
+      </div>
+      <div class="cols cols-2 grow">
+        <div class="panel">
+          <p class="eyebrow">Closest prior art</p>
+          <table class="prior-table" aria-label="Prior art and adjacent work">
+            <thead><tr><th scope="col">Area</th><th scope="col">Representative work</th><th scope="col">What it establishes</th></tr></thead>
+            <tbody>
+              <tr><td>Feature location</td><td>Dit et al. 2013; Marcus et al. 2004</td><td>IR and concept location can recover where a feature lives.</td></tr>
+              <tr><td>Traceability</td><td>Antoniol et al. 2002; FTLR 2021; LiSSA 2025; TraceLLM 2026</td><td>Links between artefacts can be recovered, ranked, and evaluated.</td></tr>
+              <tr><td>Reverse documentation</td><td>Reversa, arXiv:2605.18684 (2026)</td><td>Traceable specs, confidence marking, gaps for human validation, manifest.</td></tr>
+              <tr><td>Architecture conformance</td><td>Murphy et al. reflexion models (1995)</td><td>Compare intended and observed structure; surface drift.</td></tr>
+              <tr><td>Assurance cases</td><td>Kelly &amp; Weaver, GSN (2004)</td><td>Claims must be supported by argument and evidence.</td></tr>
+              <tr><td>Tooling</td><td>GoQu, CAST, ADDI, Guidewire CUE</td><td>Gosu lint, portfolio discovery, official estimate.</td></tr>
+            </tbody>
+          </table>
+          <p class="source" style="margin:7px 0 0">Selective, not exhaustive. Public IDs and titles only; gated bodies marked gated. Vendor claims labelled as vendor claims. We do not claim the absence of prior work. Citations in <span class="mono">docs/presentation/sources.md</span>. Reversa is the closest single work; PreFlight is narrower and domain-specific.</p>
+          <div class="panel tint" style="margin-top:9px;padding:9px 11px">
+            <p class="small" style="margin:0"><b>Threat to the novelty claim:</b> if Reversa adds Guidewire artefact adapters and a disposition ledger, the gap narrows quickly. The moat is not the algorithm. It is the domain evidence model, the review workflow, and the offline independence.</p>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel">
+            <p class="eyebrow">Honest scorecard</p>
+            <p class="small" style="margin-bottom:4px">Author’s assessment, not a benchmark or external review.</p>
+            <div class="score-row"><span class="score-label">Engineering integration</span><span class="score-track"><span class="score-fill" style="width:70%"></span></span><span class="score-num">7/10</span></div>
+            <div class="score-row"><span class="score-label">Research novelty</span><span class="score-track"><span class="score-fill low" style="width:30%"></span></span><span class="score-num">3/10</span></div>
+            <div class="score-row"><span class="score-label">Demo quality</span><span class="score-track"><span class="score-fill" style="width:80%"></span></span><span class="score-num">8/10</span></div>
+            <div class="score-row"><span class="score-label">Standalone product</span><span class="score-track"><span class="score-fill low" style="width:40%"></span></span><span class="score-num">4/10</span></div>
+            <div class="score-row"><span class="score-label">SI accelerator</span><span class="score-track"><span class="score-fill mid" style="width:60%"></span></span><span class="score-num">6/10</span></div>
+            <p class="score-note">Research novelty is deliberately low: the individual mechanisms are established. The contribution is the integration, the Guidewire artefact model, and the review artifact.</p>
+          </div>
+          <div class="panel tint">
+            <p class="eyebrow">What is actually different</p>
+            <p class="small" style="margin:0"><b>1.</b> Cross-artefact feature evidence for Guidewire-style PCF/entity/typelist/template/Gosu.<br><b>2.</b> A disposition ledger with per-row provenance and reviewer state.<br><b>3.</b> An impact-rated assumption register tied to gaps.<br><b>4.</b> A self-verifying review packet, offline, before the official estimate.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Concede novelty early.</strong> “The algorithms are not new. Feature location, traceability recovery, reflexion models, and GSN are established. Reversa 2026 is very close in spirit: traceable specs, confidence marking, gaps for human validation, and a SHA-256 manifest.”</p>
+      <p>Then define the contribution. “PreFlight is not a new traceability algorithm. It is a domain-specific integration: the Guidewire artefact families, the disposition ledger with provenance, the assumption register, and the review packet — offline, before CUE.”</p>
+      <p>Read the scorecard honestly: engineering 7, research novelty 3, demo 8, standalone product 4, SI accelerator 6. “Do not claim first or only. The honest claim is ‘we integrated these ideas for this hand-off and made the evidence inspectable.’”</p>
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide" id="slide-15" data-section="Viability" data-title="Viability, limitations, kill risks" aria-label="Slide 15 of 16: Viability and limitations">
+    <div class="slide-body">
+      <div class="slide-head">
+        <div class="slide-head-main">
+          <p class="kicker">Viability</p>
+          <h2>The wedge is real. The evidence is not yet sufficient to call it a product.</h2>
+          <p class="slide-lede">A research prototype today. The defensible path is an independent, offline, pre-CUE evidence packet for one LOB, used as a systems-integrator accelerator — not a replacement for the official estimate or gate.</p>
+        </div>
+        <span class="head-badge attention">Research prototype</span>
+      </div>
+      <div class="cols cols-2 risk-cols grow">
+        <div class="panel risk-panel">
+          <p class="eyebrow">Kill risks / open evidence gaps</p>
+          <div class="risk-grid">
+            <div class="risk"><span class="risk-dot"></span><div><b>Synthetic in-sample</b><span>One 300-file fixture; not a real estate.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>Internally authored target</b><span>AI-assisted reference, not blind independent annotation.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>No human IAA</b><span>AI-AI concordance would not be human inter-annotator agreement.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>No real estate</b><span>Customer code, scale, and naming drift unproven.</span></div></div>
+            <div class="risk"><span class="risk-dot"></span><div><b>CUE is official</b><span>Official Cloud Upgrade Estimate; PreFlight prepares file-level evidence before it.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>4-feature holdout</b><span>Naming-shift only; never imported or tuned.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>Vendor services and assistants</b><span>Cloud Assurance Services, Lighthouse, and Developer Assistants already own parts of the workflow.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>Gated rule corpus</b><span>Public IDs/titles; bodies and threshold are gated.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>Parser / naming shift</b><span>Custom PCF shapes and renames can break matching.</span></div></div>
+            <div class="risk"><span class="risk-dot m"></span><div><b>Draft non-deployable</b><span>Local _ext draft is not compiled or tenant-validated.</span></div></div>
+          </div>
+          <div style="margin-top:7px">
+            <p class="eyebrow" style="margin-bottom:3px">Proposed acceptance tests before the next claim</p>
+            <table class="mini-table" aria-label="Proposed viability tests">
+              <thead><tr><th scope="col">Test</th><th scope="col">Question</th><th scope="col">Pass signal</th></tr></thead>
+              <tbody>
+                <tr><td>Desirability</td><td>Would an SI reuse the packet on another LOB?</td><td>Requested, not subsidised</td></tr>
+                <tr><td>Feasibility</td><td>Do supported parsers cover a real LOB?</td><td>≥ 90% of files parsed</td></tr>
+                <tr><td>Credibility</td><td>Do blind humans agree with the links?</td><td>IAA κ ≥ 0.6 on 30 links</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="eval-bottom">
+            <p class="eyebrow" style="margin-bottom:4px">What we would need to believe</p>
+            <ul class="bullets tight" style="font-size:clamp(.64rem,.69vw,.74rem);margin-bottom:0">
+              <li>An SI will pay for independent pre-estimate evidence, not just delivery hours.</li>
+              <li>A real estate produces findings and dispositions comparable to the synthetic slice.</li>
+              <li>Reviewers prefer the packet to the spreadsheet they use today.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel wedge">
+            <p class="eyebrow">Defensible wedge</p>
+            <h3>Vendor-independent, offline, pre-CUE, file-level evidence for one LOB.</h3>
+            <p class="small" style="margin-bottom:0">Why it can survive: independence from the vendor gate, auditability, low deployment friction, and reviewer control. “Independent” means vendor-independent, <b>not independently validated</b>: the evaluation is internal and in-sample. The buyer is an SI or an insurer’s migration lead who needs a repeatable evidence pack before CUE and Cloud Assurance Services fix the estimate and the gate.</p>
+          </div>
+          <div class="panel tint">
+            <p class="eyebrow">Verdict</p>
+            <p class="small" style="margin:0"><b>Research prototype today.</b> Viable as a wedge if a pilot estate and blind human annotation arrive. Not viable as a standalone product on the current evidence.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:9px;padding:9px 12px">
+        <p class="eyebrow" style="margin-bottom:4px">Roadmap to a credible claim</p>
+        <div class="roadmap">
+          <div class="road"><b>01</b>Real anonymised estate, one LOB</div>
+          <div class="road"><b>02</b>Second LOB to test transfer</div>
+          <div class="road"><b>03</b>Blind human annotation + IAA</div>
+          <div class="road"><b>04</b>Line-level findings</div>
+          <div class="road"><b>05</b>Performance envelope at estate scale</div>
+          <div class="road"><b>06</b>Cloud Assurance / CUE import-export</div>
+          <div class="road"><b>07</b>Compile validation of draft</div>
+        </div>
+      </div>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Say the quiet part.</strong> “On the current evidence, this is a research prototype, not a product. The metrics are in-sample synthetic. The target is internally authored and AI-assisted. There is no human IAA and no real estate.”</p>
+      <p>Then the wedge. “The defensible slice is vendor-independent, offline, pre-CUE, file-level evidence for one LOB, used by an SI to de-risk the estimate. CUE is the official Cloud Upgrade Estimate; Cloud Assurance Services is the official standards service; Lighthouse is the migration lab. PreFlight prepares file-level evidence before them. It does not replace any of them.”</p>
+      <p>Say what independent means: “Vendor-independent, not independently validated. The evaluation is internal and in-sample.”</p>
+      <p>Roadmap: real anonymised estate, second LOB, blind human annotation, line-level findings, performance, import/export, compile validation. “Those are the experiments that would turn this into a claim I can defend.”</p>
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide slide--close" id="slide-16" data-section="Close" data-title="Close and ask" aria-label="Slide 16 of 16: Close and ask">
+    <div class="slide-body">
+      <p class="kicker close-kicker">Close</p>
+      <h2 class="close-quote">Every claim has evidence.<br>Every unknown has a name.<br><span class="accent">Every change waits for a human.</span></h2>
+      <p class="close-sub">That is the standard PreFlight is trying to make ordinary: an estimate you can inspect, challenge, and sign — with the unknowns written down instead of discovered at week five.</p>
+      <div class="ask-grid">
+        <div class="ask"><b>Pilot estate</b><span>An anonymised, authorised snapshot of one LOB. The next experiment is a real inventory, not another synthetic fixture.</span></div>
+        <div class="ask"><b>SME annotation</b><span>Blind review by two domain experts, with disagreements adjudicated. That is the human IAA the current evaluation lacks.</span></div>
+        <div class="ask"><b>Feedback</b><span>Attack the claims, the packet, and the disposition model. The fastest way to improve this is to try to break it.</span></div>
+      </div>
+      <p class="pilot-ask"><b>Pilot ask:</b> one authorised estate, two blind SME annotators, hard feedback.</p>
+      <div class="contact-line">
+        <span><b>Saundarya Singh</b> · Independent research prototype</span>
+        <span><b>Repository</b> github.com/SaundaryaSingh/Preflight-CloudMigration</span>
+        <span><b>License</b> MIT</span>
+        <span><b>Deck</b> docs/presentation/index.html</span>
+      </div>
+      <p class="disclaimer">PreFlight is an independent academic research prototype. It is not affiliated with, endorsed by, sponsored by, or certified by Guidewire Software, Inc. Guidewire, InsuranceSuite, PolicyCenter, ClaimCenter, BillingCenter, Gosu, Advanced Product Designer (APD), Jutro, Integration Gateway, Cloud Assurance, Developer Assistants, Guidewire Cloud Platform, and InsuranceNow are trademarks or registered trademarks of Guidewire Software, Inc. All fixtures are synthetic. Findings are pattern-based heuristics, not official Cloud Standards checks, and are not legal, security, or compliance advice. Impact ranges are heuristic planning ranges, not quotes. <b>Official Cloud Assurance: not run.</b></p>
+    </div>
+    <div class="speaker-note" hidden>
+      <p><strong>Close on the standard, not the feature list.</strong> “Every claim has evidence; every unknown has a name; every change waits for a human. That is what we want a migration estimate to look like.”</p>
+      <p>Make the ask concrete: one authorised pilot estate, two blind SME annotators, and hard feedback. “The next experiment is not another synthetic fixture.”</p>
+      <p>Close with the contact line: Saundarya Singh, independent research prototype, repository <span class="mono">github.com/SaundaryaSingh/Preflight-CloudMigration</span>, MIT licence. Repeat the disclaimer: independent prototype, synthetic fixtures, not affiliated with Guidewire, official Cloud Assurance not run.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot" aria-label="Deck status">
+  <span class="foot-brand">PreFlight · independent research prototype</span>
+  <span class="foot-note">Synthetic estate · not affiliated with Guidewire · Official Cloud Assurance: not run</span>
+  <div class="foot-mid"><div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div></div>
+  <div class="foot-right"><span class="foot-dot" aria-hidden="true"></span><span>Offline</span><span id="foot-slide">01 / 16</span></div>
+</footer>
+
+<aside class="notes-panel" id="notes-panel" aria-label="Speaker notes" aria-hidden="true" inert>
+  <div class="notes-head"><h2>Speaker notes</h2><button class="notes-close" type="button" id="notes-close" aria-label="Close speaker notes" tabindex="-1">×</button></div>
+  <div class="notes-body" id="notes-body"></div>
+</aside>
+
+<div class="help-backdrop" id="help-backdrop">
+  <div class="help" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="help-head"><h2 id="help-title">Keyboard &amp; presentation help</h2><button class="help-close" type="button" id="help-close" aria-label="Close help">×</button></div>
+    <table>
+      <thead><tr><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>→</kbd> <kbd>↓</kbd> <kbd>Space</kbd> <kbd>PageDown</kbd></td><td>Next slide</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>↑</kbd> <kbd>PageUp</kbd></td><td>Previous slide</td></tr>
+        <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>First / last slide</td></tr>
+        <tr><td><kbd>n</kbd></td><td>Toggle speaker notes</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Open / close this help</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close help or notes</td></tr>
+        <tr><td><kbd>p</kbd> or Ctrl/Cmd + <kbd>p</kbd></td><td>Print / save as PDF</td></tr>
+        <tr><td>Touch</td><td>Swipe left / right to navigate</td></tr>
+      </tbody>
+    </table>
+    <p class="help-note">Deep links use <code>#slide-1</code> … <code>#slide-16</code>. The deck has no external fonts, scripts, styles, or network calls. Print produces one 16:9 slide per page. Reduced-motion settings are respected.</p>
+  </div>
+</div>
+
+<div class="visually-hidden" id="live-region" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var total = slides.length;
+  var current = 0;
+  var notesOpen = false;
+  var helpOpen = false;
+  var notesPanel = document.getElementById("notes-panel");
+  var notesBody = document.getElementById("notes-body");
+  var notesToggle = document.getElementById("notes-toggle");
+  var notesClose = document.getElementById("notes-close");
+  var helpBackdrop = document.getElementById("help-backdrop");
+  var helpOpenButton = document.getElementById("help-open");
+  var helpCloseButton = document.getElementById("help-close");
+  var counter = document.getElementById("counter");
+  var footSlide = document.getElementById("foot-slide");
+  var progressBar = document.getElementById("progress-bar");
+  var sectionLabel = document.getElementById("section-label");
+  var live = document.getElementById("live-region");
+  var lastFocus = null;
+  var touchX = null;
+  var touchY = null;
+
+  function pad(n) { return n < 10 ? "0" + n : String(n); }
+
+  function notesFor(index) {
+    var note = slides[index].querySelector(".speaker-note");
+    return note ? note.innerHTML : "<p>No speaker notes for this slide.</p>";
+  }
+
+  function renderNotes(index) {
+    notesBody.innerHTML = notesFor(index);
+    notesBody.scrollTop = 0;
+  }
+
+  function updateChrome(index) {
+    var slide = slides[index];
+    var number = index + 1;
+    counter.innerHTML = pad(number) + " <span>/ " + pad(total) + "</span>";
+    footSlide.textContent = pad(number) + " / " + pad(total);
+    progressBar.style.width = ((number / total) * 100).toFixed(2) + "%";
+    sectionLabel.textContent = slide.getAttribute("data-section") || "";
+    live.textContent = "Slide " + number + " of " + total + ": " + (slide.getAttribute("data-title") || "");
+    if (notesOpen) renderNotes(index);
+  }
+
+  function show(index, updateHash) {
+    index = Math.max(0, Math.min(total - 1, index));
+    if (index === current && slides[index].classList.contains("is-active")) {
+      updateChrome(index);
+      return;
+    }
+    slides[current].classList.remove("is-active");
+    slides[current].setAttribute("aria-hidden", "true");
+    current = index;
+    slides[current].classList.add("is-active");
+    slides[current].removeAttribute("aria-hidden");
+    updateChrome(current);
+    if (updateHash !== false) {
+      var hash = "#slide-" + (current + 1);
+      if (window.location.hash !== hash) {
+        try { history.replaceState(null, "", hash); }
+        catch (err) { window.location.hash = hash; }
+      }
+    }
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      slides[current].scrollIntoView({ block: "start" });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  function openNotes() {
+    notesOpen = true;
+    notesPanel.classList.add("open");
+    notesPanel.setAttribute("aria-hidden", "false");
+    notesPanel.inert = false;
+    notesClose.removeAttribute("tabindex");
+    notesToggle.setAttribute("aria-pressed", "true");
+    renderNotes(current);
+    notesClose.focus();
+  }
+  function closeNotes(returnFocus) {
+    notesOpen = false;
+    notesPanel.classList.remove("open");
+    notesPanel.setAttribute("aria-hidden", "true");
+    notesPanel.inert = true;
+    notesClose.setAttribute("tabindex", "-1");
+    notesToggle.setAttribute("aria-pressed", "false");
+    if (returnFocus) notesToggle.focus();
+  }
+  function toggleNotes() { notesOpen ? closeNotes(true) : openNotes(); }
+
+  function openHelp() {
+    if (helpOpen) return;
+    lastFocus = document.activeElement;
+    helpOpen = true;
+    helpBackdrop.classList.add("open");
+    helpCloseButton.focus();
+  }
+  function closeHelp() {
+    if (!helpOpen) return;
+    helpOpen = false;
+    helpBackdrop.classList.remove("open");
+    if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+    else helpOpenButton.focus();
+  }
+
+  function keydown(event) {
+    var tag = (event.target && event.target.tagName) || "";
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) {
+      if (["ArrowLeft", "ArrowRight", "Home", "End", " "].indexOf(event.key) >= 0) return;
+    }
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
+    if (helpOpen) {
+      if (event.key === "Tab") {
+        var focusable = helpBackdrop.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+        if (focusable.length) {
+          var first = focusable[0];
+          var last = focusable[focusable.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+      }
+      if (event.key === "Escape" || event.key === "?") { event.preventDefault(); closeHelp(); }
+      return;
+    }
+    if (event.key === "Escape" && notesOpen) { event.preventDefault(); closeNotes(true); return; }
+    if (event.key === " " && /^(BUTTON|A|SUMMARY)$/.test(tag)) return;
+    switch (event.key) {
+      case "ArrowRight": case "ArrowDown": case "PageDown": case " ":
+        event.preventDefault(); next(); break;
+      case "ArrowLeft": case "ArrowUp": case "PageUp":
+        event.preventDefault(); prev(); break;
+      case "Home":
+        event.preventDefault(); show(0); break;
+      case "End":
+        event.preventDefault(); show(total - 1); break;
+      case "?":
+        event.preventDefault(); helpOpen ? closeHelp() : openHelp(); break;
+      case "n": case "N":
+        event.preventDefault(); toggleNotes(); break;
+      case "p": case "P":
+        if (!event.metaKey && !event.ctrlKey) { event.preventDefault(); window.print(); }
+        break;
+      default: break;
+    }
+  }
+
+  function hashToIndex() {
+    var match = (window.location.hash || "").match(/slide-(\d+)/);
+    if (!match) return 0;
+    var value = parseInt(match[1], 10) - 1;
+    return isNaN(value) ? 0 : Math.max(0, Math.min(total - 1, value));
+  }
+
+  document.getElementById("print-button").addEventListener("click", function () { window.print(); });
+  notesToggle.addEventListener("click", toggleNotes);
+  notesClose.addEventListener("click", function () { closeNotes(true); });
+  helpOpenButton.addEventListener("click", openHelp);
+  helpCloseButton.addEventListener("click", closeHelp);
+  helpBackdrop.addEventListener("click", function (event) { if (event.target === helpBackdrop) closeHelp(); });
+
+  window.addEventListener("keydown", keydown);
+  window.addEventListener("hashchange", function () { show(hashToIndex(), false); });
+
+  document.querySelector(".deck").addEventListener("touchstart", function (event) {
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) { touchX = null; touchY = null; return; }
+    if (event.touches.length !== 1) return;
+    touchX = event.touches[0].clientX;
+    touchY = event.touches[0].clientY;
+  }, { passive: true });
+
+  document.querySelector(".deck").addEventListener("touchend", function (event) {
+    if (event.target && event.target.closest && event.target.closest(".matrix-wrap")) { touchX = null; touchY = null; return; }
+    if (touchX === null || event.changedTouches.length !== 1) return;
+    var dx = event.changedTouches[0].clientX - touchX;
+    var dy = event.changedTouches[0].clientY - touchY;
+    touchX = null; touchY = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+      if (dx < 0) next(); else prev();
+    }
+  }, { passive: true });
+
+  // Make all inactive slides inert for assistive technology and tab order.
+  slides.forEach(function (slide, index) {
+    if (index !== 0) slide.setAttribute("aria-hidden", "true");
+  });
+
+  if (!window.location.hash) {
+    try { history.replaceState(null, "", "#slide-1"); }
+    catch (err) { window.location.hash = "#slide-1"; }
+  }
+  show(hashToIndex(), false);
+})();
+</script>
+</body>
+</html>

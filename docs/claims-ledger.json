@@ -48,13 +48,13 @@
     },
     {
       "id": "C-004",
-      "claim": "Vendor estimate: most monoline products of average complexity convert in 6\u20138 weeks, including testing.",
+      "claim": "Vendor estimate: APD product conversion for most monoline products of average complexity takes 6\u20138 weeks, including testing; this is not a full migration estimate.",
       "status": "VERIFIED-VENDOR-CLAIM",
       "access": "public",
       "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "quote": "Blog: \u201cMost monoline products of average complexity can be converted in just 6-8 weeks, including testing.\u201d",
       "falsifier": "Guidewire changes the estimate; independent data contradicts it.",
-      "consequence": "Cite as vendor estimate only, never as a benchmark.",
+      "consequence": "Cite as a vendor APD-conversion estimate, never as a full migration estimate or benchmark.",
       "rule_ids": []
     },
     {
@@ -449,6 +449,19 @@
       "falsifier": "A public canonical XSD or a different PCF format definition.",
       "consequence": "Parser uses lxml structure; no XSD-validation claim.",
       "rule_ids": []
+    },
+    {
+      "id": "C-037",
+      "claim": "PF-GW-SBT-001 detection is a synthetic marker heuristic: it flags standardsBasedTemplate=\"true\" and does not assert an official SBT assessment or conversion result.",
+      "status": "PRODUCT-CLAIM",
+      "access": "none",
+      "source_url": "https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
+      "quote": "The Olos release note documents the SBT conversion limitation; the marker detection itself is a PreFlight heuristic.",
+      "falsifier": "An official SBT assessment or a documented detection standard that replaces the marker heuristic.",
+      "consequence": "Rule and UI label PF-GW-SBT-001 as heuristic, standard_family=none, with no standard_id; the readiness flag remains separate from advisory findings.",
+      "rule_ids": [
+        "PF-GW-SBT-001"
+      ]
     }
   ]
 }

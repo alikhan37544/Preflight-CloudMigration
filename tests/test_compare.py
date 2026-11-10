@@ -93,6 +93,21 @@ def test_reference_agreement_is_measured(context) -> None:
     assert result.confusion["unresolved"]["unresolved"] == 1
 
 
+def test_wrong_mapping_target_lowers_reference_f1(context) -> None:
+    import copy
+
+    _, discovery, reconstruction, reference = context
+    wrong = copy.deepcopy(reconstruction.mappings)
+    target = next(m for m in wrong if m.source_ref == "PersonalVehicle.ModelYear")
+    target.target_name = "notModelYear"
+    target.target_path = "schema.notModelYear"
+    result = compare_feature(reference, wrong, discovery.evidence)
+    assert result.macro_f1 < 1.0
+    row = next(r for r in result.rows if r.source_ref == "PersonalVehicle.ModelYear")
+    assert row.class_.value == "missing"
+
+
+
 def test_every_source_row_links_evidence(context) -> None:
     _, discovery, reconstruction, reference = context
     result = compare_feature(reference, reconstruction.mappings, discovery.evidence)

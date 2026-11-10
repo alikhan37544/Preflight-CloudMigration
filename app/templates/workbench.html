@@ -1,13 +1,15 @@
 {% extends "base.html" %}
-{% from "_macros.html" import confidence, status %}
+{% from "_macros.html" import confidence, status, scroll_region, pluralize, locator %}
 
 {% block content %}
+{% set evidence_query = request.query_params.get('evidence', '') %}
+{% set evidence_selected = evidence_query and selected_evidence and selected_evidence.evidence_id == evidence_query %}
 <div class="page-head">
   <div>
     <div class="eyebrow">Evidence graph</div>
     <h1>Feature workbench</h1>
     <p class="lede">One selected feature, traced across PCF, entity metadata, typelists, the extracted
-    template, Gosu, and tests. Click a node to inspect file evidence.</p>
+    template, Gosu, and tests. Click a highlighted evidence-bearing node to inspect file evidence.</p>
   </div>
   <div class="head-meta">
     {% if view %}{{ status(view.status.status) }}{% endif %}
@@ -40,9 +42,28 @@
 
 {% if view.unsupported_count %}
 <div class="banner banner-warning">
-  <strong>{{ view.unsupported_count }} unsupported or corrupt files are listed, not hidden.</strong>
-  Results exclude them. <a href="/manifest?run={{ run_id }}&status=unsupported">Inspect the manifest</a>.
+  <strong>{{ view.unsupported_count }} excluded files (binary, corrupt, or unsupported) are listed, not hidden.</strong>
+  Results exclude them. <a href="/manifest?run={{ run_id }}&excluded=1">Inspect the excluded files</a>.
 </div>
+{% endif %}
+
+{% set summary = view.feature_summary %}
+{% if summary %}
+<section class="summary-strip" aria-label="Selected feature summary">
+  <div class="summary-stat"><span class="summary-value">{{ summary.evidence }}</span><span class="summary-label">evidence records</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.files }}</span><span class="summary-label">distinct files</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.artifact_types }}</span><span class="summary-label">artefact types</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.tests }}</span><span class="summary-label">tests</span></div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.references }}</span><span class="summary-label">references</span></div>
+  <div class="summary-stat summary-signal"{% if summary.long_type is none %} title="No long-type finding is linked to this feature."{% endif %}>
+    {% if summary.long_type is none %}
+    <span class="summary-value">—</span><span class="summary-label">long type vs APD limit (none linked)</span>
+    {% else %}
+    <span class="summary-value">{{ summary.long_type }} <span class="summary-vs">vs</span> 24</span><span class="summary-label">long type vs APD limit</span>
+    {% endif %}
+  </div>
+  <div class="summary-stat"><span class="summary-value">{{ summary.gaps }}</span><span class="summary-label">{{ summary.gaps_label }}</span></div>
+</section>
 {% endif %}
 
 <div class="workbench-grid">
@@ -65,6 +86,9 @@
         </span>
       </a>
       {% endfor %}
+      <div class="empty-inline feature-empty" data-feature-empty hidden>
+        <p>No features match.</p>
+      </div>
     </div>
     <div class="panel-foot muted">
       {% if view.selected_feature %}
@@ -81,16 +105,40 @@
   <section class="panel spine-panel" aria-label="Feature spine">
     <div class="panel-head">
       <h2>Feature spine</h2>
-      <span class="muted">{{ view.spine_layout.nodes|length if view.spine_layout else 0 }} nodes - click a node for evidence below</span>
+      <span class="muted">{{ pluralize(view.spine_layout.nodes|length if view.spine_layout else 0, 'node') }} - Click a highlighted evidence-bearing node
+        <span class="spine-selected-note" data-spine-selected>{% if evidence_selected %}Selected {{ evidence_query }}{% endif %}</span></span>
     </div>
     {% if view.spine_layout %}
-    <div class="spine-scroll">
+    <p class="spine-caption">Six columns read left to right: PCF, entity, typelist, template / Gosu, API draft, tests.
+      Edges are directed. Labels wrap so test nodes stay inside the graph at 1280px.
+      <span class="spine-structural-note">API-draft structural nodes carry no evidence record; they are muted and dashed.</span></p>
+    <div class="evidence-inline" data-evidence-inline aria-live="polite"{% if not evidence_selected %} hidden{% endif %}>
+      <div class="evidence-inline-label">Selected node evidence</div>
+      <div data-evidence-inline-body>
+        {% if evidence_selected %}
+        <div class="evidence-head">
+          <span class="pill pill-confidence">{{ selected_evidence.confidence }}</span>
+          <code>{{ selected_evidence.evidence_id }}</code>
+        </div>
+        <div class="evidence-path">{{ selected_evidence.path }}</div>
+        <div class="evidence-locator">{{ locator(selected_evidence.locator) }}</div>
+        <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
+        <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="spine-scroll" data-spine-scroll>
       <svg class="spine-svg" viewBox="0 0 {{ view.spine_layout.width }} {{ view.spine_layout.height }}"
-           role="img" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}">
+           width="{{ view.spine_layout.width }}" height="{{ view.spine_layout.height }}"
+           role="group" aria-label="Evidence graph for {{ view.selected_feature.feature_id }}: six columns from PCF to tests. Highlighted nodes are keyboard-selectable; structural nodes carry no evidence record.">
         {% for column in view.spine_layout.columns %}
-        <text class="column-label" x="{{ column.x }}" y="30">{{ column.label }}</text>
+        <g class="spine-column-header" data-column-label="{{ column.label }}">
+          <text class="column-label" x="{{ column.x }}" y="20">
+            {%- for line in column.header_lines %}<tspan x="{{ column.x }}" y="{{ 20 + loop.index0 * 12 }}">{{ line }}</tspan>{% endfor -%}
+          </text>
+        </g>
         {% endfor %}
-        <g class="spine-edges">
+        <g class="spine-edges" aria-hidden="true">
           {% for edge in view.spine_layout.edges %}
           <path d="M {{ edge.x1 }} {{ edge.y1 }} C {{ edge.x1 + 18 }} {{ edge.y1 }}, {{ edge.x2 - 18 }} {{ edge.y2 }}, {{ edge.x2 }} {{ edge.y2 }}"
                 class="edge edge-{{ edge.kind }}"/>
@@ -98,27 +146,48 @@
         </g>
         <g class="spine-nodes">
           {% for node in view.spine_layout.nodes %}
-          <g class="spine-node node-{{ node.kind }}" tabindex="0" role="button"
+          {% set is_selected = evidence_selected and node.evidence_id and node.evidence_id == evidence_query %}
+          {% set has_evidence = node.evidence_id %}
+          <g class="spine-node node-{{ node.kind }}{{ '' if has_evidence else ' node-structural' }}{{ ' selected' if is_selected }}"
+             {% if has_evidence %}tabindex="0" role="button" aria-pressed="{{ 'true' if is_selected else 'false' }}"{% else %}role="note"{% endif %}
              data-evidence-id="{{ node.evidence_id or '' }}" data-path="{{ node.artifact_path or '' }}"
-             aria-label="{{ node.label }} {{ node.kind }}">
+             aria-label="{{ node.label }} {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}{% if not has_evidence %}; structural node, no evidence record{% endif %}">
+            <title>{{ node.label }} - {{ node.kind }}{% if node.artifact_path %} - {{ node.artifact_path }}{% endif %}{% if not has_evidence %} (structural node; no evidence record){% endif %}</title>
+            {% if is_selected %}<rect class="node-selected-outline" x="{{ node.x - 3 }}" y="{{ node.y - 3 }}"
+                  width="{{ node.w + 6 }}" height="{{ node.h + 6 }}" rx="6"/>{% endif %}
             <rect x="{{ node.x }}" y="{{ node.y }}" width="{{ node.w }}" height="{{ node.h }}" rx="4"/>
-            <text class="node-label" x="{{ node.x + 9 }}" y="{{ node.y + 16 }}">{{ node.label }}</text>
-            <text class="node-kind" x="{{ node.x + 9 }}" y="{{ node.y + 30 }}">{{ node.kind }}</text>
+            {% for line in node.label_lines %}
+            <text class="node-label" x="{{ node.x + 8 }}" y="{{ node.y + 15 + loop.index0 * 12 }}">{{ line }}</text>
+            {% endfor %}
+            <text class="node-kind" x="{{ node.x + 8 }}" y="{{ node.y + node.kind_y }}">{{ node.kind }}</text>
           </g>
           {% endfor %}
         </g>
       </svg>
     </div>
+    <div class="spine-legend" aria-label="Edge kinds and node marker">
+      <span class="legend-title">Edges:</span>
+      <span class="legend-item"><span class="legend-line legend-contains" aria-hidden="true"></span>contains</span>
+      <span class="legend-item"><span class="legend-line legend-declares" aria-hidden="true"></span>declares</span>
+      <span class="legend-item"><span class="legend-line legend-references" aria-hidden="true"></span>references</span>
+      <span class="legend-item"><span class="legend-line legend-configures" aria-hidden="true"></span>configures</span>
+      <span class="legend-item"><span class="legend-line legend-tested_by" aria-hidden="true"></span>tested_by</span>
+      <span class="legend-item legend-selected"><span class="legend-outline" aria-hidden="true"></span>selected node</span>
+    </div>
+    <p class="spine-scroll-hint" data-spine-scroll-hint hidden>This graph is wider than the window. Scroll horizontally to see all six columns, including Tests.</p>
     <details class="table-fallback">
       <summary>Spine table fallback</summary>
-      <table class="data-table compact">
-        <thead><tr><th>Node</th><th>Kind</th><th>File</th><th>Confidence</th></tr></thead>
-        <tbody>
-          {% for node in view.spine_layout.nodes %}
-          <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% call scroll_region("Spine table fallback, horizontally scrollable if needed") %}
+        <table class="data-table compact spine-table">
+          <caption>Spine nodes with kind, file, and confidence.</caption>
+          <thead><tr><th scope="col">Node</th><th scope="col">Kind</th><th scope="col">File</th><th scope="col">Confidence</th></tr></thead>
+          <tbody>
+            {% for node in view.spine_layout.nodes %}
+            <tr><td>{{ node.label }}</td><td>{{ node.kind }}</td><td><code>{{ node.artifact_path or '-' }}</code></td><td>{{ node.confidence }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endcall %}
     </details>
     {% else %}
     <div class="empty-inline">
@@ -127,19 +196,19 @@
     {% endif %}
   </section>
 
-  <aside class="panel evidence-panel" aria-label="Evidence drawer">
+  <aside class="panel evidence-panel" id="evidence-drawer" tabindex="-1" aria-label="Evidence drawer">
     <div class="panel-head">
       <h2>Evidence</h2>
       <span class="muted">file + line/pointer</span>
     </div>
-    <div class="evidence-drawer" data-evidence-drawer>
+    <div class="evidence-drawer" data-evidence-drawer aria-live="polite">
       {% if selected_evidence %}
       <div class="evidence-head">
         <span class="pill pill-confidence">{{ selected_evidence.confidence }}</span>
         <code>{{ selected_evidence.evidence_id }}</code>
       </div>
       <div class="evidence-path">{{ selected_evidence.path }}</div>
-      <div class="evidence-locator">{{ selected_evidence.locator.kind }} {{ selected_evidence.locator.value }}{% if selected_evidence.locator.line %}:{{ selected_evidence.locator.line }}{% endif %}</div>
+      <div class="evidence-locator">{{ locator(selected_evidence.locator) }}</div>
       <pre class="evidence-excerpt">{{ selected_evidence.excerpt }}</pre>
       <div class="muted">Method: {{ selected_evidence.method }}. Excerpt SHA-256: <code>{{ selected_evidence.excerpt_sha|short }}</code></div>
       {% else %}
@@ -155,10 +224,10 @@
         <h3>Grounded assistant</h3>
         <span class="badge badge-neutral">retrieval-only - model off</span>
       </div>
-      <form data-assistant-form>
+      <form data-assistant-form data-feature-id="{{ view.selected_feature.feature_id if view.selected_feature else '' }}">
         <label class="visually-hidden" for="assistant-question">Ask about this snapshot</label>
         <input id="assistant-question" class="input" name="question" placeholder="Ask about evidence, gaps, findings..." required>
-        <button class="btn btn-primary btn-small" type="submit">Ask</button>
+        <button class="btn btn-primary btn-small" type="submit" data-assistant-submit>Ask</button>
       </form>
       <div class="prompt-chips">
         <button type="button" class="chip" data-assistant-prompt="Does this estate use territory rating?">Territory rating?</button>
@@ -166,20 +235,21 @@
         <button type="button" class="chip" data-assistant-prompt="Which files reference Motorcycle_Ext?">Motorcycle_Ext?</button>
       </div>
       <div class="assistant-result" data-assistant-result>
-        <p class="muted">Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
+        <div class="assistant-transcript" data-assistant-transcript aria-live="polite" aria-relevant="additions" role="region" aria-label="Assistant transcript" tabindex="0"></div>
+        <p class="muted assistant-hint" data-assistant-hint>Answers cite evidence IDs. If the snapshot lacks evidence, the assistant refuses and names the missing source.</p>
       </div>
     </div>
   </aside>
 </div>
 
-{% set long_type_findings = view.findings | selectattr('rule_id', 'equalto', 'PF-GW-NAM-001') | list %}
-{% if long_type_findings %}
+{% if summary and summary.long_type_finding %}
+{% set long_type_finding = summary.long_type_finding %}
 <section class="panel migration-signal" aria-label="Long type signal">
   <div class="eyebrow">Estimate-moving signal</div>
   <div class="signal-row">
     <div>
-      <h2>{{ long_type_findings[0].title }}</h2>
-      <p class="muted">{{ long_type_findings[0].message }}</p>
+      <h2>{{ long_type_finding.title }}</h2>
+      <p class="muted">{{ long_type_finding.message }}</p>
     </div>
     <div class="signal-meta">
       <span class="pill pill-error">24-char limit</span>
@@ -192,6 +262,7 @@
 <section class="panel" aria-label="Gaps and assumptions">
   <div class="panel-head">
     <h2>Unknowns and gaps</h2>
+    <span class="muted">estate-wide</span>
     <span class="counter">{{ view.gaps|length }}</span>
   </div>
   {% if view.gaps %}

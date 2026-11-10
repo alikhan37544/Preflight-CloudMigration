@@ -46,8 +46,63 @@ def _citations_from(items: list[Evidence], limit: int = 8) -> list[str]:
     return seen
 
 
+def _artifact_family(path: str) -> str:
+    lower = path.lower().replace("\\", "/")
+    if lower.endswith(".pcf"):
+        return "PCF"
+    if lower.endswith(".eti"):
+        return "installed entity"
+    if lower.endswith(".etx"):
+        return "entity extension"
+    if lower.endswith(".tti"):
+        return "typelist"
+    if lower.endswith(".ttx"):
+        return "typelist extension"
+    if "/template/" in lower or lower.startswith("product/template/"):
+        return "APD template"
+    if lower.startswith("gtest/") or "/gtest/" in lower:
+        return "tests"
+    if lower.endswith(".gs"):
+        return "Gosu"
+    if lower.endswith((".yaml", ".yml")):
+        return "codegen/config YAML"
+    if lower.endswith(".json"):
+        return "JSON config"
+    if lower.endswith(".xml"):
+        return "XML config"
+    return "other artefacts"
+
+
+def _artifact_families(items: list[Evidence]) -> list[str]:
+    ordered: list[str] = []
+    for item in items:
+        family = _artifact_family(item.path)
+        if family not in ordered:
+            ordered.append(family)
+    return ordered
+
+
+def _join_words(values: list[str]) -> str:
+    if not values:
+        return "none"
+    if len(values) == 1:
+        return values[0]
+    return ", ".join(values[:-1]) + " and " + values[-1]
+
+
+def _feature_evidence(feature, evidence: list[Evidence]) -> list[Evidence]:
+    by_id = {item.evidence_id: item for item in evidence}
+    return [by_id[eid] for eid in feature.evidence_ids if eid in by_id]
+
+
+def _record_word(count: int) -> str:
+    return "record" if count == 1 else "records"
+
+
+
 def answer_question(question: str, discovery: DiscoveryResult, review: ReviewResult,
-                    reconstruction: ReconstructionResult) -> AssistantAnswer:
+                    reconstruction: ReconstructionResult,
+                    feature_id: str | None = None) -> AssistantAnswer:
     text = (question or "").strip()
     lower = text.lower()
 
@@ -113,17 +168,42 @@ def answer_question(question: str, discovery: DiscoveryResult, review: ReviewRes
         )
 
     if "test" in lower:
-        tests = [ev for ev in discovery.evidence if "gtest/" in ev.path or "/gtest/" in ev.path]
+        feature = (
+            next((f for f in discovery.features if f.feature_id == feature_id), None)
+            if feature_id else None
+        )
+        feature_evidence = set(feature.evidence_ids) if feature else None
+        tests = [
+            ev for ev in discovery.evidence
+            if ("gtest/" in ev.path or "/gtest/" in ev.path)
+            and (feature_evidence is None or ev.evidence_id in feature_evidence)
+        ]
+        scope = (
+            f" linked to {feature.name} ({feature.feature_id})"
+            if feature else " linked to the selected feature"
+        )
         if tests:
             citations = _citations_from(tests)
+            paths = {ev.path for ev in tests}
+            unit_findings = [f for f in review.findings if f.rule_id == "PF-GW-GUNIT-001"]
+            extra = (
+                " A separate PF-GW-GUNIT-001 advisory finding flags DB-coupled test code."
+                if unit_findings else ""
+            )
             return AssistantAnswer(
                 answer=(
-                    f"{len(tests)} test evidence records are linked to the feature. "
-                    "One is a pure unit test; one is DB-coupled and carries an advisory finding."
+                    f"{len(tests)} test evidence records across {len(paths)} file"
+                    f"{'s' if len(paths) != 1 else ''}{scope}.{extra}"
                 ),
                 grounded=True,
                 citations=citations,
                 searched_scopes=["gtest", "feature evidence"],
+            )
+        if feature:
+            return _refusal(
+                f"no test evidence is linked to {feature.feature_id} in this snapshot.",
+                searched=["gtest", "feature evidence"],
+                missing=[f"a test artefact linked to {feature.name}"],
             )
 
     if "finding" in lower or "blocker" in lower or "risk" in lower:
@@ -143,22 +223,60 @@ def answer_question(question: str, discovery: DiscoveryResult, review: ReviewRes
         )
 
     if "vehicle" in lower:
-        feature = next((f for f in discovery.features if f.feature_id == "PA-VEH-01"), None)
+        feature = None
+        if feature_id:
+            feature = next((f for f in discovery.features if f.feature_id == feature_id), None)
+        if feature is None:
+            feature = next(
+                (f for f in discovery.features
+                 if f.feature_id == "PA-VEH-01"
+                 or f.capability == "vehicle_information"),
+                None,
+            )
         if feature:
-            evidence_by_id = {e.evidence_id: e for e in discovery.evidence}
-            items = [evidence_by_id[eid] for eid in feature.evidence_ids if eid in evidence_by_id]
+            items = _feature_evidence(feature, discovery.evidence)
+            if not items:
+                return _refusal(
+                    f"no evidence record for {feature.feature_id} is present in this run.",
+                    searched=["feature evidence", "spine"],
+                    missing=[f"evidence linked to {feature.feature_id}"],
+                )
             citations = _citations_from(items)
             paths = {ev.path for ev in items}
+            families = _artifact_families(items)
+            answer = (
+                f"{feature.name} ({feature.feature_id}) is supported by {len(items)} evidence "
+                f"{_record_word(len(items))} across {len(paths)} file"
+                f"{'s' if len(paths) != 1 else ''}. Artefact families present: "
+                f"{_join_words(families)}."
+            )
+            territory_gaps = [
+                gap for gap in discovery.gaps
+                if "territor" in gap.subject.lower()
+            ]
+            territory_assumptions = [
+                item for item in reconstruction.assumptions
+                if "territor" in item.statement.lower()
+            ]
+            if territory_gaps:
+                answer += (
+                    " The snapshot records a territory gap ("
+                    + ", ".join(gap.gap_id for gap in territory_gaps)
+                    + ") rather than inventing a rating source."
+                )
+            if territory_assumptions:
+                answer += (
+                    " The assumption register records "
+                    f"{len(territory_assumptions)} territory assumption"
+                    f"{'s' if len(territory_assumptions) != 1 else ''} ("
+                    + ", ".join(item.assumption_id for item in territory_assumptions)
+                    + ")."
+                )
             return AssistantAnswer(
-                answer=(
-                    f"Vehicle Information (PA-VEH-01) is supported by {len(items)} evidence records "
-                    f"across {len(paths)} files: PCF, installed entity, entity extension, typelist, "
-                    "extracted template, Gosu validation, and tests. The territory source is absent "
-                    "and is recorded as an assumption."
-                ),
+                answer=answer,
                 grounded=True,
                 citations=citations,
-                searched_scopes=["feature evidence", "spine", "gaps"],
+                searched_scopes=["feature evidence", "spine", "gaps", "assumptions"],
             )
 
     if "policy" in lower and "question" in lower:

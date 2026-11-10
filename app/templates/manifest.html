@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status %}
+{% from "_macros.html" import status, scroll_region %}
 
 {% block content %}
 <div class="page-head">
@@ -16,8 +16,8 @@
 
 {% if view.unsupported_count %}
 <div class="banner banner-warning">
-  <strong>{{ view.unsupported_count }} unsupported or corrupt files could not be parsed.</strong> Results exclude them.
-  The source snapshot is unchanged; its hash is verified before and after analysis.
+  <strong>{{ view.unsupported_count }} excluded files (binary, corrupt, or unsupported) could not be parsed.</strong>
+  Results exclude them. The source snapshot is unchanged; its hash is verified before and after analysis.
 </div>
 {% endif %}
 
@@ -30,9 +30,18 @@
     Hash check recorded in the audit trail.
   </div>
   {% endif %}
+  {% if excluded %}
+  <div class="excluded-summary" role="status" aria-live="polite">
+    <strong>{{ excluded_artifacts|length }} excluded files</strong>
+    <span class="pill pill-state">{{ excluded_counts.binary }} binary</span>
+    <span class="pill pill-state">{{ excluded_counts.corrupt }} corrupt</span>
+    <span class="pill pill-state">{{ excluded_counts.unsupported }} unsupported</span>
+    <span class="muted">Listed with reasons; the source snapshot is unchanged.</span>
+  </div>
+  {% endif %}
+
   <form class="filter-row" method="get" action="/manifest">
     <input type="hidden" name="run" value="{{ run_id }}">
-    {% if excluded %}<input type="hidden" name="excluded" value="1">{% endif %}
     <label class="visually-hidden" for="manifest-q">Filter by path</label>
     <input id="manifest-q" class="input" type="search" name="q" value="{{ q }}" placeholder="Filter by path...">
     <label class="visually-hidden" for="manifest-status">Filter by status</label>
@@ -42,31 +51,49 @@
       <option value="{{ value }}" {{ 'selected' if status_filter == value }}>{{ value }}</option>
       {% endfor %}
     </select>
+    <label class="check-inline"><input type="checkbox" name="excluded" value="1" {{ 'checked' if excluded }}> Excluded ({{ view.unsupported_count }})</label>
     <button class="btn" type="submit">Apply</button>
     <span class="muted">{{ total }} matching{% if excluded %} (excluded files){% endif %} - page {{ page }} of {{ pages }}</span>
   </form>
 
-  <table class="data-table manifest-table">
-    <thead><tr><th>Path</th><th>Kind</th><th>Parser</th><th>Status</th><th>Lines</th><th>Size</th><th>SHA-256</th></tr></thead>
-    <tbody>
-      {% for artifact in artifacts %}
-      <tr>
-        <td><code>{{ artifact.path }}</code>{% if artifact.warnings %}<div class="muted">{{ artifact.warnings|join('; ') }}</div>{% endif %}</td>
-        <td>{{ artifact.kind }}</td>
-        <td>{{ artifact.parser }}</td>
-        <td>{{ status(artifact.status) }}</td>
-        <td>{{ artifact.line_count }}</td>
-        <td>{{ artifact.size }}</td>
-        <td><code class="hash" title="{{ artifact.sha256 }}">{{ artifact.sha256|short }}</code></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% if artifacts %}
+  {% call scroll_region("Manifest artifacts table, horizontally scrollable if needed", "Scroll horizontally to see path, size, and hash columns.") %}
+    <table class="data-table manifest-table">
+      <caption>Snapshot artifacts with parser, status, and exclusion reason.</caption>
+      <thead><tr><th scope="col">Path</th><th scope="col">Kind</th><th scope="col">Parser</th><th scope="col">Status</th><th scope="col">Why excluded</th><th scope="col">Lines</th><th scope="col">Size</th><th scope="col">SHA-256</th></tr></thead>
+      <tbody>
+        {% for artifact in artifacts %}
+        <tr>
+          <td><code>{{ artifact.path }}</code>{% if artifact.warnings %}<div class="muted">{{ artifact.warnings|join('; ') }}</div>{% endif %}</td>
+          <td>{{ artifact.kind }}</td>
+          <td>{{ artifact.parser }}</td>
+          <td>{{ status(artifact.status) }}</td>
+          <td class="muted">
+            {% if artifact.status == 'binary' %}Binary asset; content is not parsed as source.
+            {% elif artifact.status == 'corrupt' %}Parse failed{% if artifact.warnings %}: {{ artifact.warnings[0] }}{% endif %}
+            {% elif artifact.status == 'unsupported' %}No supported parser for this file type.
+            {% else %}-{% endif %}
+          </td>
+          <td>{{ artifact.line_count }}</td>
+          <td>{{ artifact.size }}</td>
+          <td><code class="hash" title="{{ artifact.sha256 }}">{{ artifact.sha256|short }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endcall %}
 
   <div class="pagination">
     {% if page > 1 %}<a class="btn btn-small" href="/manifest?run={{ run_id }}&page={{ page - 1 }}&q={{ q }}&status={{ status_filter }}&excluded={{ excluded }}">Previous</a>{% endif %}
     <span class="muted">Page {{ page }} of {{ pages }}</span>
     {% if page < pages %}<a class="btn btn-small" href="/manifest?run={{ run_id }}&page={{ page + 1 }}&q={{ q }}&status={{ status_filter }}&excluded={{ excluded }}">Next</a>{% endif %}
   </div>
+  {% else %}
+  <div class="empty-inline" role="status">
+    <p><strong>No files match these filters.</strong></p>
+    <p class="muted">Clear the path or status filter, or include excluded files, to see more of the manifest.</p>
+    <p><a class="btn btn-small" href="/manifest?run={{ run_id }}">Clear filters</a></p>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

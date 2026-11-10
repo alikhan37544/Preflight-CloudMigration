@@ -8,3 +8,5 @@ data/*.sqlite
 worktrees/
 
 *.egg-info/
+
+data/.locks/

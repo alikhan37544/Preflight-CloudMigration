@@ -57,6 +57,41 @@ def test_vehicle_question_is_grounded_with_citations(context) -> None:
     assert answer.grounded is True
     assert answer.citations
     assert set(answer.citations) <= known_ids(discovery, review)
+    assert "Artefact families present:" in answer.answer
+    assert "territory gap" in answer.answer.lower()
+    assert "territory assumption" in answer.answer.lower()
+
+
+def test_one_evidence_feature_claims_only_what_is_present(context) -> None:
+    import copy
+
+    _, discovery, reconstruction, review, _ = context
+    sparse = copy.deepcopy(discovery)
+    feature = next(f for f in sparse.features if f.feature_id == "PA-VEH-01")
+    evidence_by_id = {item.evidence_id: item for item in sparse.evidence}
+    pcf = next(
+        evidence_by_id[eid] for eid in feature.evidence_ids
+        if evidence_by_id[eid].path.endswith(".pcf")
+    )
+    feature.evidence_ids = [pcf.evidence_id]
+    sparse.features = [feature]
+    sparse.evidence = [pcf]
+    sparse.gaps = []
+    sparse_reconstruction = copy.deepcopy(reconstruction)
+    sparse_reconstruction.assumptions = []
+
+    answer = answer_question(
+        "What evidence supports Vehicle Information?", sparse, review,
+        sparse_reconstruction, feature_id="PA-VEH-01",
+    )
+    assert answer.grounded is True
+    assert answer.citations == [pcf.evidence_id]
+    assert "1 evidence record" in answer.answer
+    assert "Artefact families present: PCF." in answer.answer
+    assert "installed entity" not in answer.answer
+    assert "territory" not in answer.answer.lower()
+    assert "assumption" not in answer.answer.lower()
+
 
 
 def test_motorcycle_question_cites_typelist_evidence(context) -> None:
@@ -87,6 +122,24 @@ def test_injected_instruction_does_not_invent_evidence(context) -> None:
     assert answer.grounded is False
     assert not answer.citations or set(answer.citations) <= known_ids(discovery, review)
     assert "SecretRatingTable.xml" not in answer.answer
+
+
+def test_tests_question_is_scoped_to_the_selected_feature(context) -> None:
+    _, discovery, reconstruction, review, _ = context
+    vehicle = next(f for f in discovery.features if f.feature_id == "PA-VEH-01")
+    answer = answer_question(
+        "Which tests cover vehicle validation?", discovery, review, reconstruction,
+        feature_id="PA-VEH-01",
+    )
+    assert answer.grounded is True
+    assert "PA-VEH-01" in answer.answer
+    assert set(answer.citations) <= set(vehicle.evidence_ids)
+    policy = answer_question(
+        "Which tests cover vehicle validation?", discovery, review, reconstruction,
+        feature_id="PA-POL-02",
+    )
+    assert policy.grounded is False
+    assert "PA-POL-02" in policy.answer
 
 
 def test_demo_question_set_has_answer_and_refusal_cases(context) -> None:

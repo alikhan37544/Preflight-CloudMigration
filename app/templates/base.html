@@ -25,7 +25,7 @@
   </header>
 
   {% if run_id %}
-  <div class="contextbar">
+  <div class="contextbar" role="region" aria-label="Run context">
     <div class="crumbs">
       <span>Workspace</span><span class="sep">/</span><span>{{ title }}</span>
       <span class="sep">/</span><code>{{ run_id }}</code>
@@ -38,32 +38,42 @@
       {% endif %}
       <span>{{ release_context }}</span>
     </div>
+    {% if view %}
     <div class="context-actions">
       <a class="btn btn-ghost btn-small" href="/api/runs/{{ run_id }}/audit" target="_blank" rel="noopener">Audit JSON</a>
-      <button class="btn btn-ghost btn-small" type="button" data-copy="{{ view.manifest.sha256 if view else '' }}">Copy snapshot hash</button>
+      {% if view.manifest.sha256 %}
+      <button class="btn btn-ghost btn-small" type="button" data-copy="{{ view.manifest.sha256 }}">Copy snapshot hash</button>
+      {% endif %}
     </div>
+    {% endif %}
   </div>
   {% endif %}
 
   <div class="shell">
     <aside class="sidebar" aria-label="Primary navigation">
-      <div class="side-group">
-        <div class="side-label">Review</div>
-        <a class="side-link {{ 'active' if title == 'Workbench' }}" href="/{% if run_id %}?run={{ run_id }}{% endif %}">Workbench</a>
-        <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}">Manifest</a>
-        <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}">Reconstruction</a>
-        <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}">Findings</a>
-      </div>
-      <div class="side-group">
-        <div class="side-label">Evidence</div>
-        <a class="side-link {{ 'active' if title == 'Evaluation' }}" href="/evaluation{% if run_id %}?run={{ run_id }}{% endif %}">Evaluation</a>
-        <a class="side-link {{ 'active' if title == 'Packet' }}" href="/packet{% if run_id %}?run={{ run_id }}{% endif %}">Review packet</a>
-      </div>
-      <div class="side-group">
-        <div class="side-label">Workspace</div>
-        <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs">Runs</a>
-        <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings">Settings</a>
-        <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about">About</a>
+      <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="primary-nav-links">
+        <span class="nav-toggle-title"><span class="nav-toggle-icon" aria-hidden="true">&#9776;</span> Sections</span>
+        <span class="nav-toggle-hint" data-nav-toggle-hint>Menu</span>
+      </button>
+      <div class="side-groups" id="primary-nav-links" data-nav-groups>
+        <div class="side-group">
+          <div class="side-label">Review</div>
+          <a class="side-link {{ 'active' if title == 'Workbench' }}" href="/{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Workbench' %} aria-current="page"{% endif %}>Workbench</a>
+          <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Manifest' %} aria-current="page"{% endif %}>Manifest</a>
+          <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Reconstruction' %} aria-current="page"{% endif %}>Reconstruction</a>
+          <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Findings' %} aria-current="page"{% endif %}>Findings</a>
+        </div>
+        <div class="side-group">
+          <div class="side-label">Evidence</div>
+          <a class="side-link {{ 'active' if title == 'Evaluation' }}" href="/evaluation{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Evaluation' %} aria-current="page"{% endif %}>Evaluation</a>
+          <a class="side-link {{ 'active' if title == 'Packet' }}" href="/packet{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Packet' %} aria-current="page"{% endif %}>Review packet</a>
+        </div>
+        <div class="side-group">
+          <div class="side-label">Workspace</div>
+          <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs"{% if title == 'Runs' %} aria-current="page"{% endif %}>Runs</a>
+          <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings"{% if title == 'Settings' %} aria-current="page"{% endif %}>Settings</a>
+          <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about"{% if title == 'About and boundaries' %} aria-current="page"{% endif %}>About</a>
+        </div>
       </div>
       <div class="side-foot">
         <div class="offline-note">Local only. No tenant, no telemetry.</div>
@@ -76,15 +86,33 @@
   </div>
 
   <footer class="footer">
-    <div class="footer-line">
-      <strong>Independent research prototype.</strong> Not affiliated with, endorsed by, or certified by Guidewire
-      Software, Inc. Findings are pattern-based heuristics, not official Cloud Standards checks.
-      Official Cloud Assurance: not run.
-    </div>
     <div class="footer-line muted">
       {{ disclaimer }}
     </div>
   </footer>
+  <dialog class="decision-dialog" data-decision-dialog aria-labelledby="decision-dialog-title" aria-describedby="decision-consequence">
+    <form data-decision-form>
+      <div class="panel-head">
+        <h2 id="decision-dialog-title" data-decision-title>Record decision</h2>
+        <button class="btn btn-ghost btn-small" type="button" data-decision-cancel aria-label="Close decision dialog">Close</button>
+      </div>
+      <p class="decision-object"><span class="muted" data-decision-object-type></span> <code data-decision-object-id></code></p>
+      <p class="decision-object decision-summary" data-decision-object-summary></p>
+      <p class="decision-consequence" id="decision-consequence" data-decision-consequence role="note"></p>
+      <label class="decision-label" for="decision-reason">Reason (required)</label>
+      <textarea class="input decision-reason" id="decision-reason" name="reason" rows="4" required
+                placeholder="Why is this decision correct?" data-decision-reason></textarea>
+      <div data-decision-edit hidden>
+        <label class="decision-label" for="decision-value" data-decision-value-label>Edited value (required)</label>
+        <input class="input" id="decision-value" name="edited_value" data-decision-value>
+      </div>
+      <p class="banner banner-error decision-error" data-decision-error role="alert" hidden></p>
+      <div class="button-row decision-buttons">
+        <button class="btn" type="button" data-decision-cancel>Cancel</button>
+        <button class="btn btn-primary" type="submit" data-decision-confirm>Record decision</button>
+      </div>
+    </form>
+  </dialog>
   <div class="toast" data-toast role="status" aria-live="polite"></div>
 </body>
 </html>

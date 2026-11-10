@@ -121,8 +121,8 @@ COMMON_FILES: dict[str, str] = {
         "PersonalVehicle",
         [("GarageLocation_Ext", "Text", None), ("Territory_Ext", "Integer", None)],
     ),
-    "config/metadata/entity/PersonalVehicleDriver.eti": entity_xml(
-        "PersonalVehicleDriver",
+    "config/metadata/entity/VehicleDriver.eti": entity_xml(
+        "VehicleDriver",
         [
             ("FirstName", "Text", None),
             ("LastName", "Text", None),
@@ -131,8 +131,8 @@ COMMON_FILES: dict[str, str] = {
             ("ViolationType", "TypeKey", "ViolationType"),
         ],
     ),
-    "config/extensions/entity/PersonalVehicleDriver.etx": entity_ext_xml(
-        "PersonalVehicleDriver", [("CDL_Ext", "Boolean", None)]
+    "config/extensions/entity/VehicleDriver.etx": entity_ext_xml(
+        "VehicleDriver", [("CDL_Ext", "Boolean", None)]
     ),
     "config/metadata/entity/PersonalAutoLine.eti": entity_xml(
         "PersonalAutoLine",
@@ -394,12 +394,12 @@ COMMON_FILES: dict[str, str] = {
     ),
     "gsrc/acme/negatives/CatchWithLogging.gs": (
         "package acme.negatives\n\n"
-        "class CatchWithLogging {\n"
+        "class CatchAndRethrow {\n"
         "  function safe() {\n"
         "    try {\n"
         "      maybeFail()\n"
         "    } catch (e : Exception) {\n"
-        "      log.error(e.Message)\n"
+        "      throw new RuntimeException(\"vehicle lookup failed\", e)\n"
         "    }\n"
         "  }\n"
         "}\n"
@@ -681,7 +681,7 @@ def truth_features() -> dict:
         "fixture": "acme-pc-2026.10",
         "features": [
             {"feature_id": "PA-VEH-01", "capability": "vehicle_information", "name": "Vehicle Information", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PAVehicleDV.pcf", "config/metadata/entity/PersonalVehicle.eti"]},
-            {"feature_id": "PA-DRV-01", "capability": "driver_information", "name": "Driver Information", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PADriverDV.pcf", "config/metadata/entity/PersonalVehicleDriver.eti"]},
+            {"feature_id": "PA-DRV-01", "capability": "driver_information", "name": "Driver Information", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PADriverDV.pcf", "config/metadata/entity/VehicleDriver.eti"]},
             {"feature_id": "PA-COV-01", "capability": "coverage_selection", "name": "Coverage Selection", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PACoverageDV.pcf", "config/metadata/entity/PACoverage.eti"]},
             {"feature_id": "PA-COV-02", "capability": "coverage_terms", "name": "Coverage Terms", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PACoverageTermsDV.pcf", "config/metadata/entity/PACoverageTerm.eti"]},
             {"feature_id": "PA-VEH-02", "capability": "vehicle_rating", "name": "Vehicle Rating Factors", "lob": "PersonalAuto", "anchors": ["config/web/pcf/policy/PAVehicleRatingDV.pcf", "config/metadata/entity/RatingFactor.eti"]},

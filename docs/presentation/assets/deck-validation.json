@@ -1,0 +1,57 @@
+{
+  "deck_validation": {
+    "viewports": {
+      "1920x1080": {
+        "failures": [],
+        "slides": 16
+      },
+      "1440x900": {
+        "failures": [],
+        "slides": 16
+      },
+      "1280x720": {
+        "failures": [],
+        "slides": 16
+      },
+      "1024x768": {
+        "failures": [],
+        "slides": 16
+      },
+      "390x844": {
+        "failures": [],
+        "slides": 16
+      }
+    },
+    "console_errors": [],
+    "external_requests": [],
+    "layout_checks": {
+      "stage_labels_1920": {
+        "overlaps": [],
+        "ok": true
+      }
+    },
+    "accessibility": {
+      "mobile_matrix": {
+        "tabindex": "0",
+        "role": "region",
+        "label": "Capability comparison table; scroll horizontally at narrow widths",
+        "scrollWidth": 760,
+        "clientWidth": 358
+      }
+    },
+    "generated_at": "2026-11-09T22:33:47+00:00"
+  },
+  "pdf": {
+    "pdf": "docs/presentation/PreFlight-deck.pdf",
+    "bytes": 914190,
+    "sha256": "1648150424413b22856168b53319504e3c253d4a981160e1745161c3e97611e7",
+    "pages": 16,
+    "page_size": "1200 x 675.12 pts"
+  },
+  "content_validation": {
+    "ok": true,
+    "failures": [],
+    "snapshot_short": "bd4a8a4b338a",
+    "source": "docs/presentation/index.html"
+  }
+}

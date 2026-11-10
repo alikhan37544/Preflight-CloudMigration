@@ -42,6 +42,18 @@ def reconstruction(demo_manifest, discovery, tmp_path_factory):
     )
 
 
+def test_installed_driver_entity_matches_codegen_override(demo_manifest, discovery, reconstruction) -> None:
+    driver_feature = next(f for f in discovery.features if f.feature_id == "PA-DRV-01")
+    evidence_by_id = {e.evidence_id: e for e in discovery.evidence}
+    driver_paths = {evidence_by_id[eid].path for eid in driver_feature.evidence_ids}
+    assert "config/metadata/entity/VehicleDriver.eti" in driver_paths
+    assert "config/extensions/entity/VehicleDriver.etx" in driver_paths
+    assert not any("PersonalVehicleDriver" in path for path in driver_paths)
+    driver_mapping = next(m for m in reconstruction.mappings if m.rule_id == "R-CG-03")
+    assert driver_mapping.target_name == "VehicleDriver"
+    assert (DEMO / "config/metadata/entity/VehicleDriver.eti").is_file()
+
+
 def test_twelve_explicit_mappings(reconstruction) -> None:
     rules = [m.rule_id for m in reconstruction.mappings]
     assert rules == [
@@ -79,7 +91,14 @@ def test_assumptions_are_impact_rated(reconstruction) -> None:
     assert "rating" in statements
     long_type = next(a for a in reconstruction.assumptions if "24" in a.statement or "long type" in a.statement.lower())
     assert long_type.impact_range_days == (7.0, 9.0)
-    assert "11" in long_type.impact_basis and "4" in long_type.impact_basis and "2" in long_type.impact_basis
+    assert "two files" in long_type.impact_basis.lower()
+    assert "0 tests" in long_type.impact_basis.lower()
+    assert "heuristic" in long_type.impact_basis.lower()
+    assert "11" not in long_type.impact_basis
+    assert "PA-VEH-02" in long_type.statement
+    assert "product/template/LongTypeA.xml" in long_type.statement
+    assert "config/resources/productmodel/PersonalAuto.xml" in long_type.statement
+    assert "template and product-model change" in long_type.question_to_ask
     assert "not a quote" in long_type.impact_caveat.lower()
     assert all(a.status == "open" for a in reconstruction.assumptions)
 
@@ -97,6 +116,7 @@ def test_draft_validates_against_local_contract(reconstruction) -> None:
 
 
 def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
+    import json
     import yaml
 
     path = reconstruction.draft_root / "config/integration/apis/installedlobs/pa_codegen_config_ext-1.0.yaml"
@@ -104,9 +124,49 @@ def test_codegen_draft_contains_verified_overrides(reconstruction) -> None:
     types = data["types"]
     assert types["PAVehicle"]["nameOverride"] == "PersonalVehicle"
     assert types["PAVehicle"]["fields"]["Year"]["nameOverride"] == "ModelYear"
+    # The APD template field is GarageLocation; the installed extension column
+    # is GarageLocation_Ext. nameOverride bridges the two names.
+    garage = types["PAVehicle"]["fields"]["GarageLocation"]
+    assert garage["nameOverride"] == "GarageLocation_Ext"
+    assert garage["requiredForCreate"] is False
+    assert "GarageLocation_Ext" not in types["PAVehicle"]["fields"]
     assert types["PADriver"]["nameOverride"] == "VehicleDriver"
     assert types["PALine"]["nameOverride"] == "PersonalAutoLine"
     assert types["PersonalAutoRatingFactor"]["nameOverride"] == "PersonalAutoRatingFactorConfiguration"
+
+    updater = json.loads(
+        (reconstruction.draft_root / "config/integration/updaters/ext/policyperiod/v1/"
+         "policyperiod_pa_ext-1.0.updater.json").read_text(encoding="utf-8")
+    )
+    assert updater["create"]["garageLocation"] == "GarageLocation_Ext"
+    assert updater["update"]["garageLocation"] == "GarageLocation_Ext"
+    assert updater["create"]["vehicleType"] == "VehicleType"
+
+
+def test_codegen_schema_and_updater_agree_on_garage_location(reconstruction) -> None:
+    import json
+    import yaml
+
+    codegen = yaml.safe_load((
+        reconstruction.draft_root / "config/integration/apis/installedlobs/"
+        "pa_codegen_config_ext-1.0.yaml"
+    ).read_text(encoding="utf-8"))
+    schema = json.loads((
+        reconstruction.draft_root / "config/integration/schemas/ext/policyperiod/v1/"
+        "policyperiod_pa_ext-1.0.schema.json"
+    ).read_text(encoding="utf-8"))
+    updater = json.loads((
+        reconstruction.draft_root / "config/integration/updaters/ext/policyperiod/v1/"
+        "policyperiod_pa_ext-1.0.updater.json"
+    ).read_text(encoding="utf-8"))
+
+    garage = codegen["types"]["PAVehicle"]["fields"]["GarageLocation"]
+    assert garage["nameOverride"] == updater["create"]["garageLocation"]
+    assert garage["nameOverride"] == updater["update"]["garageLocation"]
+    # requiredForCreate false => the API property is optional in the schema.
+    assert garage["requiredForCreate"] is False
+    assert "garageLocation" not in schema["required"]
+    assert "garageLocation" in schema["properties"]
 
 
 def test_schema_draft_has_expected_properties(reconstruction) -> None:
@@ -117,6 +177,10 @@ def test_schema_draft_has_expected_properties(reconstruction) -> None:
     assert schema["$id"] == "preflight-target-v1"
     assert set(schema["properties"]) >= {
         "modelYear", "make", "vin", "usage", "vehicleType", "garageLocation"
+    }
+    assert "garageLocation" not in schema["required"]
+    assert set(schema["required"]) == {
+        "modelYear", "make", "vin", "usage", "vehicleType"
     }
     assert "motorcycle" in schema["properties"]["vehicleType"]["enum"]
 
