@@ -95,3 +95,12 @@ inter-annotator study, non-deployable draft, and the demo-tier scope. See
   AI-assisted pass, not human IAA.
 - The PCF baseline is labelled "PCF filename baseline", not "PCF+grep".
 - Holdout is labelled capability recall under a naming-shift fixture.
+
+## Autonomous migrator (10 November 2026)
+
+- **Implementation:** `app/services/migrator.py`, `/migrator`, `/api/runs/{run_id}/migration`.
+- **Fresh seed:** five agents complete; 5/5 work packages generated; 11 open gates; verification PASS.
+- **Independent log:** `migration/audit.jsonl` hash chain verifies (`verify-migration`).
+- **Review-run integrity:** review audit remains at its 9 seed events; `verify-packet` still passes.
+- **Safety:** every package has `approval: pending`; the orchestrator writes only
+  `migration/target/**` and cannot approve, deploy, or resolve an assumption.
