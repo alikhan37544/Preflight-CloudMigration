@@ -382,3 +382,44 @@ def test_persisted_artifacts_never_contain_fixture_secrets(run) -> None:
     assert any("Value redacted (fingerprint " in finding["message"]
                for finding in findings["findings"]
                if finding["rule_id"] == "PF-GW-SEC-001")
+
+
+def test_autonomous_migrator_generates_a_verified_bundle(run) -> None:
+    from app.services.migrator import (
+        PLAN_PATH, REPORT_PATH, run_migration, verify_migration_log,
+    )
+
+    store, _ = run
+    state = run_migration(store, "R-PIPE", pace=0.0)
+    assert state["status"] == "completed_with_gates"
+    assert state["verification"]["status"] == "passed"
+    assert state["summary"]["packages"] == len(state["packages"]) == 5
+    assert state["summary"]["generated"] == 5
+    assert state["summary"]["gates"] >= 1
+    assert all(package["approval"] == "pending" for package in state["packages"])
+    assert all("_gen" not in package["target_path"] for package in state["packages"])
+    assert store.exists("R-PIPE", PLAN_PATH)
+    assert store.exists("R-PIPE", REPORT_PATH)
+    assert store.exists("R-PIPE", "migration/bundle-manifest.json")
+    for package in state["packages"]:
+        assert store.exists("R-PIPE", f"migration/target/{package['target_path']}")
+        assert package["status"] == "draft_ready"
+        assert package["evidence_ids"]
+    ok, detail = verify_migration_log(store, "R-PIPE")
+    assert ok, detail
+    assert state["audit"]["verified"] is True
+
+
+def test_migrator_agent_log_detects_tampering(run) -> None:
+    from app.services.migrator import AUDIT_PATH, run_migration, verify_migration_log
+
+    store, _ = run
+    run_migration(store, "R-PIPE", pace=0.0)
+    assert verify_migration_log(store, "R-PIPE")[0] is True
+    path = store.run_dir("R-PIPE") / AUDIT_PATH
+    lines = path.read_text(encoding="utf-8").splitlines()
+    lines[-1] = lines[-1].replace('"reason": "completed_with_gates"', '"reason": "tampered"')
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    ok, detail = verify_migration_log(store, "R-PIPE")
+    assert ok is False
+    assert "hash mismatch" in detail

@@ -10,7 +10,7 @@ PreFlight is an offline, evidence-first review workstation for legacy Guidewire-
 
 [![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-418%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-421%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-demo--ready-informational)
 
@@ -40,6 +40,24 @@ Generic linters answer none of those questions. PreFlight is built around the in
 6. **Produces explicit dispositions** for source properties and turns unresolved items into an assumption register with impact ranges and questions to ask.
 7. **Benchmarks the method** on frozen synthetic fixtures with a sealed reference target, baselines, hard negatives, and a naming-shift holdout.
 8. **Exports a review packet** with evidence, assumptions, findings, hashes, and a hash-chained audit trail.
+9. **Runs a bounded multi-agent migrator** over the completed review: Scout scopes the feature, Architect generates target files, Guardian opens risk gates, Critic verifies the output, and Scribe seals the plan, report, and bundle manifest. Every change stays pending approval.
+
+## Autonomous migrator
+
+The `/migrator` page is a live five-agent orchestration over a completed run. It
+generates a reviewable migration bundle in `data/runs/<run>/migration/`, with
+its own hash-chained agent log, and reports `completed_with_gates` while human
+decisions remain open. It does not deploy, edit `_gen` files, approve its own
+changes, or contact a tenant.
+
+```bash
+make demo
+# http://127.0.0.1:8000/migrator?run=R-DEMO-001
+.venv/bin/python -m app.cli migrate R-DEMO-001
+.venv/bin/python -m app.cli verify-migration R-DEMO-001
+```
+
+See [`docs/MIGRATOR.md`](docs/MIGRATOR.md).
 
 ## What it is not
 
@@ -47,7 +65,8 @@ Generic linters answer none of those questions. PreFlight is built around the in
 - Not a Cloud Retrofit replacement.
 - Not an official Cloud Assurance score, pass, or certification.
 - Not a generic Gosu linter; SonarQube and Cloud Assurance own generic linting.
-- Not a live-tenant connector, autonomous migration agent, or deployment tool.
+- Not a live-tenant connector or deployment tool.
+- The **Migrator** is an autonomous draft generator: it produces a local, non-deployable target bundle and leaves every change pending human approval.
 - The extension draft is **local and non-deployable**.
 
 ## Snapshot
@@ -63,7 +82,7 @@ Generic linters answer none of those questions. PreFlight is built around the in
 | Advisory findings | 24 from 8 rules |
 | Mappings | 12 explicit dispositions |
 | Assumptions | 3 |
-| Tests | 418 passing |
+| Tests | 421 passing |
 | Frozen evaluation hashes | `ground_truth/FROZEN.json` |
 | Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
 | Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
@@ -158,6 +177,7 @@ Snapshot
   → Compare       preserved / changed / missing / added / unresolved
   → Evaluate      M1–M6, baselines, margins, per-rule table
   → Packet        six-section review artifact, hashes, audit head
+  → Migrator      five-agent draft bundle, gates, verification, sealed manifest
 ```
 
 **Stack:** Python 3.12 · FastAPI · Jinja2 · vanilla JS/CSS · `lxml` · `ruamel.yaml` · Pydantic v2 · JSON run store · pytest · Playwright.
@@ -221,7 +241,7 @@ Every finding carries a claim-strength label. No finding is presented as a Cloud
 ## Testing
 
 ```bash
-make test       # full suite: 418 tests
+make test       # full suite: 421 tests
 make e2e        # Playwright golden path
 make claims     # claims-ledger and rule-coverage gate
 make verify     # hash-chained audit verification

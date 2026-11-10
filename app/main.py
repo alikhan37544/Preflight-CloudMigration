@@ -16,7 +16,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -41,6 +41,7 @@ from app.services.discovery import DiscoveryResult
 from app.services.evaluate import EvaluationResult
 from app.services.intake import UnsafeArchiveError, safe_extract_zip
 from app.services.packet import DISCLAIMER, build_packet, verify_packet_artifacts
+from app.services.migrator import MIGRATION_ARTIFACT, run_migration, verify_migration_log
 from app.services.pipeline import RunCancelled, execute_run
 from app.services.reconstruction import ReconstructionResult
 from app.services.redaction import redact_excerpt
@@ -88,7 +89,7 @@ _CORE_ARTIFACTS = (
     "manifest.json", "features.json", "evidence.json", "review_evidence.json",
     "gaps.json", "spine.json", "findings.json", "mappings.json", "changes.json",
     "assumptions.json", "comparison.json", "metrics.json", "packet.json",
-    "decisions.json", "immutability.json",
+    "decisions.json", "immutability.json", "migration.json",
 )
 _ARTIFACT_LISTS = {
     "manifest.json": "artifacts",
@@ -230,6 +231,11 @@ def _conflict(object_type: str, object_id: str, current: str, action: str) -> HT
 class AssistantRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     feature_id: str | None = None
+
+
+class MigrationRequest(BaseModel):
+    feature_id: str | None = None
+    force: bool = False
 
 
 def _fixture_path(settings: Settings, fixture_id: str) -> Path:
@@ -461,6 +467,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.store = RunStore(settings.data_dir)
     app.state.cancel_events = {}
     app.state.run_workers = {}
+    app.state.migration_workers = {}
+    app.state.migration_lock = threading.Lock()
     _reconcile_interrupted_runs(app.state.store)
 
     app.add_middleware(
@@ -681,6 +689,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return templates.TemplateResponse(
             request=request, name="reconstruction.html",
             context=context(request, run_id, view, "Reconstruction", tab=tab),
+        )
+
+    @app.get("/migrator", response_class=HTMLResponse)
+    def migrator_page(request: Request, run: str | None = Query(default=None)):
+        run_id = run or _latest_run(app.state.store)
+        if not run_id:
+            return templates.TemplateResponse(
+                request=request, name="empty.html",
+                context=context(request, None, None, "Migrator"),
+            )
+        view, response = guard(request, run_id, "Migrator")
+        if response:
+            return response
+        return templates.TemplateResponse(
+            request=request, name="migrator.html",
+            context=context(request, run_id, view, "Migrator"),
         )
 
     @app.get("/findings", response_class=HTMLResponse)
@@ -1049,6 +1073,64 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _status_or_404(app.state.store, run_id)
         view = _load_view(app.state.store, run_id)
         return {"schema_version": "1.0", "spines": view["spines"]}
+
+    @app.get("/api/runs/{run_id}/migration")
+    def migration_api(run_id: str):
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        try:
+            state = store.read_artifact(run_id, MIGRATION_ARTIFACT)
+        except StoreError as exc:
+            if exc.code == "NOT_FOUND":
+                return {"run_id": run_id, "status": "not_started", "progress": 0, "agents": []}
+            raise
+        state["audit"]["verified"], state["audit"]["detail"] = verify_migration_log(store, run_id)
+        return state
+
+    @app.post("/api/runs/{run_id}/migration", dependencies=[Depends(require_csrf)])
+    def start_migration(run_id: str, body: MigrationRequest):
+        store: RunStore = app.state.store
+        status = _status_or_404(store, run_id)
+        if status.get("status") != "succeeded":
+            raise HTTPException(status_code=409, detail="migration requires a succeeded analysis run")
+        existing = None
+        try:
+            existing = store.read_artifact(run_id, MIGRATION_ARTIFACT)
+        except StoreError as exc:
+            if exc.code != "NOT_FOUND":
+                raise
+        with app.state.migration_lock:
+            worker = app.state.migration_workers.get(run_id)
+            if worker is not None and worker.is_alive():
+                return {"run_id": run_id, "status": "running", "agents": existing.get("agents", []) if existing else []}
+            if existing and existing.get("status") in {"completed", "completed_with_gates"} and not body.force:
+                return existing
+
+            def target() -> None:
+                try:
+                    run_migration(store, run_id, feature_id=body.feature_id, pace=0.35)
+                except Exception:
+                    logger.exception("migration failed for %s", run_id)
+                finally:
+                    app.state.migration_workers.pop(run_id, None)
+
+            thread = threading.Thread(target=target, daemon=True, name=f"preflight-migrator-{run_id}")
+            app.state.migration_workers[run_id] = thread
+            thread.start()
+        return {"run_id": run_id, "status": "starting", "feature_id": body.feature_id}
+
+    @app.get("/api/runs/{run_id}/migration/file")
+    def migration_file(run_id: str, path: str = Query(min_length=1)):
+        store: RunStore = app.state.store
+        _status_or_404(store, run_id)
+        if not path.startswith("migration/") or ".." in Path(path).parts:
+            raise HTTPException(status_code=400, detail="invalid migration path")
+        target = (store.run_dir(run_id) / path).resolve()
+        root = (store.run_dir(run_id) / "migration").resolve()
+        if root not in target.parents or not target.is_file():
+            raise HTTPException(status_code=404, detail="migration file not found")
+        media = "text/markdown" if target.suffix == ".md" else "application/json"
+        return FileResponse(target, media_type=media, filename=target.name)
 
     @app.get("/api/runs/{run_id}/findings")
     def findings_api(run_id: str):
