@@ -922,3 +922,11 @@ a.citation-card:hover { border-color: var(--brand); text-decoration: none; }
   .agent-grid { grid-template-columns: 1fr; }
   .migration-table { min-width: 760px; }
 }
+
+/* Optional AI QCer */
+.ai-result h3 { margin-top: 14px; }
+.ai-claims { margin: 4px 0 10px 18px; font-size: 12px; }
+.ai-claims li { margin: 4px 0; }
+.ai-rejected, .ai-error, .ai-unavailable { border-left: 3px solid var(--danger); padding-left: 10px; }
+.ai-accepted { border-left: 3px solid var(--success); padding-left: 10px; }
+.code-block { background: var(--surface-2); border: 1px solid var(--border); padding: 8px 10px; overflow-x: auto; font-size: 11px; }

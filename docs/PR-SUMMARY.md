@@ -64,7 +64,7 @@ hardening, security/intake hardening, performance, and documentation.
 ## Verification (current branch)
 
 ```text
-pytest -q                                 421 passed
+pytest -q                                 429 passed
 claims_lint.py                            claims-lint: OK
 test_freeze_manifest.py                   18/18 frozen hashes recompute
 preflight verify-packet R-DEMO-001        OK (packet hash, content digests, audit chain)

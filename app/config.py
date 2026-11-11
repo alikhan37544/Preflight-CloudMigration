@@ -39,6 +39,15 @@ class Settings:
         "demo-slice-300", "acme-pc-2026.10",
     )
     max_upload_bytes: int = 500 * 1024 * 1024
+    # Optional evidence-locked AI QCer. Default is fully offline/deterministic.
+    ai_provider: str = field(default_factory=lambda: os.environ.get("PREFLIGHT_AI_PROVIDER", "none"))
+    ai_model: str = field(default_factory=lambda: os.environ.get("PREFLIGHT_AI_MODEL", ""))
+    ai_base_url: str = field(default_factory=lambda: os.environ.get(
+        "PREFLIGHT_AI_BASE_URL", "http://127.0.0.1:11434"
+    ))
+    ai_api_key: str = field(default_factory=lambda: os.environ.get("PREFLIGHT_AI_API_KEY", ""))
+    ai_timeout: float = field(default_factory=lambda: float(os.environ.get("PREFLIGHT_AI_TIMEOUT", "90")))
+    ai_allow_remote: bool = field(default_factory=lambda: os.environ.get("PREFLIGHT_AI_ALLOW_REMOTE", "") == "1")
 
     def __post_init__(self) -> None:
         if not self.allowed_origins:

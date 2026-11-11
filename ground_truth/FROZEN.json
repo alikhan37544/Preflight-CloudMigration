@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-09T22:27:03Z",
-  "commit": "95d179e1494de1f0d1ba1e0ee1a4eb97c31433ab",
+  "frozen_at": "2026-11-10T17:33:28Z",
+  "commit": "1ebeb77b1be52410f33c66f249e22272cae40207",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
@@ -23,7 +23,7 @@
   "annotation_concordance_sha256": "f553bd463cdfe1151089de5a0438a0e290591f2e7764a263146b2af1a3ce9515",
   "rulepack_sha256": "d84a4b7e744613ce1ff787dc4ca97c6e91a554563cf5f5bc030a13c4b3d49232",
   "pre_registration_sha256": "6cca8f43a56f7e3f5c7c146503038cad60e874e950cd3d3cd17cb491b73309cc",
-  "claims_ledger_sha256": "bb527576e24fd1b989e399de51e24543b823b9219d551d242b33d8b5d09f9ebd",
+  "claims_ledger_sha256": "be19c4c639fc6ed3b00a75d93d6ad915eba0da6a1304a5f43611e19c0e60d506",
   "gold": {
     "features.json": "ae74a3879e756c107c793a3d1d37926d45a41a8f2cc6e79fb079aa28c8f06c40",
     "mappings.json": "4f0e2a05dc1d3528b2deec5ede106bd6d18ce5cd0270c65a279f36e45c56a7fa",
@@ -37,7 +37,7 @@
   },
   "change_log": [
     {
-      "date": "2026-11-09",
+      "date": "2026-11-10",
       "change": "Frozen demo-tier fixtures and rule pack."
     }
   ]

@@ -67,6 +67,24 @@ Inside `data/runs/<run_id>/`:
 - `POST /api/runs/{run_id}/migration` — start/restart (`{"feature_id": "...", "force": true}`)
 - `GET /api/runs/{run_id}/migration/file?path=migration/...` — plan/report download
 
+## Optional AI QCer
+
+The five deterministic agents are the evidence contract. An optional sixth
+reviewer can challenge the sealed plan:
+
+```bash
+PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b \
+  .venv/bin/python -m app.cli ai-review R-DEMO-001
+```
+
+The AI receives only the plan and the evidence records cited by its packages.
+It returns structured claims/risks/missing-checks/critique, and a deterministic
+validator rejects the whole response on an unknown evidence ID, path, number,
+overclaim, or malformed JSON. The AI has no tools, write path, approval, or
+deployment. Its review is advisory and is **not** part of the sealed
+deterministic bundle. See [`docs/AI.md`](AI.md) for the research and threat
+model.
+
 ## Boundaries
 
 This is not Guidewire Cloud Assurance, not a deployment tool, and not a live

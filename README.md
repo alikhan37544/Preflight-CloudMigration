@@ -10,7 +10,7 @@ PreFlight is an offline, evidence-first review workstation for legacy Guidewire-
 
 [![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-421%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-demo--ready-informational)
 
@@ -57,7 +57,14 @@ make demo
 .venv/bin/python -m app.cli verify-migration R-DEMO-001
 ```
 
-See [`docs/MIGRATOR.md`](docs/MIGRATOR.md).
+See [`docs/MIGRATOR.md`](docs/MIGRATOR.md) and [`docs/AI.md`](docs/AI.md). The
+deterministic five-agent bundle runs offline; an optional evidence-locked AI QCer
+can challenge it only when a local/provider model is explicitly configured.
+
+```bash
+# optional, local only
+PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b   .venv/bin/python -m app.cli ai-review R-DEMO-001
+```
 
 ## What it is not
 
@@ -82,7 +89,7 @@ See [`docs/MIGRATOR.md`](docs/MIGRATOR.md).
 | Advisory findings | 24 from 8 rules |
 | Mappings | 12 explicit dispositions |
 | Assumptions | 3 |
-| Tests | 421 passing |
+| Tests | 429 passing |
 | Frozen evaluation hashes | `ground_truth/FROZEN.json` |
 | Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
 | Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
@@ -241,7 +248,7 @@ Every finding carries a claim-strength label. No finding is presented as a Cloud
 ## Testing
 
 ```bash
-make test       # full suite: 421 tests
+make test       # full suite: 429 tests
 make e2e        # Playwright golden path
 make claims     # claims-ledger and rule-coverage gate
 make verify     # hash-chained audit verification

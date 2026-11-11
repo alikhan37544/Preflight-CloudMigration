@@ -1606,3 +1606,87 @@ def test_migrator_api_runs_agents_and_renders(api, run_id) -> None:
     assert "Agent crew" in text
     assert "migration-plan.json" in text
     assert "draft ready" in text
+
+
+def test_ai_status_is_off_by_default(api) -> None:
+    client, _ = api
+    status = client.get("/api/ai/status").json()
+    assert status["configured"] is False
+    assert status["provider"] == "none"
+    page = client.get("/settings").text
+    assert "AI QCer" in page
+    assert "deterministic by default" in page
+
+
+def test_ai_review_endpoint_accepts_stub_model(api) -> None:
+    import json
+
+    client, token = api
+    fresh = client.post(
+        "/api/runs",
+        json={"project_id": "demo", "fixture_id": "demo-slice-300", "force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    run = fresh.json()["run_id"]
+    client.post(
+        f"/api/runs/{run}/migration",
+        json={"force": True},
+        headers={"X-CSRF-Token": token},
+    )
+    state = None
+    for _ in range(80):
+        state = client.get(f"/api/runs/{run}/migration").json()
+        if state.get("status") in {"completed", "completed_with_gates"}:
+            break
+        time.sleep(0.1)
+    assert state and state["status"] == "completed_with_gates", state
+
+    evidence_id = state["packages"][0]["evidence_ids"][0]
+    payload = {
+        "summary": [{"text": "The open territory gate needs an owner before approval.",
+                     "evidence_ids": [evidence_id]}],
+        "risks": [{"text": "The territory source still has no evidence record.",
+                   "severity": "high", "evidence_ids": [evidence_id],
+                   "gate_id": state["gates"][0]["gate_id"]}],
+        "missing_checks": [{"text": "Confirm the target release compiles the generated mapping.",
+                            "evidence_ids": [evidence_id]}],
+        "critique": [{"package_id": state["packages"][0]["package_id"],
+                      "text": "Validate the generated target against the target release.",
+                      "evidence_ids": [evidence_id]}],
+    }
+
+    class StubAI:
+        provider = "stub"
+        model = "stub-model"
+
+        def status(self):
+            return {"configured": True, "provider": "stub", "model": "stub-model",
+                    "reachable": True, "reason": "stub"}
+
+        @property
+        def enabled(self):
+            return True
+
+        def chat(self, **kwargs):
+            return json.dumps(payload), {"provider": "stub", "model": "stub-model"}
+
+    original = client.app.state.ai
+    client.app.state.ai = StubAI()
+    try:
+        response = client.post(
+            f"/api/runs/{run}/migration/ai-review",
+            headers={"X-CSRF-Token": token},
+        )
+        assert response.status_code == 200, response.text
+        for _ in range(80):
+            state = client.get(f"/api/runs/{run}/migration").json()
+            if (state.get("ai") or {}).get("status") not in {None, "running"}:
+                break
+            time.sleep(0.1)
+        assert state["ai"]["status"] == "accepted", state.get("ai")
+        assert state["ai"]["validator_ok"] is True
+        page = client.get(f"/migrator?run={run}")
+        assert "AI QCer" in page.text
+        assert "validator" in page.text
+    finally:
+        client.app.state.ai = original

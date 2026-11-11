@@ -21,6 +21,7 @@
           <tr><th scope="row">Parser version</th><td>1.0</td></tr>
           <tr><th scope="row">Evaluation tier</th><td>{{ settings.tier }}</td></tr>
           <tr><th scope="row">Local bind</th><td>127.0.0.1 only</td></tr>
+          <tr><th scope="row">AI QCer</th><td>{% if ai_status.configured %}{{ ai_status.provider }} · {{ ai_status.model }}{% if not ai_status.reachable %} · unreachable{% endif %}{% else %}off — deterministic by default{% endif %}</td></tr>
         </tbody>
       </table>
     {% endcall %}
@@ -30,7 +31,7 @@
     <ul class="limitation-list">
       <li>Snapshots are read-only; hashes are checked before and after analysis.</li>
       <li>Drafts are written under <code>data/runs/&lt;run&gt;/draft/</code> and never into the source.</li>
-      <li>No telemetry, no external calls, no live tenant, no credentials.</li>
+      <li>No telemetry, no live tenant, no credentials. With no AI provider configured, no external calls are made; an opt-in model endpoint is the only exception.</li>
       <li>Secrets are redacted at capture; only a fingerprint is stored.</li>
       <li>The review log is hash-chained and verifiable, but is not non-repudiation.</li>
       <li>Runs and drafts can be deleted from the <a class="text-link" href="/runs">Runs</a> page.</li>

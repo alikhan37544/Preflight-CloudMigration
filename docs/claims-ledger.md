@@ -58,3 +58,5 @@
 | “160 sub-agents verified” | No reproducible provenance. |
 | “Six-figure surprises” / “priced assumption register” | No cost data; use “estimate-moving” and “impact-rated.” |
 | APD product/edition JSON in a pre-APD estate | Incoherent scenario; v5 uses legacy product-model XML. |
+| C-038 | The AI QCer is optional, default-off, advisory, and evidence-locked; no model is bundled and it cannot approve, write source, or deploy. | PRODUCT-CLAIM | Implemented in `app/services/ai.py`; `docs/AI.md` records the research boundaries. | A release that enables a model by default or lets AI output alter deterministic artifacts, paths, gates, or approval. | UI labels AI off/unavailable; the validator rejects unknown citations, paths, numbers, and overclaims; AI review is excluded from the sealed deterministic bundle. |
+

@@ -35,6 +35,7 @@ from app.models import (
     Metric,
 )
 from app.security import SecurityMiddleware, require_csrf
+from app.services.ai import AIClient, run_ai_review
 from app.services.assistant import answer_question
 from app.services.compare import CompareResult
 from app.services.discovery import DiscoveryResult
@@ -469,6 +470,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.run_workers = {}
     app.state.migration_workers = {}
     app.state.migration_lock = threading.Lock()
+    app.state.ai = AIClient(settings)
+    app.state.ai_workers = {}
     _reconcile_interrupted_runs(app.state.store)
 
     app.add_middleware(
@@ -704,7 +707,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return response
         return templates.TemplateResponse(
             request=request, name="migrator.html",
-            context=context(request, run_id, view, "Migrator"),
+            context=context(request, run_id, view, "Migrator",
+                            ai_status=app.state.ai.status()),
         )
 
     @app.get("/findings", response_class=HTMLResponse)
@@ -845,7 +849,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def settings_page(request: Request):
         return templates.TemplateResponse(
             request=request, name="settings.html",
-            context=context(request, None, None, "Settings"),
+            context=context(request, None, None, "Settings",
+                            ai_status=app.state.ai.status()),
         )
 
     # -- JSON API ------------------------------------------------------
@@ -1073,6 +1078,52 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _status_or_404(app.state.store, run_id)
         view = _load_view(app.state.store, run_id)
         return {"schema_version": "1.0", "spines": view["spines"]}
+
+    @app.get("/api/ai/status")
+    def ai_status():
+        return app.state.ai.status()
+
+    @app.post("/api/runs/{run_id}/migration/ai-review", dependencies=[Depends(require_csrf)])
+    def start_ai_review(run_id: str):
+        store: RunStore = app.state.store
+        status = _status_or_404(store, run_id)
+        if status.get("status") != "succeeded":
+            raise HTTPException(status_code=409, detail="AI review requires a succeeded analysis run")
+        try:
+            migration = store.read_artifact(run_id, MIGRATION_ARTIFACT)
+        except StoreError as exc:
+            if exc.code == "NOT_FOUND":
+                raise HTTPException(status_code=409, detail="run the deterministic migrator first") from exc
+            raise
+        if migration.get("status") not in {"completed", "completed_with_gates"}:
+            raise HTTPException(status_code=409, detail="migration is not complete")
+        ai_status_payload = app.state.ai.status()
+        if not ai_status_payload.get("configured"):
+            raise HTTPException(status_code=409, detail=ai_status_payload.get("reason", "AI is not configured"))
+        with app.state.migration_lock:
+            worker = app.state.ai_workers.get(run_id)
+            if worker is not None and worker.is_alive():
+                return {"run_id": run_id, "status": "running"}
+            migration["ai"] = {
+                "status": "running",
+                "provider": app.state.ai.provider,
+                "model": app.state.ai.model,
+                "started_at": _now(),
+            }
+            store.write_artifact(run_id, MIGRATION_ARTIFACT, migration)
+
+            def target() -> None:
+                try:
+                    run_ai_review(store, run_id, app.state.ai)
+                except Exception:
+                    logger.exception("AI review failed for %s", run_id)
+                finally:
+                    app.state.ai_workers.pop(run_id, None)
+
+            thread = threading.Thread(target=target, daemon=True, name=f"preflight-ai-{run_id}")
+            app.state.ai_workers[run_id] = thread
+            thread.start()
+        return {"run_id": run_id, "status": "running"}
 
     @app.get("/api/runs/{run_id}/migration")
     def migration_api(run_id: str):

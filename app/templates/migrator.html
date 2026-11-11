@@ -39,7 +39,8 @@
     <div class="eyebrow">No migration run yet</div>
     <h2>Launch the crew on this snapshot</h2>
     <p>The migrator uses the completed review artifacts for this run. It will scope the feature, generate the
-    target draft, convert review findings into gates, adversarially verify every package, and seal a bundle.</p>
+    target draft, convert review findings into gates, adversarially verify every package, and seal a bundle.
+    The optional AI QCer adds an independent, evidence-locked critique; it never approves or deploys.</p>
     <ul class="migration-inline-list">
       <li><strong>Scout</strong> resolves the feature and evidence.</li>
       <li><strong>Architect</strong> generates target files.</li>
@@ -50,7 +51,7 @@
   </div>
   <div class="migration-launch-action">
     <button class="btn btn-primary" type="button" data-migration-start>Run autonomous migration</button>
-    <p class="muted">Runs locally in a few seconds. No upload, no tenant, no LLM API.</p>
+    <p class="muted">Runs locally by default with no model. AI QCer is opt-in; no upload, no tenant.</p>
   </div>
 </section>
 
@@ -105,6 +106,57 @@
     </article>
     {% endfor %}
   </div>
+</section>
+
+<section class="panel" data-ai-panel>
+  <div class="panel-head">
+    <h2>AI QCer</h2>
+    <span class="muted" data-ai-status>
+      {% if state.ai and state.ai.status == 'running' %}running…
+      {% elif state.ai %}{{ state.ai.model or state.ai.provider }} · advisory
+      {% elif ai_status.configured %}{{ ai_status.model or ai_status.provider }} · advisory
+      {% else %}off · deterministic bundle only{% endif %}
+    </span>
+  </div>
+  {% if state.ai and state.ai.status == 'running' %}
+  <p class="muted">The model is reviewing the sealed deterministic plan. Every returned claim must cite an allowed evidence ID or the whole response is rejected.</p>
+  <progress class="progress" data-ai-bar max="100"></progress>
+  {% elif state.ai %}
+    <div class="ai-result ai-{{ state.ai.status }}">
+      <p><strong>Status:</strong> {{ state.ai.status }} · <strong>provider:</strong> {{ state.ai.provider }} · <strong>model:</strong> {{ state.ai.model }}</p>
+      <p><strong>Evidence validator:</strong>
+        {% if state.ai.validator_ok %}<span class="pill pill-status status-succeeded">PASS</span>{% else %}<span class="pill pill-status status-failed">REJECT</span>{% endif %}
+        {% if state.ai.errors %}<span class="muted">{{ state.ai.errors|join('; ') }}</span>{% endif %}
+      </p>
+      {% if state.ai.summary %}
+      <h3>Advisory claims</h3>
+      <ul class="ai-claims">{% for item in state.ai.summary %}<li>{{ item.text }} <span class="muted">{{ item.evidence_ids|join(', ') }}</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if state.ai.risks %}
+      <h3>Risks</h3>
+      <ul class="ai-claims">{% for item in state.ai.risks %}<li><strong>{{ item.severity }}</strong> {{ item.text }} <span class="muted">{{ item.evidence_ids|join(', ') }}{% if item.package_id %} · {{ item.package_id }}{% endif %}</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if state.ai.missing_checks %}
+      <h3>Missing checks</h3>
+      <ul class="ai-claims">{% for item in state.ai.missing_checks %}<li>{{ item.text }} <span class="muted">{{ item.evidence_ids|join(', ') }}</span></li>{% endfor %}</ul>
+      {% endif %}
+      {% if state.ai.critique %}
+      <h3>Package critique</h3>
+      <ul class="ai-claims">{% for item in state.ai.critique %}<li><strong>{{ item.package_id or 'plan' }}</strong> {{ item.text }} <span class="muted">{{ item.evidence_ids|join(', ') }}</span></li>{% endfor %}</ul>
+      {% endif %}
+      <p class="muted"><a href="/api/runs/{{ run_id }}/migration/file?path={{ state.ai.path|urlencode }}">Download ai-review.json</a>
+        · prompt <code>{{ state.ai.prompt_sha256[:12] if state.ai.prompt_sha256 else '—' }}</code>
+        · response <code>{{ state.ai.response_sha256[:12] if state.ai.response_sha256 else '—' }}</code>
+        · <strong>advisory only</strong>; not part of the sealed deterministic bundle.</p>
+      {% if ai_status.configured %}<div class="button-row"><button class="btn btn-small" type="button" data-ai-review>Run AI review again</button></div>{% endif %}
+    </div>
+  {% elif ai_status.configured %}
+    <p>Run an independent AI QCer over the sealed deterministic plan. The model receives only this plan and its cited evidence. Its output is rejected wholesale on an unknown citation, path, number, or overclaim.</p>
+    <div class="button-row"><button class="btn btn-primary btn-small" type="button" data-ai-review>Run AI QCer</button><span class="muted" data-ai-status>ready · {{ ai_status.model or ai_status.provider }}</span></div>
+  {% else %}
+    <p class="muted"><strong>AI is off.</strong> {{ ai_status.reason }} The deterministic migrator, verifier, bundle, and review packet are fully functional without a model.</p>
+    <pre class="code-block">PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b make demo</pre>
+  {% endif %}
 </section>
 
 <section class="panel">

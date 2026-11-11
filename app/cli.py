@@ -10,6 +10,7 @@ from pathlib import Path
 from app.config import REPO, Settings
 from app.services.intake import build_manifest, snapshot_hash
 from app.services.packet import verify_packet_artifacts
+from app.services.ai import AIClient, run_ai_review
 from app.services.migrator import MIGRATION_ARTIFACT, run_migration, verify_migration_log
 from app.services.pipeline import execute_run
 from app.store import RunStore
@@ -142,6 +143,32 @@ def cmd_migrate(args) -> int:
     return 0
 
 
+def cmd_ai_review(args) -> int:
+    store = _store(args)
+    settings = Settings(data_dir=Path(args.data))
+    client = AIClient(settings)
+    status = client.status()
+    if not status.get("configured"):
+        print(status.get("reason"))
+        return 1
+    if not status.get("reachable"):
+        print(f"AI endpoint is not reachable: {status.get('reason')}")
+        return 1
+    result = run_ai_review(store, args.run_id, client)
+    print(f"{args.run_id}: AI QCer {result['status']} · validator "
+          f"{'PASS' if result.get('validator', {}).get('ok') else 'REJECT'} · "
+          f"{len(result.get('summary', []))} claims · {len(result.get('risks', []))} risks")
+    if result.get("validator", {}).get("errors"):
+        print("errors: " + "; ".join(result["validator"]["errors"][:5]))
+    return 0 if result["status"] == "accepted" else 1
+
+
+def cmd_ai_status(args) -> int:
+    client = AIClient(Settings(data_dir=Path(args.data)))
+    print(json.dumps(client.status(), indent=2))
+    return 0
+
+
 def cmd_verify_migration(args) -> int:
     store = _store(args)
     try:
@@ -203,6 +230,13 @@ def main(argv: list[str] | None = None) -> int:
     migrate.add_argument("run_id")
     migrate.add_argument("--feature", default=None)
     migrate.set_defaults(func=cmd_migrate)
+
+    ai_review = sub.add_parser("ai-review", help="run the optional evidence-locked AI QCer")
+    ai_review.add_argument("run_id")
+    ai_review.set_defaults(func=cmd_ai_review)
+
+    ai_status = sub.add_parser("ai-status", help="show optional AI provider status")
+    ai_status.set_defaults(func=cmd_ai_status)
 
     verify_migration = sub.add_parser("verify-migration", help="verify the migrator agent log")
     verify_migration.add_argument("run_id")

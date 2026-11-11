@@ -902,7 +902,7 @@
     }
     const bar = importBar || document.querySelector("[data-run-bar]");
     const label = importLabel || document.querySelector("[data-run-label]");
-    const deadline = Date.now() + 180000;
+    const deadline = Date.now() + 900000;
     while (Date.now() < deadline) {
       let status;
       try {
@@ -922,7 +922,7 @@
         if (label) label.textContent = `Run ${status.status}. See run history.`;
         return false;
       }
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
     if (label) label.textContent = "Run is taking longer than expected. Open run history.";
     return false;
@@ -1092,6 +1092,55 @@
     }
     migrationPolling = false;
     notify("Migration is taking longer than expected. Refresh the page to inspect it.", true);
+  }
+
+  const aiButton = document.querySelector("[data-ai-review]");
+  const aiPanel = document.querySelector("[data-ai-panel]");
+  let aiPolling = false;
+
+  async function watchAI() {
+    if (!runId || aiPolling) return;
+    aiPolling = true;
+    const deadline = Date.now() + 900000;
+    while (Date.now() < deadline) {
+      let state;
+      try {
+        const response = await fetch(`/api/runs/${runId}/migration`, { headers: { "Accept": "application/json" } });
+        if (!response.ok) throw new Error("Could not read AI review state");
+        state = await response.json();
+      } catch (error) {
+        aiPolling = false;
+        notify(error.message, true);
+        return;
+      }
+      const ai = state.ai || {};
+      const label = document.querySelector("[data-ai-status]");
+      if (label) label.textContent = ai.status === "running" ? "AI QCer running…" : (ai.status || "ready");
+      if (ai.status !== "running") {
+        window.location.reload();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    aiPolling = false;
+    notify("AI review is taking longer than expected. Refresh to inspect it.", true);
+  }
+
+  if (aiPanel) {
+    if (aiPanel.querySelector("[data-ai-bar]")) watchAI();
+    if (aiButton) {
+      aiButton.addEventListener("click", async () => {
+        aiButton.disabled = true;
+        try {
+          await postJson(`/api/runs/${runId}/migration/ai-review`, {});
+          notify("AI QCer running.");
+          await watchAI();
+        } catch (error) {
+          aiButton.disabled = false;
+          notify(error.message, true);
+        }
+      });
+    }
   }
 
   if (migrationPanel && migrationButton) {

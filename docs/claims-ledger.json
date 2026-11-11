@@ -19,20 +19,20 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases",
-      "quote": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases \u2014 release list shows \u201cQusar \u2014 Released: August 2026\u201d, \u201cPalisades \u2014 Released: April 2026\u201d, \u201cOlos \u2014 Released: December 2025\u201d.",
+      "quote": "https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases — release list shows “Qusar — Released: August 2026”, “Palisades — Released: April 2026”, “Olos — Released: December 2025”.",
       "falsifier": "A newer public release page or a changed cadence.",
       "consequence": "Pin release context per run; do not hard-code one release.",
       "rule_ids": []
     },
     {
       "id": "C-002",
-      "claim": "Only the current release and two most recent releases are supported (N\u22122).",
+      "claim": "Only the current release and two most recent releases are supported (N−2).",
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/olos/whatsnew/topics/introduction.html",
-      "quote": "Olos docs: \u201cOnly the current release and the two most recent releases are supported.\u201d https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
+      "quote": "Olos docs: “Only the current release and the two most recent releases are supported.” https://docs.guidewire.com/cloud/olos/whatsnew/topics/gwcp-release_highlights.html",
       "falsifier": "A change to the support policy.",
-      "consequence": "Version warning rule is scoped to N\u22122.",
+      "consequence": "Version warning rule is scoped to N−2.",
       "rule_ids": []
     },
     {
@@ -41,18 +41,18 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
-      "quote": "Guidewire blog, 12 Dec 2025: \u201ccombines advanced tooling with expert services\u201d; current Cloud Retrofit docs label it \u201cAPD Conversion (EA)\u201d. https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
+      "quote": "Guidewire blog, 12 Dec 2025: “combines advanced tooling with expert services”; current Cloud Retrofit docs label it “APD Conversion (EA)”. https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
       "falsifier": "A public self-service APD conversion product page.",
       "consequence": "Do not claim to replace or reproduce APD conversion.",
       "rule_ids": []
     },
     {
       "id": "C-004",
-      "claim": "Vendor estimate: APD product conversion for most monoline products of average complexity takes 6\u20138 weeks, including testing; this is not a full migration estimate.",
+      "claim": "Vendor estimate: APD product conversion for most monoline products of average complexity takes 6–8 weeks, including testing; this is not a full migration estimate.",
       "status": "VERIFIED-VENDOR-CLAIM",
       "access": "public",
       "source_url": "https://www.guidewire.com/resources/blog/developers/accelerate-your-cloud-transformation---convert-existing-policycenter-products-to-apd",
-      "quote": "Blog: \u201cMost monoline products of average complexity can be converted in just 6-8 weeks, including testing.\u201d",
+      "quote": "Blog: “Most monoline products of average complexity can be converted in just 6-8 weeks, including testing.”",
       "falsifier": "Guidewire changes the estimate; independent data contradicts it.",
       "consequence": "Cite as a vendor APD-conversion estimate, never as a full migration estimate or benchmark.",
       "rule_ids": []
@@ -76,7 +76,7 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/cloud-retrofit-with-apd.html",
-      "quote": "\u201cCloud Retrofit with APD App\u201d: after endpoint generation, \u201cDelete the product from APD App\u201d; the product cannot be maintained in APD. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/cloud-retrofit-with-apd.html",
+      "quote": "“Cloud Retrofit with APD App”: after endpoint generation, “Delete the product from APD App”; the product cannot be maintained in APD. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/cloud-retrofit-with-apd.html",
       "falsifier": "A new documented process that keeps the product in APD.",
       "consequence": "Target is a Cloud API extension draft, not APD conversion.",
       "rule_ids": []
@@ -105,7 +105,7 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/01-generating-LOB-endpoints/c_files_that_define_lob_specific_endpoints.html",
-      "quote": "Same page: \u201cDo not modify codegen output files directly. Any changes you make to these files will be overwritten\u2026\u201d; LOB extension files \u201chave `<productCode>_ext` in their name.\u201d",
+      "quote": "Same page: “Do not modify codegen output files directly. Any changes you make to these files will be overwritten…”; LOB extension files “have `<productCode>_ext` in their name.”",
       "falsifier": "A new doc contradicts.",
       "consequence": "Draft only `_ext`; `_gen` is read-only.",
       "rule_ids": []
@@ -132,25 +132,25 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/03-codegen-config-files/c_codegen_config_file_syntax.html",
-      "quote": "Codegen config syntax: \u201cThe nameOverride property should be used only for Cloud Retrofit without APD App. For Cloud Retrofit with APD App or APD conversion, use schemaPropertyName.\u201d",
+      "quote": "Codegen config syntax: “The nameOverride property should be used only for Cloud Retrofit without APD App. For Cloud Retrofit with APD App or APD conversion, use schemaPropertyName.”",
       "falsifier": "A later doc removes the restriction.",
       "consequence": "The product targets the non-APD Cloud Retrofit path; label this scope.",
       "rule_ids": []
     },
     {
       "id": "C-011",
-      "claim": "Endpoint-generation normalization: `VehicleDriver` \u2192 `Driver`, `PersonalVehicle` \u2192 `Vehicle`; `VehicleDriverExtResource.finishCreate` links the driver to `PALine`.",
+      "claim": "Endpoint-generation normalization: `VehicleDriver` → `Driver`, `PersonalVehicle` → `Vehicle`; `VehicleDriverExtResource.finishCreate` links the driver to `PALine`.",
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
-      "quote": "\u201cGenerating endpoints for the Personal Auto product,\u201d published 22 Oct 2026: template changes and `finishCreate` code. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
+      "quote": "“Generating endpoints for the Personal Auto product,” published 22 Oct 2026: template changes and `finishCreate` code. https://docs.guidewire.com/cloud/pc/202603/cloudapica/cloudAPI/topics/508-LOBEndpoints/02-generating-endpoints-for-PA/c_generating-endpoints-for-the-Personal-Auto-product.html",
       "falsifier": "A release changes the Personal Auto template.",
       "consequence": "Separate API-naming rule from codegen overrides.",
       "rule_ids": []
     },
     {
       "id": "C-012",
-      "claim": "APD type names are limited to 24 characters; truncation causes compile errors fixed with `nameOverride` (example `WCRetroRatingLetterOfCredit` \u2192 `WCRetroRatingLetterOfCre`).",
+      "claim": "APD type names are limited to 24 characters; truncation causes compile errors fixed with `nameOverride` (example `WCRetroRatingLetterOfCredit` → `WCRetroRatingLetterOfCre`).",
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html",
@@ -168,9 +168,9 @@
       "status": "VERIFIED-PROCESS",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
-      "quote": "\u201cAutomated cloud assurance and code compliance\u201d: exact process, `NEEDS WORK`, 120-minute timeout. https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
+      "quote": "“Automated cloud assurance and code compliance”: exact process, `NEEDS WORK`, 120-minute timeout. https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
       "falsifier": "A new official process.",
-      "consequence": "Findings are advisory; UI shows \u201cOfficial Cloud Assurance: not run.\u201d",
+      "consequence": "Findings are advisory; UI shows “Official Cloud Assurance: not run.”",
       "rule_ids": []
     },
     {
@@ -179,7 +179,7 @@
       "status": "GATED",
       "access": "public",
       "source_url": "https://docs.guidewire.com/cloud/gcc-guide/insurer-developer/latest/automated-cloud-assurance/",
-      "quote": "The public page refers to \u201cthe threshold\u201d without a number; standard pages redirect to `/gw-login`.",
+      "quote": "The public page refers to “the threshold” without a number; standard pages redirect to `/gw-login`.",
       "falsifier": "A public threshold/rule corpus.",
       "consequence": "Never invent a threshold or claim a pass/fail.",
       "rule_ids": []
@@ -241,7 +241,7 @@
       "status": "VERIFIED",
       "access": "public",
       "source_url": "https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
-      "quote": "Sonar blog, 4 Sept 2026: \u201cSonarQube Cloud adds support for \u2026 Gosu\u201d; \u201cGosu drives policy and claims logic.\u201d https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
+      "quote": "Sonar blog, 4 Sept 2026: “SonarQube Cloud adds support for … Gosu”; “Gosu drives policy and claims logic.” https://www.sonarsource.com/blog/four-new-languages-arrive-in-sonarqube-cloud/",
       "falsifier": "A support change.",
       "consequence": "Do not compete on generic Gosu linting; position on cross-artefact migration evidence.",
       "rule_ids": []
@@ -270,13 +270,13 @@
     },
     {
       "id": "C-022",
-      "claim": "The product\u2019s impact range is a heuristic, not a price or measured productivity claim.",
+      "claim": "The product’s impact range is a heuristic, not a price or measured productivity claim.",
       "status": "PRODUCT-CLAIM",
       "access": "none",
       "source_url": "",
       "quote": "Heuristic planning range; not a quote.",
       "falsifier": "A measured pilot.",
-      "consequence": "Label \u201cheuristic planning range; not a quote.\u201d",
+      "consequence": "Label “heuristic planning range; not a quote.”",
       "rule_ids": []
     },
     {
@@ -287,7 +287,7 @@
       "source_url": "",
       "quote": "PreFlight design decision.",
       "falsifier": "An authorised real fixture.",
-      "consequence": "\u201cSynthetic demo estate\u201d badge from second zero.",
+      "consequence": "“Synthetic demo estate” badge from second zero.",
       "rule_ids": []
     },
     {
@@ -364,7 +364,7 @@
     },
     {
       "id": "C-029",
-      "claim": "The demo\u2019s long-type example is a synthetic Personal Auto type name (`PersonalAutoRatingFactorConfiguration`, 37 chars), not a real Guidewire type.",
+      "claim": "The demo’s long-type example is a synthetic Personal Auto type name (`PersonalAutoRatingFactorConfiguration`, 37 chars), not a real Guidewire type.",
       "status": "PRODUCT-CLAIM",
       "access": "public",
       "source_url": "",
@@ -462,6 +462,17 @@
       "rule_ids": [
         "PF-GW-SBT-001"
       ]
+    },
+    {
+      "id": "C-038",
+      "claim": "The AI QCer is optional, default-off, advisory, and evidence-locked; no model is bundled and it cannot approve, write source, or deploy.",
+      "status": "PRODUCT-CLAIM",
+      "access": "none",
+      "source_url": "",
+      "quote": "Implemented in app/services/ai.py; docs/AI.md records the research boundaries.",
+      "falsifier": "A release that enables a model by default or lets AI output alter deterministic artifacts, paths, gates, or approval.",
+      "consequence": "UI labels AI off/unavailable; the validator rejects unknown citations, paths, numbers, and overclaims; AI review is excluded from the sealed deterministic bundle.",
+      "rule_ids": []
     }
   ]
 }

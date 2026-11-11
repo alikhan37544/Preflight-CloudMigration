@@ -1,16 +1,16 @@
 # PreFlight Security Contract
 
-**Mode:** local single-user product. No authentication, no multi-tenancy, no network egress by default.
+**Mode:** local single-user product. No authentication, no multi-tenancy, no network egress by default. Optional AI QCer is explicitly opt-in and default-off.
 **Binding:** `127.0.0.1` only.
 
 ## Threat model
 
 | Asset | Threat | Control |
 |---|---|---|
-| Source snapshot | Unauthorised upload/leak | Local-only default; no telemetry; optional LLM off |
+| Source snapshot | Unauthorised upload/leak | Local-only default; no telemetry; optional AI off |
 | Uploaded archive | Zip-slip, bomb, symlink escape | Canonicalise, size/ratio limits, reject symlinks/absolute paths |
 | XML/YAML | XXE, entity expansion, unsafe tags | `lxml` safe parser options; `safe_load` |
-| Source text | Prompt injection | No tools; evidence IDs; schema validation |
+| Source text | Prompt injection | Evidence is untrusted data; model has no tools; schema + citation/path/number validation |
 | Draft output | Path traversal | Resolve under run directory; allowlist |
 | Packet/logs | Raw secret leakage | Redact at capture; fingerprint only; tests |
 | Packet | Tampering | Packet hash + content digests; `preflight verify-packet` |
@@ -33,7 +33,9 @@
 - Audit: canonical JSON, `prev_hash`, `hash`, append-only; per-run locks serialize append/status/decision updates; an atomically written `audit.checkpoint.json` (`count` + `head`) detects tail truncation, and verification rejects cross-run events, sequence gaps, and broken hashes. Verify command; label “tamper-evident local log, not non-repudiation.”
 - Retention: `POST /api/runs/{id}/delete` removes run, draft, temp; no backups.
 - Dependency lockfile, `pip-audit`, `ruff`; no network at runtime.
-- No live tenant, no credentials, no third-party calls.
+- No live tenant, no credentials, no third-party calls. With `PREFLIGHT_AI_PROVIDER=none` (default), the runtime makes no model calls. Enabling `ollama` is loopback-only by default; `openai-compatible` remote endpoints require `PREFLIGHT_AI_ALLOW_REMOTE=1`.
+- AI output is structured JSON, checked against allowed evidence IDs, known paths, known numbers, and a forbidden-claim list. Any failure rejects the entire response. AI cannot write source, choose paths, approve, deploy, or alter deterministic artifacts.
+- Prompt injection is treated as untrusted evidence: no tools/credentials are exposed to the model, and cited IDs are validated against the run’s evidence graph.
 
 ## Test vectors
 
@@ -48,3 +50,4 @@
 - Intake: symlink enumerated as unsupported, malformed JSON/YAML marked corrupt.
 - Secrets: raw value absent from evidence, packet, logs, errors.
 - Path traversal: artifact read outside run dir.
+- AI: unknown evidence citation, unknown path, unsupported number, overclaim, malformed JSON, endpoint down, disabled-by-default, no tools/write path.
