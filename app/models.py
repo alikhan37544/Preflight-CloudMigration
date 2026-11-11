@@ -566,3 +566,77 @@ class AssistantAnswer(PreflightModel):
     citations: list[str] = Field(default_factory=list)
     searched_scopes: list[str] = Field(default_factory=list)
     missing_evidence: list[str] = Field(default_factory=list)
+
+
+class CodeFinding(PreflightModel):
+    """A code-level cloud blocker with line evidence.
+
+    ``excerpt`` is redacted at capture for secret findings. ``fingerprint`` is
+    stable across runs for the same rule at the same source location and is the
+    value exported as a SARIF partial fingerprint.
+    """
+
+    finding_id: str = Field(min_length=1)
+    rule_id: str = Field(min_length=1)
+    rule_version: str = "1.0"
+    title: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    severity: Severity
+    claim_strength: ClaimStrength
+    standard_family: StandardFamily = StandardFamily.NONE
+    standard_id: str | None = None
+    standard_title: str | None = None
+    standard_url: str | None = None
+    language: str = Field(min_length=1)
+    path: str = Field(min_length=1)
+    line: int = Field(ge=1)
+    column: int = Field(default=1, ge=1)
+    excerpt: str
+    excerpt_sha: str
+    fingerprint: str
+    message: str = Field(min_length=1)
+    remediation: str = ""
+    cloud_target: str = ""
+    autofix: str = "none"
+    confidence: Confidence = Confidence.PARSED
+    redacted: bool = False
+
+    @field_validator("excerpt_sha", "fingerprint")
+    @classmethod
+    def _hex64(cls, value: str) -> str:
+        if not _is_hex64(value):
+            raise ValueError("must be a 64-character hex digest")
+        return value
+
+    @model_validator(mode="after")
+    def _claim_rules(self) -> "CodeFinding":
+        if self.claim_strength is ClaimStrength.VERIFIED_ID and not self.standard_id:
+            raise ValueError("verified-id code findings require standard_id")
+        if self.claim_strength is ClaimStrength.HEURISTIC and self.standard_family is not StandardFamily.NONE:
+            raise ValueError("heuristic code findings must use standard_family=none")
+        return self
+
+
+class CodePatch(PreflightModel):
+    """An Architect-generated refactor draft with a unified diff."""
+
+    patch_id: str = Field(min_length=1)
+    source_path: str | None = None
+    target_path: str = Field(min_length=1)
+    finding_ids: list[str] = Field(min_length=1)
+    rule_ids: list[str] = Field(min_length=1)
+    strategy: str = Field(min_length=1)
+    diff: str
+    source_sha256: str
+    target_sha256: str
+    risk: Literal["high", "medium", "low"] = "medium"
+    semantic_review: bool = True
+    diff_redacted: bool = False
+    approval: Literal["pending", "accepted", "rejected"] = "pending"
+
+    @field_validator("source_sha256", "target_sha256")
+    @classmethod
+    def _hex64(cls, value: str) -> str:
+        if not _is_hex64(value):
+            raise ValueError("must be a 64-character hex digest")
+        return value

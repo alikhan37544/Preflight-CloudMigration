@@ -313,7 +313,7 @@ def test_mobile_390_no_overflow_and_nav_reachable(server) -> None:
             toggle.click()
             expect(toggle).to_have_attribute("aria-expanded", "true")
             links = page.locator(".sidebar .side-link")
-            expect(links).to_have_count(10)
+            expect(links).to_have_count(12)
             for index in range(links.count()):
                 link = links.nth(index)
                 expect(link).to_be_visible()

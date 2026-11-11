@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messageTransport name="vendor-mq">
+  <jms-queue name="harbor.claim.notice"/>
+  <provider>vendor-mq-bridge</provider>
+</messageTransport>

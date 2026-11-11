@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="WorkersCompPolicy">
+  <column name="ClassificationCode" type="Text"/>
+  <column name="ExperienceMod" type="Decimal"/>
+  <column name="Payroll" type="Decimal"/>
+</entity>

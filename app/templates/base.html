@@ -62,6 +62,7 @@
           <a class="side-link {{ 'active' if title == 'Manifest' }}" href="/manifest{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Manifest' %} aria-current="page"{% endif %}>Manifest</a>
           <a class="side-link {{ 'active' if title == 'Reconstruction' }}" href="/reconstruction{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Reconstruction' %} aria-current="page"{% endif %}>Reconstruction</a>
           <a class="side-link {{ 'active' if title == 'Migrator' }}" href="/migrator{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Migrator' %} aria-current="page"{% endif %}>Migrator</a>
+          <a class="side-link {{ 'active' if title == 'Codebase lab' }}" href="/codebase"{% if title == 'Codebase lab' %} aria-current="page"{% endif %}>Codebase lab</a>
           <a class="side-link {{ 'active' if title == 'Findings' }}" href="/findings{% if run_id %}?run={{ run_id }}{% endif %}"{% if title == 'Findings' %} aria-current="page"{% endif %}>Findings</a>
         </div>
         <div class="side-group">
@@ -71,6 +72,7 @@
         </div>
         <div class="side-group">
           <div class="side-label">Workspace</div>
+          <a class="side-link {{ 'active' if title == 'Case studies' }}" href="/case-studies"{% if title == 'Case studies' %} aria-current="page"{% endif %}>Case studies</a>
           <a class="side-link {{ 'active' if title == 'Runs' }}" href="/runs"{% if title == 'Runs' %} aria-current="page"{% endif %}>Runs</a>
           <a class="side-link {{ 'active' if title == 'Settings' }}" href="/settings"{% if title == 'Settings' %} aria-current="page"{% endif %}>Settings</a>
           <a class="side-link {{ 'active' if title == 'About and boundaries' }}" href="/about"{% if title == 'About and boundaries' %} aria-current="page"{% endif %}>About</a>

@@ -43,7 +43,7 @@ gets no filesystem, shell, tenant, approval, or deployment tools.
 ## Verification
 
 ```text
-pytest -q                                  429 passed
+pytest -q                                  460 passed
 claims_lint.py                            claims-lint: OK
 ai-status                                 configured=false by default
 ai-review (stub, valid)                   accepted

@@ -1,0 +1,373 @@
+schema_version: "1.0"
+metadata:
+  name: PreFlight Codebase Cloud-Blocker Pack
+  version: "1.0"
+  description: >
+    Code-level cloud-blocker and legacy anti-pattern rules for Gosu, Java
+    plugins, XML metadata, integration configuration, and GUnit tests. Rules
+    are structural heuristics or documented policy checks, not an official
+    Cloud Assurance assessment.
+  boundary: >
+    Advisory static analysis only. Every refactor is a local draft and remains
+    pending human review. Official Cloud Assurance was not run.
+
+guardian:
+  blocking_severities:
+    - error
+  apd_type_name_limit: 24
+  forbidden_target_prefixes:
+    - _gen/
+    - generated/gsrc/gw/generated/
+  required_rule_categories:
+    - data_access
+    - messaging
+    - servlet
+    - security
+    - multitenancy
+    - transactions
+    - apd
+
+rules:
+  - rule_id: PF-CODE-SQL-001
+    version: "1.0"
+    title: Direct SQL or JDBC access
+    category: data_access
+    severity: error
+    claim_strength: verified-id
+    standard_family: cloud-standard
+    standard_id: IS-TLS-1238
+    standard_title: Use of Direct SQL Calls to Access a Database
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/data-security-and-governance
+    access: gated-body
+    languages: [gosu, java]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '\bjava\.sql\.'
+        - '\bjavax\.sql\.'
+        - '\bDriverManager\s*\.\s*getConnection\s*\('
+        - '\.createStatement\s*\('
+        - '\.prepareStatement\s*\('
+        - '\.execute(?:Query|Update|Batch)\s*\('
+    message: Direct JDBC or SQL access bypasses application data APIs and is prohibited on the cloud platform.
+    remediation: >
+      Replace reads with the supported Gosu Query API or Cloud Data Access.
+      Replace writes with application APIs, Cloud API resources, or App Events.
+    cloud_target: Gosu Query / Cloud Data Access for reads; application APIs for writes
+    autofix: query_rewrite
+    risk: high
+
+  - rule_id: PF-CODE-SQL-002
+    version: "1.0"
+    title: Dynamic SQL string construction
+    category: data_access
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu, java]
+    detection:
+      kind: regex_masked
+      patterns:
+        - 'execute(?:Query|Update)\s*\([^)]*\+'
+        - '"(?i:SELECT|UPDATE|DELETE|INSERT)[^"]*"\s*\+'
+    message: SQL text is assembled by concatenation, which blocks parameterization and cloud data-access review.
+    remediation: Remove the handwritten statement; use a typed query or an application API with bound parameters.
+    cloud_target: Typed Gosu Query or application API
+    autofix: query_rewrite
+    risk: high
+
+  - rule_id: PF-CODE-SQL-003
+    version: "1.0"
+    title: Raw SQL script in the extension bundle
+    category: data_access
+    severity: error
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [sql]
+    file_suffixes: [.sql]
+    detection:
+      kind: always
+    message: Raw SQL scripts cannot be deployed as application logic on the cloud platform.
+    remediation: Move the operation behind Cloud Data Access or an application API.
+    cloud_target: Cloud Data Access read model or application API
+    autofix: raw_sql_quarantine
+    risk: high
+
+  - rule_id: PF-CODE-MSG-001
+    version: "1.0"
+    title: Legacy message-transport plugin
+    category: messaging
+    severity: error
+    claim_strength: secondary
+    standard_family: internal-guidance
+    standard_url: https://docs.guidewire.com/education/cloud-integration-basics/latest/docs/integration_cloud_basics/appevents_overview
+    access: public
+    languages: [gosu, java, xml, yaml]
+    detection:
+      kind: regex_masked
+      patterns:
+        - 'gw\.plugin\.messaging'
+        - '\bI?MessageTransport\b'
+        - '\bjavax\.jms\b'
+        - '\bjakarta\.jms\b'
+        - '\bcom\.ibm\.mq\b'
+        - '(?i)<(?:messageTransport|jms|mq)\b'
+        - '\bMessageDestination\b'
+    message: Legacy JMS/MQ message-transport plugins are replaced by App Events and Integration Gateway.
+    remediation: Publish a business event through App Events; move protocol delivery into an Integration Gateway route.
+    cloud_target: App Events webhook or Integration Gateway route
+    autofix: messaging_to_app_events
+    risk: high
+
+  - rule_id: PF-CODE-SRV-001
+    version: "1.0"
+    title: Custom servlet in the application
+    category: servlet
+    severity: error
+    claim_strength: verified-policy
+    standard_family: hardening-guidance
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: public
+    languages: [gosu, java, xml]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '\bjavax\.servlet\b'
+        - '\bjakarta\.servlet\b'
+        - 'extends\s+HttpServlet\b'
+        - '@WebServlet\b'
+        - '(?i)<servlet\b'
+    message: Custom servlets are not a supported cloud extension point.
+    remediation: Recreate the route as a Cloud API extension endpoint or an Integration Gateway route.
+    cloud_target: Cloud API extension endpoint or Integration Gateway route
+    autofix: servlet_to_cloud_api
+    risk: high
+
+  - rule_id: PF-CODE-API-001
+    version: "1.0"
+    title: Removed or unsupported Java runtime API
+    category: api
+    severity: error
+    claim_strength: verified-policy
+    standard_family: hardening-guidance
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: public
+    languages: [java, gosu, xml]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '\bjavax\.ejb\b'
+        - '\bjava\.rmi\b'
+        - '\bjavax\.naming\b'
+        - '\bjavax\.xml\.rpc\b'
+        - '\bsun\.misc\.Unsafe\b'
+        - '\borg\.apache\.commons\.httpclient\b'
+        - '\bjavax\.activation\b'
+    message: The referenced Java runtime API is removed or unsupported on the cloud runtime.
+    remediation: Replace it with a supported platform API, an application API, or an Integration Gateway route.
+    cloud_target: Supported platform API or Integration Gateway
+    autofix: remove_unsupported_api
+    risk: high
+
+  - rule_id: PF-CODE-API-002
+    version: "1.0"
+    title: Hidden or internal Guidewire package
+    category: api
+    severity: error
+    claim_strength: verified-id
+    standard_family: cloud-standard
+    standard_id: IS-TLS-1191
+    standard_title: Hidden Package Reference
+    standard_url: https://docs.guidewire.com/security/hardening-guidance-for-insurancesuite/application-and-development-security
+    access: gated-body
+    languages: [gosu, java]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '\bgw\.internal\.'
+        - '\bcom\.guidewire\.(?!public\.)'
+    message: The code reaches into a hidden or internal Guidewire package.
+    remediation: Replace the internal call with a supported public API or remove the dependency.
+    cloud_target: Supported public Guidewire API
+    autofix: remove_internal_import
+    risk: high
+
+  - rule_id: PF-CODE-SEC-001
+    version: "1.0"
+    title: Hard-coded secret
+    category: security
+    severity: error
+    claim_strength: verified-id
+    standard_family: gosu-secure-coding
+    standard_id: SEC00-G
+    standard_title: Do Not Hardcode Secrets
+    standard_url: https://docs.guidewire.com/security/gosu-secure-coding-guidelines/SEC00-G
+    access: public
+    languages: [gosu, java, yaml, xml, properties]
+    detection:
+      kind: secret_assignment
+    message: A credential or token is stored as a literal in source or configuration.
+    remediation: Bind the value through the cloud secret service and rotate the exposed credential.
+    cloud_target: Cloud secret manager binding
+    autofix: secret_binding
+    risk: high
+
+  - rule_id: PF-CODE-SEC-002
+    version: "1.0"
+    title: Weak cryptographic algorithm
+    category: crypto
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu, java]
+    detection:
+      kind: regex_strings
+      patterns:
+        - 'MessageDigest\s*\.\s*getInstance\s*\(\s*"(?i:MD5|SHA-?1)"'
+        - 'Cipher\s*\.\s*getInstance\s*\(\s*"[^"]*(?i:DES|ECB)'
+        - '"DES(?:ede)?/.+?/NoPadding"'
+    message: A weak or deprecated cryptographic algorithm is requested.
+    remediation: Use a platform-approved FIPS-validated primitive; do not carry custom encryption schemes.
+    cloud_target: Platform-managed encryption service
+    autofix: weak_crypto
+    risk: medium
+
+  - rule_id: PF-CODE-MT-001
+    version: "1.0"
+    title: Static mutable state in a shared runtime
+    category: multitenancy
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu, java]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '(?m)^\s*(?:private|protected|public)?\s*static\s+(?!final\b)(?:var\s+)?[A-Za-z_][\w.<>,\[\] ]*\s+[A-Za-z_]\w*\s*(?:=|;)'
+        - '(?m)^\s*(?:private|protected|public)?\s*static\s+var\s+[A-Za-z_]\w*'
+    message: Static mutable state can leak data or behaviour across tenants and requests.
+    remediation: Use request-scoped or tenant-scoped state; never cache tenant data in a static field.
+    cloud_target: Tenant-scoped service state or platform cache
+    autofix: static_state
+    risk: high
+
+  - rule_id: PF-CODE-MT-002
+    version: "1.0"
+    title: Local process, thread, or filesystem assumption
+    category: multitenancy
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu, java]
+    detection:
+      kind: regex_masked
+      patterns:
+        - '\bnew\s+Thread\s*\('
+        - '\bExecutors\s*\.'
+        - '\bSystem\s*\.\s*exit\s*\('
+        - '\bRuntime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec\s*\('
+        - '\bnew\s+File\s*\(\s*"/'
+        - '\bPaths\s*\.\s*get\s*\(\s*"/'
+        - '\bSystem\s*\.\s*(?:get|set)Property\s*\('
+    message: The code assumes a local process, thread, system property, or filesystem that the cloud runtime does not guarantee.
+    remediation: Use a platform scheduler, platform configuration, or a managed integration endpoint.
+    cloud_target: Platform scheduler, configuration service, or Integration Gateway
+    autofix: remove_process_assumption
+    risk: high
+
+  - rule_id: PF-CODE-TX-001
+    version: "1.0"
+    title: Explicit commit inside runWithNewBundle
+    category: transactions
+    severity: warning
+    claim_strength: secondary
+    standard_family: internal-guidance
+    standard_url: https://www.guidewire.com/resources/blog/developers/lessons-from-guidewire-cloud-migrations-de-risking-the-move-to-saas-via-guidewire-cloud
+    access: public
+    languages: [gosu]
+    detection:
+      kind: commit_in_block
+    message: The bundle is committed inside a managed transaction block.
+    remediation: Remove the explicit commit and let the bundle boundary manage the transaction.
+    cloud_target: Managed bundle transaction
+    autofix: remove_commit
+    risk: medium
+
+  - rule_id: PF-CODE-EXC-001
+    version: "1.0"
+    title: Swallowed exception
+    category: transactions
+    severity: warning
+    claim_strength: verified-id
+    standard_family: gosu-secure-coding
+    standard_id: ERR00-G
+    standard_title: Do Not Suppress Exceptions
+    standard_url: https://docs.guidewire.com/security/gosu-secure-coding-guidelines/ERR00-G
+    access: public
+    languages: [gosu, java]
+    detection:
+      kind: empty_catch
+    message: An empty catch block suppresses a failure without recovery or evidence.
+    remediation: Recover, rethrow with context, or record a typed failure; logging alone is not recovery.
+    cloud_target: Explicit failure handling
+    autofix: rethrow
+    risk: medium
+
+  - rule_id: PF-CODE-APD-001
+    version: "1.0"
+    title: APD type name exceeds the import limit
+    category: apd
+    severity: error
+    claim_strength: verified-doc
+    standard_family: none
+    standard_url: https://docs.guidewire.com/cloud/is/202607/cloudapica/cloudAPI/LOBEndpoints/generating-LOB-endpoints/c_correcting_compile_errors.html
+    access: public
+    languages: [xml]
+    file_suffixes: [.xml]
+    detection:
+      kind: apd_long_type
+      name_limit: 24
+    message: APD truncates long product-template type names on import; endpoint generation can fail to compile.
+    remediation: Add a codegen nameOverride mapping the truncated visualized name to the installed name.
+    cloud_target: Codegen nameOverride and regenerated endpoints
+    autofix: apd_name_override
+    risk: medium
+
+  - rule_id: PF-CODE-GUNIT-001
+    version: "1.0"
+    title: Database access in a pure unit test
+    category: testing
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu]
+    detection:
+      kind: gunit_db
+    message: A pure GUnit test uses database calls, coupling a unit test to a tenant database.
+    remediation: Move database assertions to an integration test and keep the unit test pure.
+    cloud_target: Pure GUnit with mocked seams
+    autofix: test_refactor
+    risk: medium
+
+  - rule_id: PF-CODE-LOG-001
+    version: "1.0"
+    title: Sensitive field written to output
+    category: logging
+    severity: warning
+    claim_strength: heuristic
+    standard_family: none
+    access: none
+    languages: [gosu, java]
+    detection:
+      kind: log_pii
+    message: A sensitive field is written to a log or standard output.
+    remediation: Remove the value or redact it before logging through the supported logging API.
+    cloud_target: Structured logging with redaction
+    autofix: redact_log
+    risk: medium

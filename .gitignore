@@ -10,3 +10,4 @@ worktrees/
 *.egg-info/
 
 data/.locks/
+codebase/

@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "status": "frozen",
-  "frozen_at": "2026-11-10T17:33:28Z",
-  "commit": "1ebeb77b1be52410f33c66f249e22272cae40207",
+  "frozen_at": "2026-11-11T06:43:13Z",
+  "commit": "a1bbdf668110bcac88a70123158a94bcc6f423a3",
   "author": "PreFlight Build",
   "fixtures": {
     "acme-pc-2026.10": {
@@ -37,7 +37,7 @@
   },
   "change_log": [
     {
-      "date": "2026-11-10",
+      "date": "2026-11-11",
       "change": "Frozen demo-tier fixtures and rule pack."
     }
   ]

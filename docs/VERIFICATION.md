@@ -41,7 +41,7 @@
 ## Final local gates (evidence)
 
 ```text
-pytest -q                                 429 passed
+pytest -q                                 460 passed
 pytest tests/test_false_positives.py ...  adversarial precision suite passes
 scripts/claims_lint.py                    claims-lint: OK
 test_freeze_manifest.py                   every fixture/gold/reference/rulepack/ledger hash recomputes
@@ -53,7 +53,7 @@ Playwright golden path                    passes (accept/reject dialog, mobile l
 
 ## Final status
 
-**Current internal gate: PASS for the demo path.** 429 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
+**Current internal gate: PASS for the demo path.** 460 tests pass; packet HTML/JSON tamper checks fail closed; XML/CDATA, inline YAML block, and reviewer-entered values are redacted; freeze hashes recompute. Independent demo reviewers scored Loop 2 at 7/10; the presentation is still being hardened. The residual limitations below remain disclosed.
 
 ## Residual limitations (disclosed, not hidden)
 
@@ -77,7 +77,7 @@ the demo separately after five hardening loops.
 | Judge / demo | 7.0 | **8.0** | Full script on an isolated copy; live seed intact; packet/audit verification; deck/PDF |
 | UX / accessibility | 7.5 | **8.2** | 0 axe violations; 1280/390 layouts; dialogs; packet export semantics; keyboard |
 | Guidewire domain | 6.0 | **8.5** | ERR00-G, A-03 counts, CUE, APD conversion scope, GarageLocation_Ext, verify-packet |
-| Engineering | 7.5 | **8.0** | 429 tests, 92/92 asset hashes, packet tamper/audit checks, CSRF, redaction |
+| Engineering | 7.5 | **8.0** | 460 tests, 92/92 asset hashes, packet tamper/audit checks, CSRF, redaction |
 
 The panel found no remaining demo blockers. Residual limitations are the
 synthetic in-sample evaluation, internally authored reference target, no human

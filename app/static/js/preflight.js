@@ -1142,6 +1142,68 @@
       });
     }
   }
+  /* Codebase lab: replay the cyclic loop and run a fresh assessment. */
+  const codebaseReplay = document.querySelector("[data-codebase-replay]");
+  const codebaseRun = document.querySelector("[data-codebase-run]");
+  const codebaseCase = new URLSearchParams(window.location.search).get("case") || "cascade-mutual";
+
+  if (codebaseReplay) {
+    codebaseReplay.addEventListener("click", () => {
+      const cards = Array.from(document.querySelectorAll("[data-iteration]"));
+      if (!cards.length) return;
+      cards.forEach((card) => card.classList.remove("is-active"));
+      notify("Replaying the Scout → Architect ↔ Guardian/Critic loop.");
+      cards.forEach((card, index) => {
+        window.setTimeout(() => {
+          card.classList.add("is-active");
+          card.scrollIntoView({ behavior: motionBehavior(), block: "center" });
+        }, index * 480);
+      });
+      window.setTimeout(() => {
+        cards.forEach((card) => card.classList.remove("is-active"));
+        notify("Loop replay complete. Green signal still requires human approval.");
+      }, cards.length * 480 + 200);
+    });
+  }
+
+  if (codebaseRun) {
+    codebaseRun.addEventListener("click", async () => {
+      codebaseRun.disabled = true;
+      try {
+        await postJson(`/api/codebase/cases/${encodeURIComponent(codebaseCase)}/run`, {
+          max_iterations: 3,
+        });
+        notify("Five-agent loop completed. Reloading the bundle.");
+        window.setTimeout(() => window.location.reload(), 500);
+      } catch (error) {
+        codebaseRun.disabled = false;
+        notify(error.message, true);
+      }
+    });
+  }
+
+  document.querySelectorAll("[data-upgrade-resume]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const status = document.querySelector("[data-upgrade-resume-status]");
+      button.disabled = true;
+      try {
+        const payload = await postJson(
+          `/api/codebase/cases/${encodeURIComponent(codebaseCase)}/resume`,
+          { scenario_id: button.dataset.scenario, choice: button.dataset.choice }
+        );
+        const decision = payload.result?.status || "recorded";
+        if (status) {
+          status.textContent = `Recorded ${button.dataset.choice}: ${decision}. ` +
+            "The green signal remains cleared and every patch still needs human approval.";
+        }
+        notify(`Upgrade response recorded: ${decision}.`);
+      } catch (error) {
+        notify(error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 
   if (migrationPanel && migrationButton) {
     if (migrationPanel.dataset.migrationStatus === "running") {

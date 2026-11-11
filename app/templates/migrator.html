@@ -33,6 +33,13 @@
   or contact a tenant. {{ state.boundary if state else 'Every generated change remains pending human approval.' }}
 </section>
 
+<section class="banner banner-info" aria-label="Codebase lab link">
+  <strong>Code-level refactoring lives in the codebase lab.</strong>
+  The review migrator uses Scribe to seal its feature bundle. The
+  <a href="/codebase">Codebase lab</a> runs Scout, Architect, Guardian, Critic, and Planner in a cyclic
+  code-migration loop with SARIF and upgrade resilience.
+</section>
+
 {% if not state %}
 <section class="panel migration-launch" data-migration-panel data-run-id="{{ run_id }}">
   <div class="migration-launch-copy">

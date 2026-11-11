@@ -90,3 +90,8 @@ model.
 This is not Guidewire Cloud Assurance, not a deployment tool, and not a live
 tenant connector. The generated target files are local JSON/YAML drafts for
 review, not a compiled Guidewire package. Official Cloud Assurance was not run.
+
+For code-level refactoring, anti-pattern detection, SARIF export, and mid-migration
+upgrade handling, see [`CODEBASE-MIGRATION.md`](CODEBASE-MIGRATION.md) and the
+`/codebase` lab. The migrator and the codebase lab keep separate agent logs and
+artifacts; neither edits the other.

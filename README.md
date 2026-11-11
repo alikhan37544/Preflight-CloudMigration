@@ -10,7 +10,7 @@ PreFlight is an offline, evidence-first review workstation for legacy Guidewire-
 
 [![CI](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml/badge.svg)](https://github.com/SaundaryaSingh/Preflight-CloudMigration/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-460%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-demo--ready-informational)
 
@@ -41,6 +41,7 @@ Generic linters answer none of those questions. PreFlight is built around the in
 7. **Benchmarks the method** on frozen synthetic fixtures with a sealed reference target, baselines, hard negatives, and a naming-shift holdout.
 8. **Exports a review packet** with evidence, assumptions, findings, hashes, and a hash-chained audit trail.
 9. **Runs a bounded multi-agent migrator** over the completed review: Scout scopes the feature, Architect generates target files, Guardian opens risk gates, Critic verifies the output, and Scribe seals the plan, report, and bundle manifest. Every change stays pending approval.
+10. **Runs a five-agent codebase migration lab** over synthetic insurer estates: Scout inventories Gosu, Java, XML, and tests; Architect emits cloud refactors and unified diffs; Guardian re-scans the target against APD and cloud-blocker rules; Critic applies patches and records runtime risk; Planner compiles a SARIF 2.1.0 bundle and executive report. Mid-migration release upgrades invalidate stale green signals.
 
 ## Autonomous migrator
 
@@ -66,6 +67,34 @@ can challenge it only when a local/provider model is explicitly configured.
 PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b   .venv/bin/python -m app.cli ai-review R-DEMO-001
 ```
 
+## Codebase migration lab
+
+The `/codebase` lab is the code-level extension: a five-agent cyclic assessment of Gosu,
+Java plugins, XML metadata, integration configuration, and GUnit tests. It detects direct
+JDBC/SQL, dynamic SQL, legacy JMS/MQ transports, servlets, removed runtime APIs, internal
+packages, hard-coded secrets, weak crypto, static tenant state, process/filesystem
+assumptions, explicit bundle commits, swallowed exceptions, APD long type names, and
+database-coupled unit tests.
+
+Architect turns each blocker family into a reviewable draft: Cloud Data Access Gosu,
+Cloud API/JAX-RS resources, App Events and Integration Gateway configuration, codegen
+`nameOverride`, secret-reference descriptors, and unified diffs. Guardian re-scans the
+target and blocks while any error or warning remains. Critic applies the displayed diffs,
+checks coverage and source immutability, then records architecture/runtime risks as named
+human gates. Planner compiles the report and SARIF 2.1.0 output. A mid-migration release
+upgrade increments the generation, invalidates the previous green signal, and offers
+revalidate, rollback, or defer.
+
+```bash
+make demo
+# http://127.0.0.1:8000/case-studies
+# http://127.0.0.1:8000/codebase?case=cascade-mutual
+# http://127.0.0.1:8000/codebase?case=harbor-pc
+```
+
+See [`docs/CODEBASE-MIGRATION.md`](docs/CODEBASE-MIGRATION.md) and
+[`docs/CASE-STUDIES.md`](docs/CASE-STUDIES.md).
+
 ## What it is not
 
 - It does not convert products to APD.
@@ -75,6 +104,8 @@ PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b   .venv/bin/python 
 - Not a live-tenant connector or deployment tool.
 - The **Migrator** is an autonomous draft generator: it produces a local, non-deployable target bundle and leaves every change pending human approval.
 - The extension draft is **local and non-deployable**.
+- The **Codebase lab** is a structural scanner and refactor drafter, not a compiler, full data-flow engine, or official Cloud Assurance check. Candidate entities in generated Gosu drafts need domain confirmation.
+- A lab green signal is a bounded agent verdict with open human gates; it is never deployment approval.
 
 ## Snapshot
 
@@ -89,7 +120,7 @@ PREFLIGHT_AI_PROVIDER=ollama PREFLIGHT_AI_MODEL=qwen2.5:1.5b   .venv/bin/python 
 | Advisory findings | 24 from 8 rules |
 | Mappings | 12 explicit dispositions |
 | Assumptions | 3 |
-| Tests | 429 passing |
+| Tests | 460 collected (450 non-browser + 10 Playwright) |
 | Frozen evaluation hashes | `ground_truth/FROZEN.json` |
 | Review packet | [`docs/demo/preflight-review-packet.html`](docs/demo/preflight-review-packet.html) |
 | Run summary | [`docs/demo/run-summary.json`](docs/demo/run-summary.json) |
@@ -135,6 +166,14 @@ make demo          # generate fixtures, seed R-DEMO-001, start tmux server
 Open:
 
 **http://127.0.0.1:8000/?run=R-DEMO-001**
+
+Codebase lab and case studies:
+
+```text
+http://127.0.0.1:8000/case-studies
+http://127.0.0.1:8000/codebase?case=cascade-mutual
+http://127.0.0.1:8000/codebase?case=harbor-pc
+```
 
 The demo server auto-restarts if it is stopped inside tmux. The launcher pins a local-only
 `PREFLIGHT_SECRET_KEY` so an already-open page keeps its CSRF token across those restarts;
@@ -185,6 +224,7 @@ Snapshot
   → Evaluate      M1–M6, baselines, margins, per-rule table
   → Packet        six-section review artifact, hashes, audit head
   → Migrator      five-agent draft bundle, gates, verification, sealed manifest
+  → Codebase lab  five-agent cyclic code refactor, SARIF 2.1.0, upgrade resilience
 ```
 
 **Stack:** Python 3.12 · FastAPI · Jinja2 · vanilla JS/CSS · `lxml` · `ruamel.yaml` · Pydantic v2 · JSON run store · pytest · Playwright.
@@ -202,11 +242,11 @@ Snapshot
 
 ```text
 app/                 FastAPI routes, Pydantic contracts, services, templates, static assets
-app/services/        intake, parsers, discovery, reconstruction, review, compare, evaluate, assistant
-rules/               feature, mapping, and review rule packs
-fixtures/            synthetic main estate, demo slice, naming-shift holdout
+app/services/        intake, parsers, discovery, reconstruction, review, compare, evaluate, assistant, migrator, codebase lab
+rules/               feature, mapping, and review rule packs plus the codebase cloud-blocker pack
+fixtures/            synthetic main estate, demo slice, naming-shift holdout, two insurer case estates
 ground_truth/        pre-registration, frozen hashes, gold labels, reference target
-docs/                claims ledger, target format, security contract, demo runner, verification
+docs/                claims ledger, target format, security contract, demo runner, codebase migration, case studies
 docs/demo/           review-packet snapshot and run summary
 templates/target/    local target contracts
 scripts/             fixture generator, seed, freeze, claims lint, demo server
@@ -231,6 +271,12 @@ Demo rules:
 
 Every finding carries a claim-strength label. No finding is presented as a Cloud Assurance violation. **Official Cloud Assurance: not run.**
 
+The codebase lab uses a separate pack in `rules/codebase_rules.yaml` with 16 code-level
+cloud-blocker families: direct SQL, dynamic SQL, raw scripts, legacy messaging, servlets,
+removed runtime APIs, internal packages, secrets, weak crypto, static state, process
+assumptions, explicit commits, swallowed exceptions, APD naming, GUnit coupling, and
+sensitive logging. See [`docs/CODEBASE-MIGRATION.md`](docs/CODEBASE-MIGRATION.md).
+
 ## Reconstruction slice
 
 `PA-VEH-01` traces:
@@ -248,7 +294,7 @@ Every finding carries a claim-strength label. No finding is presented as a Cloud
 ## Testing
 
 ```bash
-make test       # full suite: 429 tests
+make test       # full suite: 460 tests
 make e2e        # Playwright golden path
 make claims     # claims-ledger and rule-coverage gate
 make verify     # hash-chained audit verification
@@ -265,6 +311,9 @@ Coverage includes:
 - adversarial false-positive gates for every review rule
 - API, CSRF, Host/Origin, CSP, XSS, secret redaction
 - full pipeline, packet, audit chain
+- code scanner masking, secret redaction, refactor diffs, cyclic green/rework, SARIF 2.1.0
+- upgrade invalidation, resume choices, source-change and analyzer-crash containment
+- case-study pages and codebase API/bundle downloads
 - browser golden path, offline network check, screenshots
 
 ## Internal QA and adversarial review
@@ -303,6 +352,10 @@ The full adversarial record is historical and is being updated for the current b
 - No human inter-annotator study; no reviewer-effort or real-estate generalisation claim.
 - The thesis-tier protocol is planned, not delivered; this snapshot is a demo-tier feasibility study. See [`docs/EVALUATION-SCOPE.md`](docs/EVALUATION-SCOPE.md).
 - The extension draft is local and non-deployable; it is not compiled or tenant-validated.
+- The codebase lab is a structural scanner, not a compiler or full data-flow engine; candidate entities in generated Gosu drafts need domain confirmation.
+- Generated Cloud API, App Events, secret, and codegen descriptors are local drafts; they are not tenant-validated or deployed.
+- Upgrade scenarios are modelled release changes; they are not live Guidewire release monitoring.
+- SARIF results describe source findings and their evidence; they do not assert that a patch has been compiled or approved.
 
 ## Claims and legal
 

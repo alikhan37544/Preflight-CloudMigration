@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pluralize %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Insurer case studies · synthetic estates</div>
+    <h1>Two migration realities, one code-level method</h1>
+    <p class="lede">A monoline Personal Auto mutual and a multi-line P&amp;C group. Both profiles
+    carry invented code, real cloud constraints, and the same five-agent cyclic assessment.</p>
+  </div>
+  <div class="head-meta">
+    <span class="badge badge-synthetic">Synthetic profiles</span>
+    <span class="badge badge-neutral">No tenant connection</span>
+  </div>
+</div>
+
+<section class="banner banner-info" aria-label="Case study boundary">
+  <strong>Invented, not customer data.</strong> These profiles exist to exercise code-level
+  migration decisions: direct SQL, legacy messaging, servlets, static tenant state, secrets,
+  APD naming, and GUnit coupling. Official Cloud Assurance: not run.
+</section>
+
+<div class="case-grid">
+  {% for profile in profiles %}
+  <article class="panel case-card">
+    <div class="case-card-head">
+      <div>
+        <div class="eyebrow">{{ profile.segment }}</div>
+        <h2>{{ profile.name }}</h2>
+      </div>
+      <span class="badge badge-neutral">{{ profile.cloud_program }}</span>
+    </div>
+    <p class="case-tagline">{{ profile.tagline }}</p>
+
+    <dl class="case-facts">
+      <div><dt>Policies</dt><dd>{{ profile.footprint.policies }}</dd></div>
+      <div><dt>States</dt><dd>{{ profile.footprint.states }}</dd></div>
+      <div><dt>Custom Gosu</dt><dd>{{ profile.footprint.custom_gosu_files }}</dd></div>
+      <div><dt>Integrations</dt><dd>{{ profile.footprint.integrations }}</dd></div>
+    </dl>
+
+    <h3>Lines of business</h3>
+    <div class="lob-list">
+      {% for lob in profile.lobs %}
+      <div class="lob-card">
+        <strong>{{ lob.name }}</strong>
+        <span class="muted">{{ lob.product_model }} · {{ lob.editions|join(' / ') }}</span>
+        <div class="lob-features">{{ lob.custom_features|join(' · ') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <h3>Custom feature slices</h3>
+    <ul class="case-feature-list">
+      {% for feature in profile.custom_features %}
+      <li>
+        <div class="case-feature-title">{{ feature.name }} <span class="muted">· {{ feature.owner }}</span></div>
+        <div class="muted">{{ feature.description }}</div>
+        <div class="case-rule-row">
+          {% for rule in feature.anti_patterns %}<code>{{ rule }}</code>{% endfor %}
+          <span class="muted">→ {{ feature.cloud_target }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h3>Migration constraints</h3>
+    <ul class="constraint-list">
+      {% for constraint in profile.constraints %}<li>{{ constraint }}</li>{% endfor %}
+    </ul>
+
+    <div class="case-thesis">
+      <strong>Why this case matters.</strong> {{ profile.case_thesis }}
+    </div>
+
+    <div class="button-row">
+      <a class="btn btn-primary" href="/codebase?case={{ profile.case_id }}">Open codebase lab</a>
+      <a class="btn" href="/api/codebase/cases/{{ profile.case_id }}">Inspect JSON</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>What the case studies prove</h2>
+    <span class="muted">evidence-bound, not a certification</span>
+  </div>
+  <div class="case-proof-grid">
+    <div>
+      <h3>Code-level blockers are identifiable</h3>
+      <p class="muted">Direct JDBC, dynamic SQL, legacy message transports, servlets, removed Java APIs,
+      static tenant state, weak crypto, hard-coded secrets, APD naming, and DB-coupled GUnit tests
+      produce line-located findings with stable fingerprints.</p>
+    </div>
+    <div>
+      <h3>Refactors are reviewable artifacts</h3>
+      <p class="muted">The Architect emits target drafts, cloud configuration, unified diffs, and
+      semantic-review notes. Nothing is deployed and every patch stays pending.</p>
+    </div>
+    <div>
+      <h3>Gates survive platform movement</h3>
+      <p class="muted">A mid-migration release upgrade invalidates the previous green signal,
+      identifies affected patches, and offers revalidate, rollback, or defer choices.</p>
+    </div>
+    <div>
+      <h3>Findings reach developer pipelines</h3>
+      <p class="muted">SARIF 2.1.0 carries rule metadata, line locations, evidence fingerprints,
+      remediation, and claim strength without embedding source excerpts or secrets.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -26,8 +26,16 @@ def tree_hash(root: Path) -> str:
 
 
 def rulepack_hash() -> str:
+    """Hash the frozen review rule pack.
+
+    The code-migration pack (``codebase_rules.yaml``) is versioned with the
+    codebase lab, not with the sealed review-run rule pack. Excluding it keeps
+    the pre-registered demo hashes reproducible after the additive feature.
+    """
     payload = b""
     for path in sorted((REPO / "rules").glob("*.yaml")):
+        if path.name == "codebase_rules.yaml":
+            continue
         payload += path.name.encode() + b"\0" + path.read_bytes()
     return hashlib.sha256(payload).hexdigest()
 

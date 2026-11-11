@@ -181,3 +181,26 @@ hard negatives, and a naming-shift holdout that is never imported or tuned. It i
 **“What is gated?”**
 Cloud Assurance thresholds and full standard bodies; APD conversion; TrainingApp/GO content; a real
 tenant. The claims ledger marks each.
+
+---
+
+## Optional 90-second codebase-lab beat
+
+After the review packet, open `http://127.0.0.1:8000/codebase?case=cascade-mutual`.
+
+1. **Scout** — point at the source inventory: 17 scanned files, line-located blockers,
+   language mix, and custom feature slices.
+2. **Architect → Guardian rework** — show Iteration 1: the error-first pass is red because
+   Guardian still sees warning-severity blockers in the target.
+3. **Critic fix request** — show the targeted request back to Architect. This is the cyclic
+   handoff, not a single pipeline.
+4. **Iteration 2** — Guardian and Critic are both green. Every patch is still `pending`.
+5. **Patch bundle** — open one diff; show the Cloud Data Access Gosu draft, Cloud API/JAX-RS
+   resource, App Events descriptor, or codegen override.
+6. **SARIF** — download `results.sarif`; point out stable fingerprints and no secret values.
+7. **Upgrade simulator** — choose the APD naming change, evaluate, and show the generation bump,
+   invalidated green signal, affected patches, and revalidate/rollback/defer options.
+8. **Close** — “The green signal is bounded. The machine did the repetitive refactor; the human
+   still owns the change.”
+
+Then open `http://127.0.0.1:8000/case-studies` for the monoline versus multi-line contrast.

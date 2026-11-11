@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity name="HomeownersDwelling">
+  <column name="RoofYear" type="Integer"/>
+  <column name="Construction" type="TypeKey" typelist="ConstructionType"/>
+  <column name="CoastalZone" type="TypeKey" typelist="CoastalZone"/>
+  <column name="WindMitigationCredit" type="Decimal"/>
+</entity>

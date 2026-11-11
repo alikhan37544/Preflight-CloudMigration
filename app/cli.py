@@ -12,7 +12,10 @@ from app.services.intake import build_manifest, snapshot_hash
 from app.services.packet import verify_packet_artifacts
 from app.services.ai import AIClient, run_ai_review
 from app.services.migrator import MIGRATION_ARTIFACT, run_migration, verify_migration_log
+from app.services.code_migration import run_code_migration
 from app.services.pipeline import execute_run
+from app.services.resilience import SCENARIOS
+from app.services.sarif import sarif_json
 from app.store import RunStore
 
 
@@ -190,6 +193,58 @@ def cmd_claims_lint(args) -> int:
     return lint_main()
 
 
+def cmd_codebase(args) -> int:
+    settings = Settings(
+        data_dir=Path(args.data),
+        fixtures_dir=Path(args.fixtures) if args.fixtures else Settings().fixtures_dir,
+    )
+    result = run_code_migration(
+        args.case, settings, max_iterations=args.iterations,
+        upgrade_scenario=args.upgrade,
+    )
+    out = Path(args.out) if args.out else REPO / "codebase" / args.case
+    out.mkdir(parents=True, exist_ok=True)
+    for item in result.get("target_files", []):
+        target = out / "target" / item["path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(item["content"], encoding="utf-8")
+    for patch in result.get("patches", []):
+        (out / "patches").mkdir(exist_ok=True)
+        (out / "patches" / f"{patch['patch_id']}.diff").write_text(
+            patch["diff"], encoding="utf-8"
+        )
+    (out / "results.sarif").write_text(
+        sarif_json(result["sarif"]["json"]), encoding="utf-8"
+    )
+    (out / "MIGRATION-REPORT.md").write_text(
+        result["planner"]["report_markdown"], encoding="utf-8"
+    )
+    manifest = {
+        "schema_version": "1.0",
+        "case_id": args.case,
+        "status": result.get("status"),
+        "green_signal": result.get("green_signal"),
+        "boundary": result.get("boundary"),
+        "patches": [
+            {"patch_id": patch["patch_id"], "target_path": patch["target_path"],
+             "rule_ids": patch["rule_ids"], "approval": patch["approval"]}
+            for patch in result.get("patches", [])
+        ],
+        "audit_verified": result.get("audit_verified"),
+    }
+    (out / "bundle-manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        f"{args.case}: {result.get('status')} · "
+        f"{len(result.get('findings', []))} findings · "
+        f"{len(result.get('patches', []))} patches · "
+        f"green={bool(result.get('green_signal', {}).get('unified'))}"
+    )
+    print(f"bundle: {out} · sarif: {out / 'results.sarif'}")
+    return 0 if result.get("green_signal", {}).get("unified") else 1
+
+
 def cmd_manifest(args) -> int:
     manifest = build_manifest(Path(args.fixture_path), snapshot_id="S-CLI", project_id="cli")
     print(f"{manifest.file_count} files, {manifest.total_size} bytes, hash {manifest.sha256}")
@@ -244,6 +299,15 @@ def main(argv: list[str] | None = None) -> int:
 
     lint = sub.add_parser("claims-lint", help="lint the claims ledger and rule coverage")
     lint.set_defaults(func=cmd_claims_lint)
+
+    codebase = sub.add_parser("codebase", help="run the five-agent code-migration lab")
+    codebase.add_argument("case", nargs="?", default="cascade-mutual",
+                          choices=["cascade-mutual", "harbor-pc"])
+    codebase.add_argument("--out", default=None)
+    codebase.add_argument("--fixtures", default=None)
+    codebase.add_argument("--iterations", type=int, default=3)
+    codebase.add_argument("--upgrade", default=None, choices=sorted(SCENARIOS))
+    codebase.set_defaults(func=cmd_codebase)
 
     manifest = sub.add_parser("manifest", help="print a snapshot manifest summary")
     manifest.add_argument("fixture_path")

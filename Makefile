@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 UVICORN := $(PY) -m uvicorn
 
-.PHONY: install fixtures seed test e2e lint claims freeze verify demo demo-fg stop clean
+.PHONY: install fixtures seed test e2e lint claims freeze verify demo demo-fg stop clean codebase
 
 install:
 	uv venv .venv --python 3.12
@@ -44,6 +44,9 @@ demo: fixtures
 demo-fg: fixtures
 	$(PY) -m scripts.seed_demo --force
 	$(UVICORN) app.main:app --host 127.0.0.1 --port 8000
+
+codebase:
+	$(PY) -m app.cli codebase cascade-mutual --out codebase/cascade
 
 stop:
 	-@tmux kill-session -t preflight 2>/dev/null || true

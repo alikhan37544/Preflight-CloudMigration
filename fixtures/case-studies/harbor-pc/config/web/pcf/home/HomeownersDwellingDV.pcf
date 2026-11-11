@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PCF name="HomeownersDwellingDV">
+  <Screen name="HomeownersDwellingDV">
+    <TypeKeyInput id="CoastalZone" value="CoastalZone" label="CoastalZone"/>
+    <TextInput id="RoofYear" value="RoofYear" label="RoofYear"/>
+  </Screen>
+</PCF>

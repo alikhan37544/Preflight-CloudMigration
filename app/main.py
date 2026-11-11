@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import io
+import json
 import logging
 import threading
 import time
@@ -16,7 +18,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -37,6 +39,15 @@ from app.models import (
 from app.security import SecurityMiddleware, require_csrf
 from app.services.ai import AIClient, run_ai_review
 from app.services.assistant import answer_question
+from app.services.case_studies import (
+    get_case_study,
+    list_case_studies,
+)
+from app.services.code_migration import (
+    code_migration_summary,
+    run_code_migration,
+    verify_code_audit,
+)
 from app.services.compare import CompareResult
 from app.services.discovery import DiscoveryResult
 from app.services.evaluate import EvaluationResult
@@ -46,7 +57,14 @@ from app.services.migrator import MIGRATION_ARTIFACT, run_migration, verify_migr
 from app.services.pipeline import RunCancelled, execute_run
 from app.services.reconstruction import ReconstructionResult
 from app.services.redaction import redact_excerpt
+from app.services.resilience import (
+    evaluate_upgrade,
+    resilience_drills,
+    resume_assessment,
+    upgrade_scenarios,
+)
 from app.services.review import ReviewResult
+from app.services.sarif import sarif_json
 from app.store import RunStore, StoreError
 from app.views import feature_summary, load_run_view, spine_layout
 
@@ -237,6 +255,20 @@ class AssistantRequest(BaseModel):
 class MigrationRequest(BaseModel):
     feature_id: str | None = None
     force: bool = False
+
+
+class CodeMigrationRequest(BaseModel):
+    max_iterations: int = Field(default=3, ge=1, le=5)
+    upgrade_scenario: str | None = None
+
+
+class UpgradeRequest(BaseModel):
+    scenario_id: str = Field(min_length=1)
+
+
+class ResumeRequest(BaseModel):
+    scenario_id: str = Field(min_length=1)
+    choice: str = Field(min_length=1)
 
 
 def _fixture_path(settings: Settings, fixture_id: str) -> Path:
@@ -472,6 +504,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.migration_lock = threading.Lock()
     app.state.ai = AIClient(settings)
     app.state.ai_workers = {}
+    app.state.codebase_cache: dict[str, dict[str, Any]] = {}
+    app.state.codebase_lock = threading.Lock()
     _reconcile_interrupted_runs(app.state.store)
 
     app.add_middleware(
@@ -570,6 +604,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=200,
             )
         return view, None
+
+    def codebase_result(case_id: str, *, refresh: bool = False) -> dict[str, Any]:
+        try:
+            get_case_study(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="case study not found") from exc
+        with app.state.codebase_lock:
+            cached = app.state.codebase_cache.get(case_id)
+            if cached is not None and not refresh:
+                return cached
+            try:
+                result = run_code_migration(case_id, settings, max_iterations=3)
+            except FileNotFoundError as exc:
+                raise HTTPException(status_code=404, detail="case fixture not found") from exc
+            app.state.codebase_cache[case_id] = result
+            return result
+
+    def codebase_patch(result: dict[str, Any], patch_id: str) -> dict[str, Any]:
+        for patch in result.get("patches", []):
+            if patch.get("patch_id") == patch_id:
+                return patch
+        raise HTTPException(status_code=404, detail="patch not found")
 
     # -- pages ---------------------------------------------------------
     @app.get("/", response_class=HTMLResponse)
@@ -709,6 +765,53 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request=request, name="migrator.html",
             context=context(request, run_id, view, "Migrator",
                             ai_status=app.state.ai.status()),
+        )
+
+    @app.get("/codebase", response_class=HTMLResponse)
+    def codebase_page(request: Request, case: str | None = Query(default=None),
+                      upgrade: str | None = Query(default=None)):
+        profiles = list_case_studies()
+        case_id = case or profiles[0]["case_id"]
+        try:
+            result = codebase_result(case_id)
+        except HTTPException:
+            raise
+        impact = result.get("upgrade")
+        if upgrade:
+            try:
+                impact = evaluate_upgrade(result, upgrade)
+            except KeyError as exc:
+                raise HTTPException(status_code=400, detail="unknown upgrade scenario") from exc
+            result = copy.deepcopy(result)
+            result["upgrade"] = impact
+            if impact["status"] == "revalidation_required":
+                result["status"] = "revalidation_required"
+                result["green_signal"] = {
+                    **result.get("green_signal", {}),
+                    **impact["green_signal_after"],
+                }
+        return templates.TemplateResponse(
+            request=request, name="codebase.html",
+            context=context(
+                request, None, None, "Codebase lab",
+                profiles=profiles,
+                profile=result["profile"],
+                result=result,
+                impact=impact,
+                upgrade_scenarios=upgrade_scenarios(),
+                drills=resilience_drills(),
+                summary=code_migration_summary(result),
+            ),
+        )
+
+    @app.get("/case-studies", response_class=HTMLResponse)
+    def case_studies_page(request: Request):
+        return templates.TemplateResponse(
+            request=request, name="case_studies.html",
+            context=context(
+                request, None, None, "Case studies",
+                profiles=list_case_studies(),
+            ),
         )
 
     @app.get("/findings", response_class=HTMLResponse)
@@ -1182,6 +1285,132 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="migration file not found")
         media = "text/markdown" if target.suffix == ".md" else "application/json"
         return FileResponse(target, media_type=media, filename=target.name)
+
+    # -- codebase migration lab ---------------------------------------
+    @app.get("/api/codebase/cases")
+    def codebase_cases():
+        return {
+            "schema_version": "1.0",
+            "cases": list_case_studies(),
+            "upgrade_scenarios": upgrade_scenarios(),
+            "resilience_drills": resilience_drills(),
+        }
+
+    @app.get("/api/codebase/cases/{case_id}")
+    def codebase_case(case_id: str):
+        return codebase_result(case_id)
+
+    @app.post("/api/codebase/cases/{case_id}/run", dependencies=[Depends(require_csrf)])
+    def codebase_run(case_id: str, body: CodeMigrationRequest):
+        try:
+            get_case_study(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="case study not found") from exc
+        try:
+            result = run_code_migration(
+                case_id, settings, max_iterations=body.max_iterations,
+                upgrade_scenario=body.upgrade_scenario,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="case fixture not found") from exc
+        except KeyError as exc:
+            raise HTTPException(status_code=400, detail="unknown upgrade scenario") from exc
+        with app.state.codebase_lock:
+            app.state.codebase_cache[case_id] = result
+        return result
+
+    @app.post("/api/codebase/cases/{case_id}/upgrade", dependencies=[Depends(require_csrf)])
+    def codebase_upgrade(case_id: str, body: UpgradeRequest):
+        result = codebase_result(case_id)
+        try:
+            impact = evaluate_upgrade(result, body.scenario_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=400, detail="unknown upgrade scenario") from exc
+        return impact
+
+    @app.post("/api/codebase/cases/{case_id}/resume", dependencies=[Depends(require_csrf)])
+    def codebase_resume(case_id: str, body: ResumeRequest):
+        result = codebase_result(case_id)
+        try:
+            impact = evaluate_upgrade(result, body.scenario_id)
+            updated = resume_assessment(result, impact, body.choice)
+        except KeyError as exc:
+            raise HTTPException(status_code=400, detail="unknown upgrade scenario") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"impact": impact, "result": updated, "green_signal": updated.get("green_signal")}
+
+    @app.get("/api/codebase/cases/{case_id}/sarif")
+    def codebase_sarif(case_id: str):
+        result = codebase_result(case_id)
+        return Response(
+            content=sarif_json(result["sarif"]["json"]),
+            media_type="application/sarif+json",
+            headers={"Content-Disposition": f'attachment; filename="{case_id}.sarif"'},
+        )
+
+    @app.get("/api/codebase/cases/{case_id}/report")
+    def codebase_report(case_id: str):
+        result = codebase_result(case_id)
+        return PlainTextResponse(
+            result["planner"]["report_markdown"],
+            media_type="text/markdown",
+            headers={"Content-Disposition": f'attachment; filename="{case_id}-migration-report.md"'},
+        )
+
+    @app.get("/api/codebase/cases/{case_id}/patches/{patch_id}")
+    def codebase_patch_file(case_id: str, patch_id: str):
+        result = codebase_result(case_id)
+        patch = codebase_patch(result, patch_id)
+        return PlainTextResponse(
+            patch.get("diff", ""),
+            media_type="text/x-diff",
+            headers={"Content-Disposition": f'attachment; filename="{patch_id}.diff"'},
+        )
+
+    @app.get("/api/codebase/cases/{case_id}/audit")
+    def codebase_audit(case_id: str):
+        result = codebase_result(case_id)
+        verified, detail = verify_code_audit(result.get("audit", []))
+        return {"case_id": case_id, "verified": verified, "detail": detail,
+                "events": result.get("audit", [])}
+
+    @app.get("/api/codebase/cases/{case_id}/bundle.zip")
+    def codebase_bundle(case_id: str):
+        result = codebase_result(case_id)
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            for item in result.get("target_files", []):
+                archive.writestr(f"target/{item['path']}", item.get("content", ""))
+            for patch in result.get("patches", []):
+                archive.writestr(f"patches/{patch['patch_id']}.diff", patch.get("diff", ""))
+            archive.writestr("sarif/results.sarif", sarif_json(result["sarif"]["json"]))
+            archive.writestr("MIGRATION-REPORT.md", result["planner"]["report_markdown"])
+            manifest = {
+                "schema_version": "1.0",
+                "case_id": case_id,
+                "status": result.get("status"),
+                "green_signal": result.get("green_signal"),
+                "generated_at": result.get("generated_at"),
+                "boundary": result.get("boundary"),
+                "files": [
+                    {"path": item["path"], "sha256": item["sha256"], "bytes": item["bytes"]}
+                    for item in result.get("target_files", [])
+                ],
+                "patches": [
+                    {"patch_id": patch["patch_id"], "target_path": patch["target_path"],
+                     "rule_ids": patch["rule_ids"], "approval": patch["approval"],
+                     "semantic_review": patch.get("semantic_review", True)}
+                    for patch in result.get("patches", [])
+                ],
+                "audit_verified": result.get("audit_verified"),
+            }
+            archive.writestr("bundle-manifest.json", json.dumps(manifest, indent=2) + "\n")
+        return Response(
+            content=buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{case_id}-code-migration.zip"'},
+        )
 
     @app.get("/api/runs/{run_id}/findings")
     def findings_api(run_id: str):

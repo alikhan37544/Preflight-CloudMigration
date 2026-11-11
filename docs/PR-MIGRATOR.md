@@ -60,7 +60,7 @@ This is **bounded autonomy**, not deployment:
 ## Verification
 
 ```text
-pytest -q                                 429 passed
+pytest -q                                 460 passed
 claims_lint.py                            claims-lint: OK
 migrate R-DEMO-001                        completed_with_gates · 5/5 targets · 11 gates · verification passed
 verify-migration R-DEMO-001               OK - 12 events verified (fresh seed)

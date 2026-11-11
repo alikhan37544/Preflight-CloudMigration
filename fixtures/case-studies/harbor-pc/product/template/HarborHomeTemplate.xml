@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="HarborHome">
+  <type name="HarborDwelling">
+    <field name="RoofYear" type="Integer"/>
+    <field name="CoastalZone" type="TypeKey"/>
+  </type>
+  <type name="HarborHomeownersWindMitigationConfiguration">
+    <field name="Credit" type="Decimal"/>
+  </type>
+</productTemplate>

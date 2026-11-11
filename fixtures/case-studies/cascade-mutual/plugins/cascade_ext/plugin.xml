@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin name="cascade_ext">
+  <class name="cascade.plugin.LegacyRatingPlugin"/>
+</plugin>

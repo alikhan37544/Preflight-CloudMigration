@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin name="dealer-feed">
+  <servlet path="/dealer/vehicles" class="cascade.integration.DealerFeedServlet"/>
+</plugin>

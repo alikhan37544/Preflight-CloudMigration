@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<productTemplate name="CascadeAuto">
+  <type name="CascadePersonalVehicle">
+    <field name="ModelYear" type="Integer"/>
+    <field name="TelematicsTier" type="TypeKey"/>
+  </type>
+  <type name="CascadePersonalAutoRatingFactorConfiguration">
+    <field name="FactorValue" type="Decimal"/>
+  </type>
+</productTemplate>
